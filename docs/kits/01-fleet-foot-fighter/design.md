@@ -165,3 +165,21 @@ For anyone building this kit as a mod (for example with WeiDU):
 - **Easy:** AC, movement and weapon speed bonuses, extra attacks, Time Slow and Time Pause (Time Stop effects), Relentless (standard immunities), Flicker Step (reuses the Shadowdancer's Shadowstep), Quicksilver (permanent magic resistance), Fleet Training (movement and weapon speed bonuses), Razor's Edge (damage over time on hit, like poison weapons, limited to bladed weapons and creatures that can bleed).
 - **Moderate:** Rapid Strike (attack doubling with a THAC0 penalty that scales by level), Afterimage (Mirror Image flagged as undispellable), Evasion (half damage on failed saves needs a custom effect), Hamstring (needs a movement penalty that Free Action doesn't block).
 - **Hard:** none.
+
+### As built (not yet tested in game)
+
+Code: `mod/halflingkits/kits/01-fleet-foot-fighter/`. Where the build differs from the design, or relies on something to check in game:
+
+- **Rapid Strike** uses the game's Improved Haste, so it also doubles movement and doesn't combine with Haste or Improved Haste. The design's "Improved Haste and Rapid Strike still double" doesn't hold: they don't stack.
+- **Razor's Edge** comes from daggers, short swords and katanas: each carries a hidden effect that only a Fleet Foot picks up. Limits:
+  - Throwing daggers don't cause bleeding, since the on-hit effect is melee only.
+  - With a blade in either hand, every melee hit bleeds, including the other hand's hits.
+  - The bleed scales with the attacker's level, which relies on the engine passing that level through. If it doesn't, every wound bleeds 1 per round.
+  - Bleeding is slashing damage, so physical resistance reduces it. Oozes are covered as RACE=SLIME only.
+- **Weapon speed** steps replace each other, because the game's weapon-speed effect doesn't stack. **Fleet Training** gives movement only: by level 16 every allowed weapon is already at speed 0, so its weapon-speed bonus would do nothing.
+- **Two-Weapon Style's 2 starting pips** are granted by a permanent proficiency effect. Check that a third pip can still be added at level-up.
+- **Flicker Step** is a renamed copy of the Shadowdancer's Shadowstep. **Time Slow** and **Time Pause** are innate copies of Time Stop.
+- **Evasion** is the standard thief HLA, so it behaves as the engine's Evasion does, which may differ from the design's half damage on a failed save.
+- **Relentless** uses separate immunities rather than Free Action, so speed bonuses still work. Its +10% physical resistance at level 30 is tracked with a new spell state, so it works whether Relentless is taken before or after level 30.
+- **Critical Strike** is the standard one without the Power Attack prerequisite. It does not get past critical-hit immunity (needs EEex).
+

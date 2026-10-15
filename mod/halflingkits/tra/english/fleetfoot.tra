@@ -1,0 +1,79 @@
+// Fleet Foot Fighter
+
+@100 = ~Fleet Foot Fighter~
+@101 = ~Fleet Foot Fighter~
+@102 = ~FLEET FOOT FIGHTER: Barefoot and grinning, the Fleet Foot is gone before the blade falls. Raised on the hedge-lanes and orchard runs of halfling villages, these duellists never learned to stand still: they dart between legs, vault tables and leave only a blur where they stood. Bigger folk call it cheating. The Fleet Foot calls it a fair fight.
+
+Advantages:
+– +2 AC at level 1, plus +1 every 5 levels afterwards.
+– Small Target: +2 AC against missiles, rising to +4 at level 10.
+– Fleet of Foot: +2 movement at level 1, plus +1 every 2 levels afterwards.
+– Weapon speed improves by 1 at level 1, and by 1 more every 5 levels afterwards.
+– +1/2 attack per round at level 1, and again at level 19.
+– Starts with 2 slots in Two-Weapon Style.
+– May reach grandmastery in daggers, short swords, katanas and quarterstaffs.
+– Razor's Edge: every melee hit with a dagger, short sword or katana opens a wound that bleeds for 3 rounds: 1 damage per round at level 1, rising by 1 every 10 levels. Wounds stack. Undead, golems, elementals and slimes do not bleed.
+– From level 7: Rapid Strike once per day, plus once more every 4 levels afterwards.
+  RAPID STRIKE: Doubles attacks per round for 4 rounds, plus 1 round every 5 levels afterwards, at a penalty to hit that shrinks from -4 to nothing by level 19.
+
+Disadvantages:
+– Cannot wear armour, helmets or boots, or use shields.
+– May only use daggers (including throwing daggers), short swords, katanas and quarterstaffs.
+– Must be a halfling.~
+
+@110 = ~Fleet Foot~
+@111 = ~The Fleet Foot's speed, footwork and quick hands.~
+
+@120 = ~Rapid Strike~
+@121 = ~Rapid Strike
+
+Doubles the Fleet Foot's attacks per round, and its movement with them, for 4 rounds at level 7, plus 1 round every 5 levels afterwards. Attacks suffer a penalty to hit of -4 at level 7, -3 at 10, -2 at 13 and -1 at 16, and none from level 19. Does not combine with Haste or Improved Haste.~
+@122 = ~Rapid Strike~
+
+@130 = ~Razor's Edge~
+@131 = ~Razor's Edge
+
+A bleeding wound: 1 damage per round for 3 rounds, rising by 1 for every 10 of the Fleet Foot's levels.~
+
+@140 = ~Flicker Step~
+@141 = ~Flicker Step
+
+The Fleet Foot steps out of time for about 7 seconds. It can move freely while everyone else is frozen, but cannot attack or cast until the effect ends.~
+
+@145 = ~Time Slow~
+@146 = ~Time Slow
+
+Stops time for everyone but the Fleet Foot for 1 round.~
+
+@150 = ~Time Pause~
+@151 = ~Time Pause
+
+Stops time for everyone but the Fleet Foot for 2 rounds.~
+
+@155 = ~Afterimage~
+@156 = ~Afterimage
+
+For 1 turn, the Fleet Foot leaves 4 blurred copies of itself that work like Mirror Image. This is a physical ability, so it cannot be dispelled.~
+
+@160 = ~Relentless~
+@161 = ~Relentless
+
+The Fleet Foot can no longer be held, paralysed, slowed, webbed, entangled, stunned or frightened. From level 30 it also gains +10% resistance to physical damage.~
+
+@165 = ~Hamstring~
+@166 = ~Hamstring
+
+For 1 round, every hit hamstrings the target for 2 rounds: -1 attack per round, -2 to hit and half movement. There is no save, and Free Action doesn't help, since it is a wound rather than magic. Further hits refresh the wound but do not stack.~
+@167 = ~Hamstrung~
+
+@170 = ~Quicksilver~
+@171 = ~Quicksilver
+
+Each time this ability is chosen, the Fleet Foot gains +10% magic resistance. It simply isn't where the spell was aimed.~
+
+@175 = ~Fleet Training~
+@176 = ~Fleet Training
+
+Each time this ability is chosen, the Fleet Foot gains +1 movement.~
+
+@180 = ~Fleet Foot Fighters cannot use this item.~

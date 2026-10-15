@@ -9,6 +9,16 @@ END
 LANGUAGE ~English~ ~english~ ~halflingkits/tra/english/setup.tra~
 
 /////////////////////////////////////////////////////////////////////
+// Fleet Foot Fighter (fighter, halfling only)
+/////////////////////////////////////////////////////////////////////
+BEGIN @6 DESIGNATED 1
+LABEL ~halflingkits-fleet-foot-fighter~
+REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
+
+LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/fleetfoot.tra~
+INCLUDE ~%MOD_FOLDER%/kits/01-fleet-foot-fighter/fleetfoot.tpa~
+
+/////////////////////////////////////////////////////////////////////
 // Tymora's Champion (fighter, halfling only)
 /////////////////////////////////////////////////////////////////////
 BEGIN @5 DESIGNATED 5

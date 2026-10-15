@@ -40,7 +40,7 @@ END
 
 // Standard fighter HLAs: War Cry's enemy-only area (for Fortune's Turn and
 // Wheel), and the Critical Strike and Resist Magic rows the kit keeps.
-LAF HK_FIND_FIGHTER_HLA STR_VAR name = ~War Cry~
+LAF HK_FIND_HLA STR_VAR name = ~War Cry~
   RET hk_warcry_found = found hk_warcry_spell = spell
 END
 OUTER_SET hk_enemy_found = 0
@@ -51,11 +51,11 @@ ACTION_IF (hk_warcry_found) BEGIN
   END
 END
 
-LAF HK_FIND_FIGHTER_HLA STR_VAR name = ~Critical Strike~
+LAF HK_FIND_HLA STR_VAR name = ~Critical Strike~
   RET hk_crit_found = found hk_crit_ability = ability hk_crit_icon = icon
       hk_crit_strref = strref hk_crit_min = min_lev hk_crit_max = max_lev hk_crit_num = num_allowed
 END
-LAF HK_FIND_FIGHTER_HLA STR_VAR name = ~Resist Magic~
+LAF HK_FIND_HLA STR_VAR name = ~Resist Magic~
   RET hk_rm_found = found hk_rm_ability = ability hk_rm_icon = icon
       hk_rm_strref = strref hk_rm_min = min_lev hk_rm_max = max_lev hk_rm_num = num_allowed
 END

@@ -1,0 +1,438 @@
+/////////////////////////////////////////////////////////////////////
+// Fleet Foot Fighter
+// Design: docs/kits/01-fleet-foot-fighter/design.md
+//
+// Resource prefix HKFF. Spells and EFFs:
+//   HKFFL1      Level 1 package: AC, missile AC, movement, weapon speed,
+//               +1/2 attack, 2 slots in Two-Weapon Style        (CLAB)
+//   HKFFAC      +1 AC                         (CLAB, every 5 levels from 6)
+//   HKFFMV      +1 movement                   (CLAB, every odd level from 3)
+//   HKFFMT      Small Target to +4            (CLAB, level 10)
+//   HKFFWS2-8   Weapon speed step             (CLAB, every 5 levels from 6)
+//   HKFFAP      Second +1/2 attack            (CLAB, level 19)
+//   HKFFRS      Rapid Strike (innate)         (CLAB, every 4 levels from 7)
+//   HKFFRZA.eff Razor's Edge: on-hit effect a blade gives a Fleet Foot
+//   HKFFRZB.eff Razor's Edge: casts the bleed on the creature hit
+//   HKFFBLD     Razor's Edge: the bleed
+//   HKFFFS      Flicker Step (copy of the Shadowdancer's Shadowstep)  HLA
+//   HKFFTS1/2   Time Slow / Time Pause (copies of Time Stop)          HLA
+//   HKFFAI      Afterimage                                            HLA
+//   HKFFRL      Relentless; HKFFRL3 adds its level-30 resistance      HLA
+//   HKFFHM      Hamstring; HKFFHMA.eff / HKFFHMS deliver the wound    HLA
+//   HKFFQS      Quicksilver                                           HLA
+//   HKFFTR      Fleet Training                                        HLA
+//
+// Not implemented:
+//   Critical Strike ignoring critical-hit immunity (needs EEex). The
+//   standard Critical Strike is kept, without its Power Attack
+//   prerequisite.
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells and tables
+/////////////////////////////////////////////////////////////////////
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~spwi305~   // Haste
+  RET hk_haste_icon = icon hk_haste_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~spwi212~   // Mirror Image
+  RET hk_mirror_icon = icon hk_mirror_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr403~   // Free Action
+  RET hk_free_icon = icon hk_free_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~spwi312~   // Slow
+  RET hk_slow_icon = icon hk_slow_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~spwi912~   // Time Stop
+  RET hk_timestop_found = found hk_timestop_icon = icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~   // Bless (icon for passives)
+  RET hk_bless_icon = icon hk_bless_book_icon = book_icon
+END
+
+LAF HK_FIND_KIT_ABILITY STR_VAR kit = ~SHADOWDANCER~ name = ~Shadowstep~
+  RET hk_shadowstep_found = found hk_shadowstep_spell = spell
+END
+LAF HK_FIND_HLA STR_VAR name = ~Critical Strike~
+  RET hk_crit_found = found hk_crit_ability = ability hk_crit_icon = icon
+      hk_crit_strref = strref hk_crit_min = min_lev hk_crit_max = max_lev hk_crit_num = num_allowed
+END
+LAF HK_FIND_HLA STR_VAR name = ~Evasion~ table = ~luth0~
+  RET hk_evasion_found = found hk_evasion_ability = ability hk_evasion_icon = icon
+      hk_evasion_strref = strref hk_evasion_min = min_lev hk_evasion_max = max_lev
+END
+
+// Relentless sets this state so the level-30 step knows it was taken
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_FF_RELENTLESS~ RET hk_ff_relentless_state = id END
+
+
+/////////////////////////////////////////////////////////////////////
+// Level 1 package
+//   +2 AC; Small Target +2 AC against missiles; +2 movement;
+//   weapon speed 1; +1/2 attack (APR key 6 = 0.5); 2 slots in
+//   Two-Weapon Style (proficiency 114).
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKFFL1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) STR_VAR icon = ~%hk_haste_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_haste_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2                  timing = HK_TIMING_PERMANENT END   // AC, all
+  LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2 parameter2 = 2   timing = HK_TIMING_PERMANENT END   // AC, missile
+  LPF HK_SPELL_FX INT_VAR opcode = 176 parameter1 = 2                  timing = HK_TIMING_PERMANENT END   // movement
+  LPF HK_SPELL_FX INT_VAR opcode = 190 parameter1 = 1                  timing = HK_TIMING_PERMANENT END   // weapon speed
+  LPF HK_SPELL_FX INT_VAR opcode = 1   parameter1 = 6                  timing = HK_TIMING_PERMANENT END   // +1/2 attack
+  LPF HK_SPELL_FX INT_VAR opcode = 233 parameter1 = 2 parameter2 = 114 timing = HK_TIMING_PERMANENT END   // Two-Weapon Style
+
+// Repeated steps: the CLAB applies the same spell at several levels
+CREATE SPL ~HKFFAC~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 0 parameter1 = 1 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKFFMV~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 176 parameter1 = 1 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKFFMT~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 0 parameter1 = 2 parameter2 = 2 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKFFAP~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 1 parameter1 = 6 timing = HK_TIMING_PERMANENT END
+
+// Weapon speed: opcode 190 doesn't stack (the last one applied wins), so
+// each step removes the previous one and sets the new total.
+OUTER_FOR (step = 2; step <= 8; ++step) BEGIN
+  OUTER_SET previous = step - 1
+  CREATE SPL ~HKFFWS%step%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+    LPF HK_ADD_SPELL_HEADER END
+    PATCH_IF (previous > 1) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFWS%previous%~ END
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 190 parameter1 = step timing = HK_TIMING_PERMANENT END
+END
+// HKFFL1 also holds the AC, movement and attack bonuses, so step 2 can't
+// remove it wholesale; its weapon speed 1 is simply overridden by the
+// later opcode 190.
+
+
+/////////////////////////////////////////////////////////////////////
+// Rapid Strike: doubles attacks (opcode 16, Improved Haste, which also
+// doubles movement) with a THAC0 penalty that shrinks by level.
+// One ability header per breakpoint, by caster level:
+//   level:     7 10 12 13 16 17 19 22 27 32 37
+//   penalty:   4  3  3  2  1  1  0  0  0  0  0
+//   rounds:    4  4  5  5  5  6  6  7  8  9 10
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ARRAY hk_ff_rapid_level   BEGIN 7 10 12 13 16 17 19 22 27 32 37 END
+ACTION_DEFINE_ARRAY hk_ff_rapid_penalty BEGIN 4  3  3  2  1  1  0  0  0  0  0 END
+ACTION_DEFINE_ARRAY hk_ff_rapid_rounds  BEGIN 4  4  5  5  5  6  6  7  8  9 10 END
+OUTER_SET hk_ff_rapid_count = 11
+
+CREATE SPL ~HKFFRS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) STR_VAR icon = ~%hk_haste_book_icon%~ END
+  FOR (i = 0; i < hk_ff_rapid_count; ++i) BEGIN
+    SET level = $hk_ff_rapid_level(~%i%~)
+    LPF HK_ADD_SPELL_HEADER INT_VAR min_level = level STR_VAR icon = ~%hk_haste_icon%~ END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFRS~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@122) timing = HK_TIMING_INSTANT END
+  FOR (i = 0; i < hk_ff_rapid_count; ++i) BEGIN
+    SET penalty = $hk_ff_rapid_penalty(~%i%~)
+    SET rounds  = $hk_ff_rapid_rounds(~%i%~)
+    LPF HK_SPELL_FX INT_VAR opcode = 16 parameter2 = 1 duration = rounds * 6 header = i + 1 END
+    PATCH_IF (penalty > 0) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 54 parameter1 = 0 - penalty duration = rounds * 6 header = i + 1 END
+    END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// Razor's Edge
+// Daggers, short swords and katanas carry an equipped effect that only
+// a Fleet Foot picks up (opcode 177, KIT.IDS): a melee on-hit effect
+// (opcode 248) that casts the bleed on the creature hit at the
+// attacker's level. The bleed is three delayed hits of slashing damage,
+// one per round, so every hit adds its own wound.
+// Undead, golems, elementals and slimes are immune (opcode 318 with
+// SPLPROT rows 103 GENERAL=n and 104 RACE=n). The 318s last 1 second:
+// long enough to block the rest of the spell, without piling up a
+// permanent effect on the target for every hit.
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_race_golem     = IDS_OF_SYMBOL (~race~ ~GOLEM~)
+OUTER_SET hk_race_elemental = IDS_OF_SYMBOL (~race~ ~ELEMENTAL~)
+OUTER_SET hk_race_slime     = IDS_OF_SYMBOL (~race~ ~SLIME~)
+OUTER_SET hk_general_undead = IDS_OF_SYMBOL (~general~ ~UNDEAD~)
+
+CREATE SPL ~HKFFBLD~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) END
+  FOR (tier = 0; tier < 5; ++tier) BEGIN
+    LPF HK_ADD_SPELL_HEADER INT_VAR min_level = (tier == 0 ? 1 : tier * 10) END
+  END
+  PATCH_IF (hk_general_undead >= 0) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_general_undead parameter2 = 103 duration = 1 STR_VAR resource = ~HKFFBLD~ END
+  END
+  PATCH_IF (hk_race_golem >= 0) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_race_golem parameter2 = 104 duration = 1 STR_VAR resource = ~HKFFBLD~ END
+  END
+  PATCH_IF (hk_race_elemental >= 0) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_race_elemental parameter2 = 104 duration = 1 STR_VAR resource = ~HKFFBLD~ END
+  END
+  PATCH_IF (hk_race_slime >= 0) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_race_slime parameter2 = 104 duration = 1 STR_VAR resource = ~HKFFBLD~ END
+  END
+  FOR (tier = 0; tier < 5; ++tier) BEGIN
+    FOR (round = 1; round <= 3; ++round) BEGIN
+      LPF HK_SPELL_FX
+        INT_VAR opcode = 12 parameter1 = tier + 1 parameter2 = 0x1000000   // slashing
+                timing = HK_TIMING_DELAYED duration = round * 6 header = tier + 1
+      END
+    END
+  END
+
+CREATE EFF ~HKFFRZB~
+  LPF HK_INIT_EFF INT_VAR opcode = 146 parameter1 = 0 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFBLD~ END
+
+CREATE EFF ~HKFFRZA~
+  LPF HK_INIT_EFF INT_VAR opcode = 248 timing = 2 STR_VAR resource = ~HKFFRZB~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Flicker Step (the Shadowdancer's Shadowstep, renamed)
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_shadowstep_found) BEGIN
+  COPY_EXISTING ~%hk_shadowstep_spell%.spl~ ~override/HKFFFS.spl~
+    SAY 0x08 @140
+    SAY 0x50 @141
+    SAY 0x54 @141
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Time Slow and Time Pause (Time Stop as an innate ability).
+// Opcode 231 lasts half its Duration, so 12 = 1 round, 24 = 2 rounds.
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_timestop_found) BEGIN
+  ACTION_DEFINE_ASSOCIATIVE_ARRAY hk_ff_time BEGIN
+    ~HKFFTS1~ => 12
+    ~HKFFTS2~ => 24
+  END
+  ACTION_PHP_EACH hk_ff_time AS resref => stop_duration BEGIN
+    COPY_EXISTING ~spwi912.spl~ ~override/%resref%.spl~
+      WRITE_SHORT 0x1c HK_SPELL_INNATE
+      WRITE_LONG  0x34 1
+      PATCH_IF (~%resref%~ STRING_EQUAL ~HKFFTS1~) BEGIN
+        SAY 0x08 @145
+        SAY 0x50 @146
+        SAY 0x54 @146
+      END ELSE BEGIN
+        SAY 0x08 @150
+        SAY 0x50 @151
+        SAY 0x54 @151
+      END
+      LPF ALTER_SPELL_HEADER INT_VAR location = 4 min_level = 1 END
+      LPF ALTER_SPELL_EFFECT INT_VAR match_opcode = 231 duration = stop_duration END
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Afterimage - 4 mirror images for 1 turn, not dispellable
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKFFAI~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) STR_VAR icon = ~%hk_mirror_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_mirror_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFAI~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 159 parameter1 = 4 duration = HK_ONE_TURN END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Relentless
+// Immunity to hold, paralysis, slow, web, entanglement, stun and fear,
+// built from separate opcode immunities rather than Free Action. The
+// +10% physical resistance comes from level 30: the second header if
+// Relentless is taken at 30 or later, otherwise HKFFRL3 from the CLAB
+// at level 30, which only lands on characters with the Relentless state.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKFFRL~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) STR_VAR icon = ~%hk_free_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 1  STR_VAR icon = ~%hk_free_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 30 STR_VAR icon = ~%hk_free_icon%~ END
+  // 109 paralyse/hold, 175 hold, 185 hold (II), 40 slow, 154 entangle,
+  // 157 web, 45 stun, 24 panic
+  FOR (i = 0; i < 8; ++i) BEGIN
+    SET blocked = (i == 0 ? 109 : i == 1 ? 175 : i == 2 ? 185 : i == 3 ? 40 :
+                   i == 4 ? 154 : i == 5 ? 157 : i == 6 ? 45 : 24)
+    LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = blocked timing = HK_TIMING_PERMANENT END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_ff_relentless_state special = 1 timing = HK_TIMING_PERMANENT END
+  FOR (op = 86; op <= 89; ++op) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = op parameter1 = 10 timing = HK_TIMING_PERMANENT header = 2 END
+  END
+
+CREATE SPL ~HKFFRL3~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) END
+  LPF HK_ADD_SPELL_HEADER END
+  // SPLPROT row 111 = SPLSTATE != n: without Relentless, nothing lands
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_ff_relentless_state parameter2 = 111 duration = 1 STR_VAR resource = ~HKFFRL3~ END
+  FOR (op = 86; op <= 89; ++op) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = op parameter1 = 10 timing = HK_TIMING_PERMANENT END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Hamstring - for 1 round, every melee hit applies HKFFHMS to the
+// target: -1 attack, -2 to hit and half movement for 2 rounds. Opcode
+// 176 isn't blocked by Free Action. Reapplying refreshes, not stacks.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKFFHMS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFHMS~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 1   parameter1 = "-1"                duration = 12 END
+  LPF HK_SPELL_FX INT_VAR opcode = 54  parameter1 = "-2"                duration = 12 END
+  LPF HK_SPELL_FX INT_VAR opcode = 176 parameter1 = 50 parameter2 = 2  duration = 12 END
+  LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@167) timing = HK_TIMING_INSTANT END
+
+CREATE EFF ~HKFFHMA~
+  LPF HK_INIT_EFF INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFHMS~ END
+
+CREATE SPL ~HKFFHM~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) STR_VAR icon = ~%hk_slow_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_slow_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFHM~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 248 duration = 6 STR_VAR resource = ~HKFFHMA~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: Quicksilver (+10% magic resistance) and Fleet Training
+// (+1 movement). Fleet Training's weapon speed is left out: by level 16
+// the kit's own weapon speed already takes every allowed weapon to 0.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKFFQS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@170) desc = RESOLVE_STR_REF (@171) STR_VAR icon = ~%hk_bless_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 166 parameter1 = 10 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKFFTR~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@175) desc = RESOLVE_STR_REF (@176) STR_VAR icon = ~%hk_haste_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_haste_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 176 parameter1 = 1 timing = HK_TIMING_PERMANENT END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHFF.2da)
+// The time chain: Time Slow needs Flicker Step, Time Pause needs Time
+// Slow. If Shadowstep wasn't found, Time Slow loses its prerequisite.
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+OUTER_SPRINT hk_time_prereq ~*~
+
+ACTION_IF (hk_shadowstep_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@140) picks = 3
+    STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKFFFS~ icon = ~%hk_haste_icon%~ RET hk_rows = rows hk_n = number END
+  OUTER_SPRINT hk_time_prereq ~GA_HKFFFS~
+END
+ACTION_IF (hk_timestop_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 2
+    STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKFFTS1~ icon = ~%hk_timestop_icon%~ prereq = ~%hk_time_prereq%~
+    RET hk_rows = rows hk_n = number END
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 1
+    STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKFFTS2~ icon = ~%hk_timestop_icon%~ prereq = ~GA_HKFFTS1~
+    RET hk_rows = rows hk_n = number END
+END
+ACTION_IF (hk_evasion_found) BEGIN
+  LAF HK_HLA_ROW
+    INT_VAR number = hk_n strref = hk_evasion_strref picks = 1 min_level = hk_evasion_min max_level = hk_evasion_max
+    STR_VAR rows = ~%hk_rows%~ ability = ~%hk_evasion_ability%~ icon = ~%hk_evasion_icon%~
+    RET hk_rows = rows hk_n = number
+  END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 4
+  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKFFAI~ icon = ~%hk_mirror_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 1
+  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKFFRL~ icon = ~%hk_free_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@165) picks = 3
+  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKFFHM~ icon = ~%hk_slow_icon%~ RET hk_rows = rows hk_n = number END
+ACTION_IF (hk_crit_found) BEGIN
+  LAF HK_HLA_ROW
+    INT_VAR number = hk_n strref = hk_crit_strref picks = hk_crit_num min_level = hk_crit_min max_level = hk_crit_max
+    STR_VAR rows = ~%hk_rows%~ ability = ~%hk_crit_ability%~ icon = ~%hk_crit_icon%~
+    RET hk_rows = rows hk_n = number
+  END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@170) picks = 2
+  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKFFQS~ icon = ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@175) picks = 3
+  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKFFTR~ icon = ~%hk_haste_icon%~ RET hk_rows = rows hk_n = number END
+
+COPY ~%MOD_FOLDER%/kits/01-fleet-foot-fighter/luhff.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+/////////////////////////////////////////////////////////////////////
+LAF HK_WEAPPROF_LINE
+  STR_VAR kit = ~HK_FLEETFOOT~
+          grandmastery = ~DAGGER SHORTSWORD KATANA QUARTERSTAFF~
+  RET hk_ff_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_ff_stweap = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_FLEETFOOT~ allowed = ~*~ RET hk_ff_align = line END
+
+ADD_KIT ~HK_FLEETFOOT~
+  ~HK_FLEETFOOT             1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_ff_weapprof%~                                          // WEAPPROF (column)
+  ~HK_FLEETFOOT             9 0 0 0 0 0~                      // ABCLASRQ: Str 9
+  ~HK_FLEETFOOT             0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_FLEETFOOT             17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_FLEETFOOT             17 0 0 0 0 0~                     // ABDCSCRQ
+  ~%hk_ff_align%~                                             // ALIGNMNT: any
+  ~HK_FLEETFOOT             0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/01-fleet-foot-fighter/hkffclab.2da~      // CLAB
+  ~K_F_H~                                                     // halfling fighters only
+  ~0x00004000 2~                                              // fighter usability, class 2
+  ~HFF~                                                       // LUHFF.2da
+  ~%hk_ff_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment: daggers, short swords, katanas and quarterstaffs only; no
+// armour, boots, helmets or shields. Blades also carry Razor's Edge.
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_ff_kit_id = IDS_OF_SYMBOL (~kit~ ~HK_FLEETFOOT~)
+
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id  = hk_ff_kit_id
+          message = RESOLVE_STR_REF (@180)
+  STR_VAR allowed_profs   = ~96 91 94 102~
+          forbidden_types = ~2 4 7 12~
+END
+
+// Blades: dagger 96, short sword 91, katana 94
+COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
+  PATCH_IF (SOURCE_SIZE > 0x71) BEGIN
+    READ_SHORT 0x1c item_type
+    READ_BYTE  0x31 prof
+    PATCH_IF (item_type != 5 && item_type != 14 && item_type != 31 &&
+              (prof == 96 || prof == 91 || prof == 94)) BEGIN
+      LPF ADD_ITEM_EQEFFECT
+        INT_VAR opcode     = 177
+                target     = 1
+                timing     = 2
+                parameter1 = hk_ff_kit_id
+                parameter2 = 9          // KIT.IDS
+        STR_VAR resource   = ~HKFFRZA~
+      END
+    END
+  END
+BUT_ONLY
