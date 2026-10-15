@@ -1,6 +1,6 @@
 # Party Design
 
-How the eleven halfling kits fit together into all-halfling parties: what each kit brings, six line-ups (two of six, two of four, a trio and a duo), two guest line-ups with an elf Sorcerer (Snow White and the Five Shorties, and the Three Shorties), and the swaps between them. Ratings for each kit are on the Overview and Strength Rankings tabs.
+How the halfling kits fit together into all-halfling parties: what each kit brings, six line-ups (two of six, two of four, a trio and a duo), two guest line-ups with an elf Sorcerer (Snow White and the Five Shorties, and the Three Shorties), the three playtest parties, and the swaps between them. The line-ups predate the twelfth kit, the Ghostwise Rogue, which is still to be designed; it appears only in the playtest parties. Ratings for each kit are on the Overview and Strength Rankings tabs.
 
 ## What each kit brings
 
@@ -230,6 +230,61 @@ A robust tank and a thief. Healing can always be covered by potions and resting,
 **Alternative:** the Greenhand in place of the True Heart. It hits much harder from mid-SoA (area spells, summons as the front line) but has no real front line in BG1 until the animal summons arrive at level 7, so it needs more care early.
 
 **Difficulty: moderate.** Easy in BG1, slower and harder against crowds and layered mages later; the faster levelling softens both.
+
+## Playtest parties
+
+Three parties of four, each built to playtest its kits together through BG1, SoA and ToB. Between them they use all twelve kits exactly once, and each has one of the three rogue kits. Like any four-person party they level faster than a six (experience is split four ways), so immunities and HLAs arrive sooner. Build progress and the order to test in are tracked in Tasks; the things to watch for each kit are in the playtest checklist on the Overview tab.
+
+| Party | Healer / support | Front line | Damage | Rogue |
+| --- | --- | --- | --- | --- |
+| **Hearth and Home** | Hearthsinger | Surefoot Fighter | Fleet Foot Fighter | Magpie |
+| **The Wild Wood** | Greenhand | Briarguard | Slinger | Ghostwise Rogue |
+| **Mage-Breakers** | True Heart | Unbeguiled | Tymora's Champion | Nettle |
+
+### Mage-Breakers (test first)
+
+| Position | Kit | Why it earns a slot |
+| --- | --- | --- |
+| Front line | True Heart | Tank and healer: plate, Heart immunities, Lay on Hands, Cleansing Touch and Aura of Courage |
+| Front line | Unbeguiled | Closes on casters through their spells; Clear Heads keeps the party's minds its own; Spoiling Strike Breaches what it hits |
+| Front line | Tymora's Champion | Luck-based AC, saves and damage; Tymora's Blessing and Second Chance carry the party through the hardest fight of the day |
+| Back line | Nettle | Opens each fight on the enemy caster with Spoiling Backstab or a Spoiling Trap, then scouts, handles locks and traps |
+
+**How it plays:** the Nettle finds the caster and spoils it before the fight starts, the Unbeguiled runs it down, and the True Heart and Tymora's Champion hold the line around them. Cleansing Touch and Clear Heads undo the charm, hold and confusion that usually break a party.
+
+**What it tests:** the anti-magic toolkit (the Nettle's x2 Spoiling Backstab and traps, Unbeguiled's Spoiling Strike and Stand Behind Me), the True Heart's charm and sleep immunity from level 10, Tymora's Second Chance, and Assassination's once-per-target limiter.
+
+**Difficulty: easiest against mages, hardest on attrition.** No priest means healing is the True Heart's innate powers and potions, and there is no Raise Dead until Undying Heart in ToB, so expect more trips to temples and more resting.
+
+### Hearth and Home
+
+| Position | Kit | Why it earns a slot |
+| --- | --- | --- |
+| Front line | Surefoot Fighter | The main tank: near-complete immunities, Hold the Line, and Still Ground to shut down nearby casters |
+| Front line | Fleet Foot Fighter | The damage: races past the line to cut down casters and archers; Rapid Strike and Razor's Edge |
+| Support | Hearthsinger | Hearthsong lifts the whole party; plate, cleric healing, Dispel Magic and True Seeing |
+| Back line | Magpie | Locks, traps and scouting, and the party's only arcane magic through Magpie's Knack |
+
+**How it plays:** the Surefoot plants itself and the Hearthsinger sings: the Invigorating Song drives the Fleet Foot's flurry, the Soothing Song keeps the line standing. The Magpie scouts ahead and fills magical gaps with scrolls and wands, and keeps the party in potions and gold.
+
+**What it tests:** the Hearthsinger's casting lock and Stop Singing (it can't cast while singing), Homeward Hymn's extra attack on a Fleet Foot already at the attack cap, Rapid Strike with the time HLAs, the Surefoot and Hearthsinger feeling weak early in BG1, and the Magpie's scroll fumbles and rest finds.
+
+**Difficulty: the most balanced of the three.** Strong melee and good healing; weakest against protected mages in SoA, where it leans on the Hearthsinger's Dispel Magic and the Magpie's scrolls. Keep the Hearthsinger out of the Surefoot's Still Ground when it needs to cast.
+
+### The Wild Wood
+
+| Position | Kit | Why it earns a slot |
+| --- | --- | --- |
+| Front line | Briarguard | Elemental tank: resistance up to 80%, Iron Skins, Entangle and a plant guardian that grows with it |
+| Support | Greenhand | Healing, summons that Death Spell can't kill, Insect Plague and Creeping Doom, True Seeing |
+| Back line | Slinger | Up to 5 sling attacks a round; Breaching and Dispelling bullets in ToB |
+| Rogue | Ghostwise Rogue | A wild fighter/thief with barbarian qualities and wilderness bonuses (still to be designed) |
+
+**How it plays:** a wall of thorns and summons. The Briarguard, its plant guardian and the Greenhand's creatures hold the enemy in Entangle while the Slinger shoots from behind them and the Ghostwise Rogue hunts the edges.
+
+**What it tests:** the summon limit (the Greenhand's summons and Wake the Hedge share the limit of 5), both familiars (the Greenhand's rabbit and the Briarguard's badger), the Greenhand's druid spells, Iron Skins with 80% elemental resistance against ToB dragons, the Slinger's Eagle Eye, and the Ghostwise Rogue's wilderness bonuses outdoors versus in towns and dungeons.
+
+**Difficulty: strongest outdoors, weakest in cities and dungeons.** Nobody in it can open locks (the Ghostwise Rogue has no Open Locks), so locked doors and chests mean bashing, Knock scrolls or leaving them. Its answers to enemy mages are the Greenhand's True Seeing and Dispel Magic, then the Slinger's bullets in ToB. It needs the most building before it can be tested: the Ghostwise Rogue is still to be designed and neither familiar is built yet.
 
 ## Swaps
 

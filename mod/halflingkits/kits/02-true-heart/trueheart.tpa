@@ -1,0 +1,407 @@
+/////////////////////////////////////////////////////////////////////
+// True Heart
+// Design: docs/kits/02-true-heart/design.md
+//
+// Resource prefix HKTH. Spells and EFFs:
+//   HKTHL1        +2 AC, Courageous Heart (immune to fear)       (CLAB, level 1)
+//   HKTHH5-H35    Heart immunities                (CLAB, levels 5 to 35)
+//   HKTHPFE/AOF/LOH/DHM/RM  Innate Protection from Evil, Armour of
+//                 Faith, Lay on Hands, Draw Upon Holy Might, Righteous
+//                 Magic (copies of the game's spells)
+//   HKTHCT        Cleansing Touch                 (CLAB, every 5 levels)
+//   HKTHAU1/AU2   Aura of Courage                 (CLAB, levels 8 and 16)
+//   HKTHAP1/AP2, HKTHAE1/AE2.eff   the aura's pulse (every round)
+//   HKTHSYM       Symbol of Arvoreen              (CLAB, level 25)
+//   HKTHMH/CH/UH  Mending, Cleansing and Undying Heart          HLA
+//   HKTHHR        Heart's Resolve                               HLA
+//   HKTHHH        Healing Hands                                 HLA
+//   HKTHHF        Heart of Faith                                HLA
+//   HKTHMSG/CHM   Arvoreen's Messenger and Champion (copies of
+//                 Summon Deva and Summon Planetar)              HLA
+//
+// Not yet built (a later script pass; not EEex):
+//   - Falling when reputation drops to 8 or lower. Paladin falling is
+//     hard-coded; a fighter kit needs a script to remove and restore
+//     its abilities.
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells and tables
+/////////////////////////////////////////////////////////////////////
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~   // Bless: party-only area
+  RET hk_bless_projectile = projectile hk_bless_target = target hk_bless_range = range
+      hk_bless_icon = icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr103~   // Cure Light Wounds: touch range and icon
+  RET hk_clw_range = range hk_clw_icon = icon hk_clw_book_icon = book_icon
+END
+
+// Innate copies of the game's holy spells: name, pattern, our resref
+ACTION_DEFINE_ARRAY hk_th_names    BEGIN ~Protection from Evil~ ~Armor of Faith~ ~Lay on Hands~ ~Draw Upon Holy Might~ ~Righteous Magic~ END
+ACTION_DEFINE_ARRAY hk_th_dests    BEGIN ~HKTHPFE~ ~HKTHAOF~ ~HKTHLOH~ ~HKTHDHM~ ~HKTHRM~ END
+ACTION_DEFINE_ARRAY hk_th_patterns BEGIN ~^sppr[0-9]+\.spl$~ ~^sppr[0-9]+\.spl$~ ~^spcl[0-9]+\.spl$~ ~^sppr[0-9]+\.spl$~ ~^sppr[0-9]+\.spl$~ END
+OUTER_SET $hk_th_strref(~0~) = RESOLVE_STR_REF (@120)
+OUTER_SET $hk_th_strref(~1~) = RESOLVE_STR_REF (@121)
+OUTER_SET $hk_th_strref(~2~) = RESOLVE_STR_REF (@122)
+OUTER_SET $hk_th_strref(~3~) = RESOLVE_STR_REF (@123)
+OUTER_SET $hk_th_strref(~4~) = RESOLVE_STR_REF (@124)
+OUTER_FOR (i = 0; i < 5; ++i) BEGIN
+  OUTER_SPRINT spell_name $hk_th_names(~%i%~)
+  OUTER_SPRINT dest       $hk_th_dests(~%i%~)
+  OUTER_SPRINT pattern    $hk_th_patterns(~%i%~)
+  LAF HK_FIND_SPELL_BY_NAME STR_VAR name = EVAL ~%spell_name%~ pattern = EVAL ~%pattern%~ RET found spell END
+  // Armour of Faith is spelt the British way in some languages' tables
+  ACTION_IF (NOT found && ~%spell_name%~ STRING_EQUAL ~Armor of Faith~) BEGIN
+    LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Armour of Faith~ RET found spell END
+  END
+  ACTION_IF (found) BEGIN
+    LAF HK_INNATE_COPY INT_VAR name = $hk_th_strref(~%i%~) STR_VAR source = EVAL ~%spell%~ dest = EVAL ~%dest%~ END
+  END
+END
+
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Summon Deva~ RET hk_deva_found = found hk_deva_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Summon Planetar~ pattern = ~^spwi[0-9]+\.spl$~
+  RET hk_planetar_found = found hk_planetar_spell = spell
+END
+
+ACTION_DEFINE_ARRAY hk_th_std_hla BEGIN ~Hardiness~ ~Resist Magic~ ~Smite~ END
+OUTER_FOR (i = 0; i < 3; ++i) BEGIN
+  OUTER_SPRINT hla $hk_th_std_hla(~%i%~)
+  LAF HK_FIND_HLA STR_VAR name = EVAL ~%hla%~
+    RET found ability icon strref min_lev max_lev num_allowed prereq
+  END
+  // Smite drops its Power Attack prerequisite (Power Attack is dropped)
+  ACTION_IF (~%hla%~ STRING_EQUAL ~Smite~) BEGIN
+    OUTER_SPRINT prereq ~*~
+  END
+  OUTER_SET    $hk_th_hla_found(~%i%~)   = found
+  OUTER_SPRINT $hk_th_hla_ability(~%i%~) ~%ability%~
+  OUTER_SPRINT $hk_th_hla_icon(~%i%~)    ~%icon%~
+  OUTER_SET    $hk_th_hla_strref(~%i%~)  = strref
+  OUTER_SET    $hk_th_hla_min(~%i%~)     = min_lev
+  OUTER_SET    $hk_th_hla_max(~%i%~)     = max_lev
+  OUTER_SET    $hk_th_hla_num(~%i%~)     = num_allowed
+  OUTER_SPRINT $hk_th_hla_prereq(~%i%~)  ~%prereq%~
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Heart immunities (opcode 101 blocks each listed opcode)
+//   1  fear (24)                    15 confusion (128), berserk (3),
+//   5  poison (25), disease (78)       feeblemind (76)
+//  10  charm (5), domination (241),  20 petrification (134), polymorph (135)
+//      sleep (39)                    25 stun (45)
+//                                    30 level drain (216)
+//                                    35 maze (213), imprisonment (211)
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ASSOCIATIVE_ARRAY hk_th_hearts BEGIN
+   5 => ~25 78~
+  10 => ~5 241 39~
+  15 => ~128 3 76~
+  20 => ~134 135~
+  25 => ~45~
+  30 => ~216~
+  35 => ~213 211~
+END
+
+CREATE SPL ~HKTHL1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2  timing = HK_TIMING_PERMANENT END   // +2 AC
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 24 timing = HK_TIMING_PERMANENT END   // fear
+
+ACTION_PHP_EACH hk_th_hearts AS level => opcodes BEGIN
+  CREATE SPL ~HKTHH%level%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@135) desc = RESOLVE_STR_REF (@136) END
+    LPF HK_ADD_SPELL_HEADER END
+    PATCH_FOR_EACH blocked IN ~25~ ~78~ ~5~ ~241~ ~39~ ~128~ ~3~ ~76~ ~134~ ~135~ ~45~ ~216~ ~213~ ~211~ BEGIN
+      PATCH_IF (INDEX (EXACT_MATCH ~ %blocked% ~ ~ %opcodes% ~) >= 0) BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = blocked timing = HK_TIMING_PERMANENT END
+      END
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Cleansing Touch: one ally, cures by tier (headers by level; each tier
+// adds to the ones before). Opcode 337 removes every effect of the
+// listed opcode.
+//   5  fear (161), poison (11), disease (79)
+//  10  sleep (2), hold and paralysis (337: 109, 175, 185), slow (337: 40)
+//  15  charm (337: 5, 241), confusion (242), stun (46), feeblemind (77)
+//  20  blindness (75), deafness (81), silence (48), drained levels (224)
+//  25  petrification (43), polymorph (337: 135), heal 25% of max HP
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_TH_CLEANSE
+  INT_VAR target = 2
+BEGIN
+  // Headers: 1 (tier 5), 2 (10), 3 (15), 4 (20), 5 (25)
+  FOR (header = 1; header <= 5; ++header) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 161 target timing = HK_TIMING_INSTANT header END
+    LPF HK_SPELL_FX INT_VAR opcode = 11  target timing = HK_TIMING_INSTANT header END
+    LPF HK_SPELL_FX INT_VAR opcode = 79  target timing = HK_TIMING_INSTANT header END
+    PATCH_IF (header >= 2) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 2 target timing = HK_TIMING_INSTANT header END
+      PATCH_FOR_EACH removed IN ~109~ ~175~ ~185~ ~40~ BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 337 target parameter1 = "-1" parameter2 = removed timing = HK_TIMING_INSTANT header END
+      END
+    END
+    PATCH_IF (header >= 3) BEGIN
+      PATCH_FOR_EACH removed IN ~5~ ~241~ BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 337 target parameter1 = "-1" parameter2 = removed timing = HK_TIMING_INSTANT header END
+      END
+      LPF HK_SPELL_FX INT_VAR opcode = 242 target timing = HK_TIMING_INSTANT header END
+      LPF HK_SPELL_FX INT_VAR opcode = 46  target timing = HK_TIMING_INSTANT header END
+      LPF HK_SPELL_FX INT_VAR opcode = 77  target timing = HK_TIMING_INSTANT header END
+    END
+    PATCH_IF (header >= 4) BEGIN
+      PATCH_FOR_EACH cure IN ~75~ ~81~ ~48~ ~224~ BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = cure target timing = HK_TIMING_INSTANT header END
+      END
+    END
+    PATCH_IF (header >= 5) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 43  target timing = HK_TIMING_INSTANT header END
+      LPF HK_SPELL_FX INT_VAR opcode = 337 target parameter1 = "-1" parameter2 = 135 timing = HK_TIMING_INSTANT header END
+      LPF HK_SPELL_FX INT_VAR opcode = 17  target parameter1 = 25 parameter2 = 2 timing = HK_TIMING_INSTANT header END
+    END
+  END
+END
+
+CREATE SPL ~HKTHCT~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@125) desc = RESOLVE_STR_REF (@126) STR_VAR icon = EVAL ~%hk_clw_book_icon%~ END
+  PATCH_FOR_EACH level IN ~1~ ~10~ ~15~ ~20~ ~25~ BEGIN
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 range = hk_clw_range min_level = level STR_VAR icon = EVAL ~%hk_clw_icon%~ END
+  END
+  LPF HK_TH_CLEANSE END
+
+
+/////////////////////////////////////////////////////////////////////
+// Aura of Courage: a permanent repeating effect (opcode 272) on the
+// True Heart casts a pulse on allies in Bless's area every round:
+// immune to fear, +1 to saves (+2 from level 16).
+/////////////////////////////////////////////////////////////////////
+OUTER_FOR (tier = 1; tier <= 2; ++tier) BEGIN
+  CREATE SPL ~HKTHAP%tier%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKTHAP%tier%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 161 target = 2 timing = HK_TIMING_INSTANT END
+    LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 24 duration = 7 END
+    LPF HK_SPELL_FX INT_VAR opcode = 325 target = 2 parameter1 = tier duration = 7 END
+  CREATE EFF ~HKTHAE%tier%~
+    LPF HK_INIT_EFF INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKTHAP%tier%~ END
+END
+
+CREATE SPL ~HKTHAU1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 272 parameter1 = 6 parameter2 = 3 timing = HK_TIMING_PERMANENT STR_VAR resource = ~HKTHAE1~ END
+
+CREATE SPL ~HKTHAU2~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTHAU1~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 272 parameter1 = 6 parameter2 = 3 timing = HK_TIMING_PERMANENT STR_VAR resource = ~HKTHAE2~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// Symbol of Arvoreen (level 25): +2 Strength and Constitution;
+// 2 HP per round (opcode 98 type 3: 1 HP every 3 seconds)
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKTHSYM~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 44 parameter1 = 2 timing = HK_TIMING_PERMANENT END
+  LPF HK_SPELL_FX INT_VAR opcode = 10 parameter1 = 2 timing = HK_TIMING_PERMANENT END
+  LPF HK_SPELL_FX INT_VAR opcode = 98 parameter1 = 3 parameter2 = 3 timing = HK_TIMING_PERMANENT END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: the healing chain (allies in Bless's area)
+//   Mending Heart:   heal 50% of maximum HP
+//   Cleansing Heart: Cleansing Touch at the current tier (opcode 326
+//                    casts it at the True Heart's level)
+//   Undying Heart:   raise the fallen, then Mending and Cleansing
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_TH_AREA_HEADER INT_VAR min_level = 1 BEGIN
+  LPF HK_ADD_SPELL_HEADER
+    INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile min_level
+    STR_VAR icon = EVAL ~%hk_clw_icon%~
+  END
+END
+
+CREATE SPL ~HKTHMH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146) STR_VAR icon = EVAL ~%hk_clw_book_icon%~ END
+  LPF HK_TH_AREA_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 17 target = 2 parameter1 = 50 parameter2 = 2 timing = HK_TIMING_INSTANT END
+
+CREATE SPL ~HKTHCH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) STR_VAR icon = EVAL ~%hk_clw_book_icon%~ END
+  LPF HK_TH_AREA_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTHCT~ END
+
+CREATE SPL ~HKTHUH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) STR_VAR icon = EVAL ~%hk_clw_book_icon%~ END
+  LPF HK_TH_AREA_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 32  target = 2 timing = HK_TIMING_INSTANT END   // raise dead
+  LPF HK_SPELL_FX INT_VAR opcode = 17  target = 2 parameter1 = 50 parameter2 = 2 timing = HK_TIMING_INSTANT END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTHCT~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Heart's Resolve - 1 turn of the Heart immunities the True Heart
+// had at half its level. Header by level: at level L the half level
+// L/2 reaches the next Heart at levels 10, 20, 30 and 40.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKTHHR~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) END
+  PATCH_FOR_EACH level IN ~1~ ~10~ ~20~ ~30~ ~40~ BEGIN
+    LPF HK_TH_AREA_HEADER INT_VAR min_level = level END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTHHR~ END
+  // Half level 1: fear (every header)
+  LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 24 duration = HK_ONE_TURN END
+  FOR (header = 2; header <= 5; ++header) BEGIN
+    // Half level 5+: poison, disease
+    PATCH_FOR_EACH blocked IN ~25~ ~78~ BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = blocked duration = HK_ONE_TURN header END
+    END
+    PATCH_IF (header >= 3) BEGIN   // half level 10+: charm, domination, sleep
+      PATCH_FOR_EACH blocked IN ~5~ ~241~ ~39~ BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = blocked duration = HK_ONE_TURN header END
+      END
+    END
+    PATCH_IF (header >= 4) BEGIN   // half level 15+: confusion, berserk, feeblemind
+      PATCH_FOR_EACH blocked IN ~128~ ~3~ ~76~ BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = blocked duration = HK_ONE_TURN header END
+      END
+    END
+    PATCH_IF (header >= 5) BEGIN   // half level 20: petrification, polymorph
+      PATCH_FOR_EACH blocked IN ~134~ ~135~ BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = blocked duration = HK_ONE_TURN header END
+      END
+    END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: Healing Hands (+1 Lay on Hands and Cleansing Touch a day per
+// pick), Heart of Faith (+2 saves vs spells per pick), and the Deva and
+// Planetar summons, renamed
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKTHHH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTHLOH~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTHCT~ END
+
+CREATE SPL ~HKTHHF~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@170) desc = RESOLVE_STR_REF (@171) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 37 parameter1 = 2 timing = HK_TIMING_PERMANENT END
+
+ACTION_IF (hk_deva_found) BEGIN
+  LAF HK_INNATE_COPY INT_VAR name = RESOLVE_STR_REF (@175) STR_VAR source = EVAL ~%hk_deva_spell%~ dest = ~HKTHMSG~ END
+END
+ACTION_IF (hk_planetar_found) BEGIN
+  LAF HK_INNATE_COPY INT_VAR name = RESOLVE_STR_REF (@176) STR_VAR source = EVAL ~%hk_planetar_spell%~ dest = ~HKTHCHM~ END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHTH.2da)
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKTHMH~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKTHCH~ icon = EVAL ~%hk_clw_icon%~ prereq = ~GA_HKTHMH~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKTHUH~ icon = EVAL ~%hk_clw_icon%~ prereq = ~GA_HKTHCH~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKTHHR~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@165) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKTHHH~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@170) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKTHHF~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+ACTION_IF (hk_deva_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@175) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKTHMSG~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+END
+ACTION_IF (hk_planetar_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@176) picks = 1 min_level = 30
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKTHCHM~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+END
+OUTER_FOR (i = 0; i < 3; ++i) BEGIN
+  ACTION_IF ($hk_th_hla_found(~%i%~)) BEGIN
+    OUTER_SPRINT ability $hk_th_hla_ability(~%i%~)
+    OUTER_SPRINT icon    $hk_th_hla_icon(~%i%~)
+    OUTER_SPRINT prereq  $hk_th_hla_prereq(~%i%~)
+    LAF HK_HLA_ROW
+      INT_VAR number = hk_n strref = $hk_th_hla_strref(~%i%~) picks = $hk_th_hla_num(~%i%~)
+              min_level = $hk_th_hla_min(~%i%~) max_level = $hk_th_hla_max(~%i%~)
+      STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%ability%~ icon = EVAL ~%icon%~ prereq = EVAL ~%prereq%~
+      RET hk_rows = rows hk_n = number
+    END
+  END
+END
+
+COPY ~%MOD_FOLDER%/kits/02-true-heart/luhth.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+// Weapon skill: specialisation (2 pips) in its favoured weapons,
+// proficiency (1 pip) in everything else it can use, and none in the
+// weapons it can't use. Fighting styles as the fighter.
+/////////////////////////////////////////////////////////////////////
+LAF HK_WEAPPROF_LINE
+  INT_VAR copy_all = 1 pips = 2 cap = 1
+  STR_VAR kit     = ~HK_TRUEHEART~
+          skilled = ~SHORTSWORD MACE FLAILMORNINGSTAR SHORTBOW SLING CROSSBOW~
+          none    = ~TWOHANDEDSWORD BASTARDSWORD HALBERD SPEAR LONGBOW~
+  RET hk_th_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_th_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_TRUEHEART~ values = ~STR=9 CHR=15~ RET hk_th_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_TRUEHEART~ allowed = ~LAWFUL_GOOD~ RET hk_th_align = line END
+
+ADD_KIT ~HK_TRUEHEART~
+  ~HK_TRUEHEART             1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_th_weapprof%~                                          // WEAPPROF (column)
+  ~%hk_th_abclasrq%~                                          // ABCLASRQ: Str 9, Cha 15
+  ~HK_TRUEHEART             0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_TRUEHEART             17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_TRUEHEART             17 0 0 0 0 0~                     // ABDCSCRQ
+  ~%hk_th_align%~                                             // ALIGNMNT: lawful good
+  ~HK_TRUEHEART             0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/02-true-heart/hkthclab.2da~              // CLAB
+  ~K_F_H~                                                     // halfling fighters only
+  ~0x00004000 2~                                              // fighter usability, class 2
+  ~HTH~                                                       // LUHTH.2da
+  ~%hk_th_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment: no two-handed swords (93), bastard swords (89), halberds
+// (99), spears (98) or longbows (104); no heavy crossbows (crossbows,
+// item type 27, named "heavy"); no large shields.
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_th_kit_id = IDS_OF_SYMBOL (~kit~ ~HK_TRUEHEART~)
+
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id          = hk_th_kit_id
+          message         = RESOLVE_STR_REF (@180)
+          max_shield_size = 3
+  STR_VAR forbidden_profs = ~93 89 99 98 104~
+          name_types      = ~27~
+          name_deny       = ~heavy~
+END

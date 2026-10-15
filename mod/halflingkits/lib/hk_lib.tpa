@@ -250,15 +250,20 @@ END
 //   copy_all: 0 = copy only the fighting-style rows from the base column;
 //             1 = copy every row from the base column
 //   skilled:  proficiency row names raised to `pips`
-//   pips:     5 = grandmastery, 3 = mastery
+//   pips:     5 = grandmastery, 3 = mastery, 2 = specialisation
+//   cap:      copied rows (other than fighting styles) are capped at
+//             this many pips; 0 = no cap
+//   none:     proficiency row names forced to 0
 // Everything else is 0.
 /////////////////////////////////////////////////////////////////////
 DEFINE_ACTION_FUNCTION HK_WEAPPROF_LINE
   INT_VAR copy_all = 0
           pips     = 5
+          cap      = 0
   STR_VAR kit      = ""
           base     = "FIGHTER"
           skilled  = ""
+          none     = ""
           styles   = "2HANDED SWORDANDSHIELD SINGLEWEAPON 2WEAPON"
   RET line
 BEGIN
@@ -286,12 +291,17 @@ BEGIN
     FOR (r = 0; r < hk_wp; ++r) BEGIN
       READ_2DA_ENTRY_FORMER ~hk_wp~ r 0 label
       SET value = 0
-      PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %skilled% ~) >= 0) BEGIN
+      SET is_style = (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %styles% ~) >= 0)
+      PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %none% ~) >= 0) BEGIN
+        SET value = 0
+      END ELSE PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %skilled% ~) >= 0) BEGIN
         SET value = pips
         SET hk_wp_matched += 1
-      END ELSE PATCH_IF (copy_all ||
-                         INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %styles% ~) >= 0) BEGIN
+      END ELSE PATCH_IF (copy_all || is_style) BEGIN
         READ_2DA_ENTRY_FORMER ~hk_wp~ r base_col value
+        PATCH_IF (cap > 0 && NOT is_style && value > cap) BEGIN
+          SET value = cap
+        END
       END
       SPRINT line ~%line% %value%~
     END
@@ -380,6 +390,9 @@ END
 //                    (D1 buckler, D2 small, D3 medium, D4 large)
 //   forbidden_types: space-separated item types blocked outright
 //                    (2 armour, 4 boots, 7 helmets, 12 shields)
+//   forbidden_profs: space-separated proficiency IDs blocked outright
+//   name_types/name_deny: items of these types whose English name
+//                    matches the regexp are blocked (e.g. heavy crossbows)
 /////////////////////////////////////////////////////////////////////
 DEFINE_ACTION_FUNCTION HK_RESTRICT_ITEMS
   INT_VAR kit_id          = 0
@@ -388,6 +401,9 @@ DEFINE_ACTION_FUNCTION HK_RESTRICT_ITEMS
           max_shield_size = 4
   STR_VAR allowed_profs   = ""
           forbidden_types = ""
+          forbidden_profs = ""
+          name_types      = ""
+          name_deny       = ""
 BEGIN
   COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
     PATCH_IF (SOURCE_SIZE > 0x71) BEGIN
@@ -408,6 +424,23 @@ BEGIN
 
       PATCH_IF (INDEX (EXACT_MATCH ~ %item_type% ~ ~ %forbidden_types% ~) >= 0) BEGIN
         SET restrict = 1
+      END
+      PATCH_IF (item_type != 5 && item_type != 14 && item_type != 31 &&
+                INDEX (EXACT_MATCH ~ %prof% ~ ~ %forbidden_profs% ~) >= 0) BEGIN
+        SET restrict = 1
+      END
+      PATCH_IF (NOT ~%name_deny%~ STRING_EQUAL ~~ &&
+                INDEX (EXACT_MATCH ~ %item_type% ~ ~ %name_types% ~) >= 0) BEGIN
+        READ_LONG 0x0c nm
+        PATCH_IF (nm <= 0) BEGIN
+          READ_LONG 0x08 nm
+        END
+        PATCH_IF (nm > 0) BEGIN
+          GET_STRREF nm txt
+          PATCH_IF (INDEX (CASE_INSENSITIVE EVALUATE_REGEXP ~%name_deny%~ ~%txt%~) >= 0) BEGIN
+            SET restrict = 1
+          END
+        END
       END
 
       // Shields (12): size from the paperdoll animation, D1 to D4

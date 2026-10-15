@@ -1,0 +1,82 @@
+// True Heart
+
+@100 = ~True Heart~
+@101 = ~True Heart~
+@102 = ~TRUE HEART: Halflings are not supposed to be paladins, and nobody told the True Heart. Raised on hearth-tales of good folk standing against the dark, they took up a short sword and the symbol of Arvoreen, the halfling god of defence and vigilance, and simply refused to be afraid. No charm can turn their faith, no terror can break it, and no demon has yet found the bottom of it.
+
+Advantages:
+– +2 AC.
+– Innate holy powers: Protection from Evil (once a day), Armour of Faith (1 use, plus 1 every 4 levels), Lay on Hands (heals 2 hit points per level; 1 use, plus 1 every 10 levels), Draw Upon Holy Might from level 3 (plus 1 every 5 levels) and Righteous Magic from level 10 (plus 1 every 10 levels).
+– Cleansing Touch from level 5 (plus 1 use every 5 levels): frees one ally from fear, poison and disease; from level 10 also hold, paralysis, sleep and slow; from 15 also charm, confusion, stun and feeblemind; from 20 also blindness, deafness and silence, restoring drained levels; from 25 also petrification and polymorph, healing a quarter of the target's hit points.
+– Heart immunities: fear (level 1), poison and disease (5), charm, domination and sleep (10), confusion, berserk and feeblemind (15), polymorph and petrification (20), stun (25), level drain (30), maze and imprisonment (35).
+– Aura of Courage from level 8: allies nearby are immune to fear and gain +1 to saves (+2 from level 16).
+– Symbol of Arvoreen at level 25: +2 Strength, +2 Constitution and 2 hit points regenerated each round.
+
+Disadvantages:
+– Weapon skill stops at specialisation in short swords, maces, flails, short bows, slings and crossbows, and at proficiency in all other weapons.
+– Cannot use two-handed swords, bastard swords, halberds, spears, longbows, heavy crossbows or large shields.
+– Casts no spells: all its holy powers are innate.
+– Requires Charisma 15 or higher.
+– Must be a lawful good halfling.~
+
+@110 = ~True Heart~
+@111 = ~The True Heart's faith and courage.~
+
+@120 = ~Protection from Evil~
+@121 = ~Armour of Faith~
+@122 = ~Lay on Hands~
+@123 = ~Draw Upon Holy Might~
+@124 = ~Righteous Magic~
+
+@125 = ~Cleansing Touch~
+@126 = ~Cleansing Touch
+
+Touches one ally and frees them from harmful effects: fear, poison and disease; from level 10 also hold, paralysis, sleep and slow; from 15 also charm, confusion, stun and feeblemind; from 20 also blindness, deafness and silence, restoring drained levels; from 25 also petrification and polymorph, healing a quarter of their hit points.~
+
+@130 = ~Aura of Courage~
+@131 = ~Aura of Courage
+
+The True Heart and its allies nearby are immune to fear and gain +1 to saves, or +2 from level 16.~
+
+@135 = ~Heart~
+@136 = ~The True Heart's faith shields it from another kind of harm.~
+
+@140 = ~Symbol of Arvoreen~
+@141 = ~Symbol of Arvoreen
+
++2 Strength, +2 Constitution and 2 hit points regenerated each round.~
+
+@145 = ~Mending Heart~
+@146 = ~Mending Heart
+
+Heals the True Heart and all allies nearby for half of their maximum hit points.~
+
+@150 = ~Cleansing Heart~
+@151 = ~Cleansing Heart
+
+Applies Cleansing Touch, at its current strength, to the True Heart and all allies nearby.~
+
+@155 = ~Undying Heart~
+@156 = ~Undying Heart
+
+Raises all fallen allies nearby, then heals and cleanses the whole group as Mending Heart and Cleansing Heart.~
+
+@160 = ~Heart's Resolve~
+@161 = ~Heart's Resolve
+
+For 1 turn, the True Heart and allies nearby gain the Heart immunities the True Heart had at half its level.~
+
+@165 = ~Healing Hands~
+@166 = ~Healing Hands
+
+Each time this ability is chosen, the True Heart gains one more use of Lay on Hands and of Cleansing Touch each day.~
+
+@170 = ~Heart of Faith~
+@171 = ~Heart of Faith
+
+Each time this ability is chosen, the True Heart gains +2 to saves against spells.~
+
+@175 = ~Arvoreen's Messenger~
+@176 = ~Arvoreen's Champion~
+
+@180 = ~True Hearts cannot use this item.~

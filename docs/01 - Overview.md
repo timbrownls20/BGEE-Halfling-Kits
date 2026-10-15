@@ -140,9 +140,11 @@ How tightly each kit's features serve one idea, out of 10.
 
 ## Halfling parties
 
-Party line-ups (a recommended six, the original six, a classic four, a quintessential halfling four, a trio, a duo, and Snow White and the Five and Three Shorties with an elf Sorcerer), what each kit brings to a party, and the swaps between them are on the Party Design tab.
+Party line-ups (a recommended six, the original six, a classic four, a quintessential halfling four, a trio, a duo, Snow White and the Five and Three Shorties with an elf Sorcerer, and the three playtest parties), what each kit brings to a party, and the swaps between them are on the Party Design tab.
 
 ## Playtest checklist
+
+Each kit is playtested once, in one of three parties of four with one rogue each (Hearth and Home, The Wild Wood, Mage-Breakers); the line-ups are under Playtest parties in Party Design, and build progress in Tasks.
 
 The main things to watch in play, with the first trim to try for each if it feels too strong.
 

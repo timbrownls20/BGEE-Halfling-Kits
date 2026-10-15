@@ -17,7 +17,7 @@ A twelfth halfling kit: a Ghostwise halfling rogue. The Ghostwise are the reclus
 
 - Concept and theme (one idea, as for every kit).
 - At-a-glance level table, Advantages, Disadvantages and High Level Abilities.
-- Alignment (halflings lean good; see the conventions in the Handover).
+- Alignment (halflings lean good; see the conventions in Tasks).
 - Ratings: add to the kit's "Rough ratings" line, the Overview tables and the Strength Rankings, and re-rank.
 - Party Design: where it fits in the line-ups.
 - Check for overlap with the Briarguard (nature warrior) and the Fleet Foot (melee damage).

@@ -2,11 +2,11 @@
 
 Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Baldur's Gate II: Enhanced Edition (including Siege of Dragonspear and Throne of Bhaal). Each kit is built around one idea and tuned to be strong but not overpowered.
 
-**Status:** design complete for eleven kits; the twelfth, the Ghostwise Rogue, is a placeholder still to be designed. Five are coded as a WeiDU mod: the Fleet Foot Fighter, the Hearthsinger, Tymora's Champion, the Nettle and the Briarguard (without its familiar yet). None has been installed or playtested yet.
+**Status:** design complete for eleven kits; the twelfth, the Ghostwise Rogue, is a placeholder still to be designed. Six are coded as a WeiDU mod: the Fleet Foot Fighter, the True Heart (without its reputation fall yet), the Hearthsinger, Tymora's Champion, the Nettle and the Briarguard (without its familiar yet). None has been installed or playtested yet.
 
 ## Start here
 
-- [Handover](docs/HANDOVER.md): status, design conventions, the game rules the design relies on, open questions and next steps. Read this first.
+- [Tasks](docs/TASKS.md): status, to do, a log of what's done, constraints, design conventions, the game rules the design relies on, and open questions. Read this first.
 - [Overview](docs/01%20-%20Overview.md): kit summaries, power, solo and theme ratings, and the playtest checklist.
 - [Party Design](docs/02%20-%20Party%20Design.md): what each kit brings to a party, and suggested line-ups.
 - [Strength Rankings](docs/03%20-%20Strength%20Rankings.md): damage, survivability and party value compared with the standard classes and kits.
@@ -16,7 +16,7 @@ Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Bald
 | Kit | Base class | Role | Coded | Tested |
 | --- | --- | --- | --- | --- |
 | [Fleet Foot Fighter](docs/kits/01-fleet-foot-fighter/design.md) | Fighter | Melee damage, mobility | Yes | |
-| [True Heart](docs/kits/02-true-heart/design.md) | Fighter | Front-line healer and protector | | |
+| [True Heart](docs/kits/02-true-heart/design.md) | Fighter | Front-line healer and protector | Yes (no reputation fall yet) | |
 | [Surefoot Fighter](docs/kits/03-surefoot-fighter/design.md) | Fighter | Tank | | |
 | [Hearthsinger](docs/kits/04-hearthsinger/design.md) | Cleric | Party support (songs) | Yes | |
 | [Tymora's Champion](docs/kits/05-tymoras-champion/design.md) | Fighter | Lucky all-rounder | Yes | |
@@ -59,4 +59,4 @@ A full install needs a real game. Copy `mod/halflingkits/` into the game folder 
 
 - [WeiDU](https://github.com/WeiDUorg/weidu) to install the mod.
 - [IWDification](https://www.gibberlings3.net/mods/spells/iwdification/) for some of the Greenhand's spells (not yet coded).
-- [EEex](https://github.com/Bubb13/EEex) only for the abilities marked Hard in the [Handover](docs/HANDOVER.md#implementation-difficulty).
+- [EEex](https://github.com/Bubb13/EEex) only for the abilities marked Hard in [Tasks](docs/TASKS.md#implementation-difficulty).

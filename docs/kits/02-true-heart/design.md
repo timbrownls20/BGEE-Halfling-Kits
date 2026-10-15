@@ -102,3 +102,17 @@ For anyone building this kit as a mod (for example with WeiDU):
 - **Easy:** Heart immunities, AC bonus, Protection from Evil, innate Armour of Faith, Draw Upon Holy Might, Righteous Magic, Lay on Hands (as the paladin's) and Cleansing Touch (combining effects from existing cure spells), Symbol of Arvoreen, Heart of Faith, Healing Hands (extra uses of existing abilities), Mending Heart, Cleansing Heart and Undying Heart (based on standard mass healing and raising), Arvoreen's Messenger and Arvoreen's Champion (the standard Deva and Planetar summons, renamed).
 - **Moderate:** Aura of Courage (a passive area effect around the True Heart) and Heart's Resolve (granting allies immunities by the True Heart's half level).
 - **Hard:** the reputation-based fall condition (paladin falling is hard-coded and would need scripting for a fighter kit).
+
+### As built (not yet tested in game)
+
+Code: `mod/halflingkits/kits/02-true-heart/`. Where the build differs from the design, or relies on something to check in game:
+
+- **Falling at reputation 8 or lower is not built yet.** Paladin falling is hard-coded, so a fighter kit needs a script to remove and restore its abilities. It's planned for the script pass (no EEex needed).
+- **Protection from Evil, Armour of Faith, Lay on Hands, Draw Upon Holy Might and Righteous Magic** are innate copies of the game's own spells, found by name at install. Lay on Hands is the paladin's, so it heals 2 HP per level as designed. **Arvoreen's Messenger** and **Arvoreen's Champion** are renamed copies of Summon Deva and Summon Planetar.
+- **Cleansing Touch** gains its tiers at levels 5, 10, 15, 20 and 25. Disease cure also removes feeblemind from level 5, because the game's disease cure covers both.
+- **Aura of Courage** refreshes every round on allies in Bless's party-only area (not exactly 20 feet). The level-16 step replaces the level-8 aura.
+- **Mending, Cleansing and Undying Heart** and **Heart's Resolve** use Bless's area (not exactly 30 or 15 feet). Undying Heart raises the fallen first, then heals and cleanses; check in game that Bless's area reaches dead party members.
+- **Heart's Resolve** grants the Heart immunities of half the True Heart's level, stepping up at levels 10, 20, 30 and 40.
+- **Weapon skill:** specialisation in short swords, maces, flails, short bows, slings and crossbows; proficiency at most in other weapons; none in the weapons it can't use. Fighting styles as the fighter.
+- **Heavy crossbows** are blocked by name (crossbows whose name contains "heavy").
+

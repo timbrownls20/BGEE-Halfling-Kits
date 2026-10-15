@@ -125,7 +125,7 @@ For anyone building this kit as a mod (for example with WeiDU):
 Code: `mod/halflingkits/kits/11-briarguard/`. Where the build differs from the design, or relies on something to check in game:
 
 - **Find Familiar is not built yet**, and neither is the badger's part of Badger's Fury. A true familiar needs a script (following the party, riding in the pack, adding hit points to its master, and costing Constitution when it dies). This is scriptable, not EEex, and is planned as its own pass.
-- **Natural armour** is decided by item name at install: names containing leather, hide, Ankheg or dragon are allowed, unless they say studded; all other armour is blocked. `hkbgarm.2da` in the kit folder corrects any item the names get wrong (one row per item: resref, then ALLOW or DENY). This answers open question 3 in the Handover with a rule; the item-by-item check still needs a game install.
+- **Natural armour** is decided by item name at install: names containing leather, hide, Ankheg or dragon are allowed, unless they say studded; all other armour is blocked. `hkbgarm.2da` in the kit folder corrects any item the names get wrong (one row per item: resref, then ALLOW or DENY). This answers open question 3 in Tasks with a rule; the item-by-item check still needs a game install.
 - **Entangle, Barkskin and Iron Skins** are copies of the game's own spells, found by name at install.
 - **Wild Stride** blocks the entangle and web effects and the game's own Entangle and Spike Growth spells, and sets a spell state that the kit's own entangles (Briar Patch and the plant guardians' blows) check, so it is never caught in them.
 - **Entangled** (Briar Patch, plant guardians) is the entangle overlay plus movement stopped, with one save vs breath. Briar Patch's piercing damage hits everyone in the area, allies and the Briarguard included; only the entangle spares the Briarguard.
@@ -134,5 +134,5 @@ Code: `mod/halflingkits/kits/11-briarguard/`. Where the build differs from the d
 - **Hedge Shelter** gives +3 AC (standing in for "Barkskin's AC bonus") and reuses Bless's party-only area, not exactly 15 feet.
 - **Thornhide** fires on any hit, ranged as well as melee.
 - **Ironwood** uses the engine's weapon enchantment bonus on both hands; check in game that it lets the Briarguard hit creatures that need +3 and +4 weapons.
-- **Strength of the Oak** losing its +2 Constitution when it ends is open question 4 in the Handover; not changed.
+- **Strength of the Oak** losing its +2 Constitution when it ends is open question 4 in Tasks; not changed.
 
