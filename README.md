@@ -1,8 +1,8 @@
 # Halfling Kits for Baldur's Gate
 
-Eleven halfling-only character kits for Baldur's Gate: Enhanced Edition and Baldur's Gate II: Enhanced Edition (including Siege of Dragonspear and Throne of Bhaal). Each kit is built around one idea and tuned to be strong but not overpowered.
+Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Baldur's Gate II: Enhanced Edition (including Siege of Dragonspear and Throne of Bhaal). Each kit is built around one idea and tuned to be strong but not overpowered.
 
-**Status:** design complete for all eleven kits. Four are coded as a WeiDU mod: the Fleet Foot Fighter, the Hearthsinger, Tymora's Champion and the Nettle. None has been installed or playtested yet.
+**Status:** design complete for eleven kits; the twelfth, the Ghostwise Rogue, is a placeholder still to be designed. Five are coded as a WeiDU mod: the Fleet Foot Fighter, the Hearthsinger, Tymora's Champion, the Nettle and the Briarguard (without its familiar yet). None has been installed or playtested yet.
 
 ## Start here
 
@@ -25,7 +25,8 @@ Eleven halfling-only character kits for Baldur's Gate: Enhanced Edition and Bald
 | [Unbeguiled](docs/kits/08-unbeguiled/design.md) | Fighter | Mage-hunter | | |
 | [Nettle](docs/kits/09-nettle/design.md) | Thief | Anti-caster opener | Yes | |
 | [Greenhand](docs/kits/10-greenhand/design.md) | Cleric | Nature priest and summoner | | |
-| [Briarguard](docs/kits/11-briarguard/design.md) | Fighter | Nature warrior, elemental tank | | |
+| [Briarguard](docs/kits/11-briarguard/design.md) | Fighter | Nature warrior, elemental tank | Yes (no familiar yet) | |
+| [Ghostwise Rogue](docs/kits/12-ghostwise-rogue/design.md) | Fighter/Thief | Wild rogue with barbarian qualities (to be designed) | | |
 
 Each coded kit's design file ends with an "As built" section listing where the code differs from the design. **Tested** means installed and played in the game; no kit has been yet, as there is no game install to test against.
 

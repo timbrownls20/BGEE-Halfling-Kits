@@ -1,0 +1,84 @@
+// Briarguard
+
+@100 = ~Briarguard~
+@101 = ~Briarguard~
+@102 = ~BRIARGUARD: Some halflings guard the hedgerows rather than tend them. They wear what the wild gives (hide, chitin, dragon scale), carry a stout club, and fight with the thorns at their back. Fire and frost wash off them like rain off a holly leaf.
+
+Advantages:
+– May reach grandmastery in clubs, quarterstaffs, slings and short bows.
+– Small and Nimble: +2 AC.
+– Heartwood Hide: resistance to fire, cold, electricity and acid: 10% at level 1, 25% at 5, 40% at 10, 60% at 15 and 80% at 20.
+– Wild Stride: immune to entangle, web and Spike Growth; from level 12, also to hold, paralysis and slow. Haste and Boots of Speed still work.
+– Innate abilities: Entangle and Barkskin from level 1 (Barkskin twice a day from level 9), Strength of the Oak from level 4 (+2 Strength and Constitution for 1 turn; up to three times a day), Iron Skins from level 10 (twice a day from 16), and Wake the Hedge from level 14.
+  WAKE THE HEDGE: The hedgerow stands up and fights for 2 turns: a Bramble Man, a Thornwood Guardian from level 18, or a Young Treant from level 22.
+
+Disadvantages:
+– Natural armour only: leather, hide, Ankheg Plate and dragon scale, but no studded leather or metal armour.
+– May only use clubs, quarterstaffs, slings and short bows.
+– May only use bucklers and small shields.
+– Requires Wisdom 13 or higher.
+– Must be a neutral good or true neutral halfling.~
+
+@110 = ~Briarguard~
+@111 = ~The Briarguard's heartwood hide and wild stride.~
+
+@120 = ~Entangle~
+@121 = ~Barkskin~
+@122 = ~Iron Skins~
+
+@125 = ~Strength of the Oak~
+@126 = ~Strength of the Oak
+
+For 1 turn, the Briarguard gains +2 Strength and +2 Constitution.~
+
+@130 = ~Wake the Hedge~
+@131 = ~Wake the Hedge
+
+The hedgerow stands up and fights beside the Briarguard for 2 turns: a Bramble Man, a Thornwood Guardian from level 18, or a Young Treant from level 22. Its blows entangle what they hit, and like all wood it burns easily. Death Spell cannot kill it.~
+@132 = ~Bramble Man~
+@133 = ~Thornwood Guardian~
+@134 = ~Young Treant~
+
+@140 = ~Briar Patch~
+@141 = ~Briar Patch
+
+Thorns burst from the ground: creatures in the area are entangled (save vs breath) and take 2d6 piercing damage each round for 3 rounds. Wild Stride lets the Briarguard fight inside it.~
+
+@145 = ~Call the Pack~
+@146 = ~Call the Pack
+
+Summons a cave bear and two dire wolves for 1 turn. Death Spell cannot kill them. While the pack stands, the Briarguard gains +2 to hit and immunity to fear.~
+@147 = ~Pack Bear~
+@148 = ~Pack Wolf~
+
+@150 = ~Heartwood~
+@151 = ~Heartwood
+
+Each time this ability is chosen, the Briarguard gains 5% resistance to slashing, piercing, crushing and missile damage.~
+
+@155 = ~Deep Roots~
+@156 = ~Deep Roots
+
+Strength of the Oak also regenerates 3 hit points per round while it lasts.~
+
+@160 = ~Ironwood~
+@161 = ~Ironwood
+
+The Briarguard's weapons count as +3 weapons for what they can hit, or +4 with a second pick.~
+
+@165 = ~Badger's Fury~
+@166 = ~Badger's Fury
+
+For 1 turn, the Briarguard gains +1 attack per round, +2 damage, and immunity to charm and confusion.~
+
+@170 = ~Thornhide~
+@171 = ~Thornhide
+
+For 3 turns, anything that hits the Briarguard takes 2d6 piercing damage.~
+
+@175 = ~Hedge Shelter~
+@176 = ~Hedge Shelter
+
+For 1 turn, the Briarguard and its allies nearby gain +3 AC and 25% resistance to fire, cold, electricity and acid.~
+
+@180 = ~Briarguards cannot use this item.~

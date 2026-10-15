@@ -118,6 +118,9 @@ DEFINE_PATCH_FUNCTION HK_SPELL_FX
           resist_dispel = 0
           special       = 0
           header        = 0
+          savingthrow   = 0
+          dicenumber    = 0
+          dicesize      = 0
   STR_VAR resource      = ""
 BEGIN
   LPF ADD_SPELL_EFFECT
@@ -130,6 +133,9 @@ BEGIN
             resist_dispel
             special
             header
+            savingthrow
+            dicenumber
+            dicesize
             power = 0
             probability1 = 100
             probability2 = 0
@@ -543,6 +549,7 @@ DEFINE_PATCH_FUNCTION HK_INIT_EFF
           duration      = 0
           resist_dispel = 0
           special       = 0
+          savingthrow   = 0
   STR_VAR resource      = ""
 BEGIN
   WRITE_LONG   0x10 opcode
@@ -555,6 +562,7 @@ BEGIN
   WRITE_SHORT  0x2c 100         // probability 1
   WRITE_SHORT  0x2e 0           // probability 2
   WRITE_ASCIIE 0x30 ~%resource%~ #8
+  WRITE_LONG   0x40 savingthrow
   WRITE_LONG   0x48 special
   WRITE_LONG   0x5c resist_dispel
 END
@@ -738,4 +746,129 @@ BEGIN
       END
     BUT_ONLY
   END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_RESTRICT_ARMOUR_BY_NAME (action)
+// The game doesn't record what armour is made of, so armour (item type
+// 2) is classified by its English name: names matching `allow` (and
+// not `deny`) stay usable, everything else is made unusable by the kit.
+// An override table (two columns: resref, ALLOW or DENY) corrects any
+// item the names get wrong; it may be empty.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_RESTRICT_ARMOUR_BY_NAME
+  INT_VAR kit_id    = 0
+          message   = "-1"
+  STR_VAR allow     = ""
+          deny      = ""
+          overrides = ""   // path to the override table in the mod folder
+BEGIN
+  ACTION_CLEAR_ARRAY hk_armour_override
+  ACTION_IF (NOT ~%overrides%~ STRING_EQUAL ~~ && FILE_EXISTS ~%overrides%~) BEGIN
+    COPY - ~%overrides%~ ~override~
+      READ_2DA_ENTRIES_NOW ~hk_ao~ 2
+      FOR (r = 0; r < hk_ao; ++r) BEGIN
+        READ_2DA_ENTRY_FORMER ~hk_ao~ r 0 res
+        READ_2DA_ENTRY_FORMER ~hk_ao~ r 1 rule
+        TO_UPPER res
+        TO_UPPER rule
+        DEFINE_ASSOCIATIVE_ARRAY hk_armour_override BEGIN ~%res%~ => ~%rule%~ END
+      END
+  END
+
+  COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
+    PATCH_IF (SOURCE_SIZE > 0x71) BEGIN
+      READ_SHORT 0x1c item_type
+      PATCH_IF (item_type == 2) BEGIN
+        SPRINT res ~%SOURCE_RES%~
+        TO_UPPER res
+        SET natural = 0
+        PATCH_IF (VARIABLE_IS_SET $hk_armour_override(~%res%~)) BEGIN
+          SPRINT rule $hk_armour_override(~%res%~)
+          SET natural = (~%rule%~ STRING_EQUAL ~ALLOW~)
+        END ELSE BEGIN
+          READ_LONG 0x0c nm
+          PATCH_IF (nm <= 0) BEGIN
+            READ_LONG 0x08 nm
+          END
+          PATCH_IF (nm > 0) BEGIN
+            GET_STRREF nm txt
+            SET natural = (INDEX (CASE_INSENSITIVE EVALUATE_REGEXP ~%allow%~ ~%txt%~) >= 0 &&
+                           (~%deny%~ STRING_EQUAL ~~ ||
+                            INDEX (CASE_INSENSITIVE EVALUATE_REGEXP ~%deny%~ ~%txt%~) < 0))
+          END
+        END
+        PATCH_IF (NOT natural) BEGIN
+          LPF ADD_ITEM_EQEFFECT
+            INT_VAR opcode = 319 target = 1 timing = 2
+                    parameter1 = kit_id parameter2 = 9 power = 0 special = message
+          END
+        END
+      END
+    END
+  BUT_ONLY
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_FIND_CRE_BY_NAME (action)
+// Finds a vanilla creature by its English name, so kits can copy one
+// (a cave bear, a treant) without hard-coding resrefs.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_FIND_CRE_BY_NAME
+  STR_VAR name = ""
+  RET found cre
+BEGIN
+  OUTER_SET found = 0
+  OUTER_SPRINT cre ~~
+  COPY_EXISTING_REGEXP GLOB ~^.+\.cre$~ ~override~
+    PATCH_IF (found == 0 && SOURCE_SIZE > 0x2d3) BEGIN
+      READ_LONG 0x08 nm
+      PATCH_IF (nm > 0) BEGIN
+        GET_STRREF nm txt
+        PATCH_IF (~%txt%~ STRING_EQUAL_CASE ~%name%~) BEGIN
+          SET found = 1
+          SPRINT cre ~%SOURCE_RES%~
+        END
+      END
+    END
+  BUT_ONLY
+  ACTION_IF (found == 0) BEGIN
+    OUTER_SPRINT hk_ability_name ~%name%~
+    OUTER_SPRINT hk_ability_kit  ~creature~
+    WARN @4
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_SUMMON_COPY (patch)
+// Turns a copied vanilla creature into a clean summon: new name, hit
+// points and AC; no scripts, dialogue, death variable or XP value, so
+// it can't trigger the original's quest logic.
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_SUMMON_COPY
+  INT_VAR name = "-1"
+          hp   = 0      // 0 = keep
+          ac   = 100    // 100 = keep
+BEGIN
+  PATCH_IF (name >= 0) BEGIN
+    WRITE_LONG 0x08 name
+    WRITE_LONG 0x0c name
+  END
+  PATCH_IF (hp > 0) BEGIN
+    WRITE_SHORT 0x24 hp
+    WRITE_SHORT 0x26 hp
+  END
+  PATCH_IF (ac != 100) BEGIN
+    WRITE_SHORT  0x46 ac
+    WRITE_SHORT  0x48 ac
+  END
+  WRITE_LONG 0x14 0                                   // XP value
+  FOR (off = 0x248; off < 0x270; off += 8) BEGIN      // override, class, race, general, default scripts
+    WRITE_ASCII off ~~ #8
+  END
+  WRITE_ASCII 0x280 ~~ #32                            // death variable
+  WRITE_ASCII 0x2cc ~~ #8                             // dialogue
 END

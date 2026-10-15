@@ -1,0 +1,452 @@
+/////////////////////////////////////////////////////////////////////
+// Briarguard
+// Design: docs/kits/11-briarguard/design.md
+//
+// Resource prefix HKBG. Spells, EFFs and creatures:
+//   HKBGL1        Small and Nimble, Heartwood Hide 10%, Wild Stride   (CLAB, level 1)
+//   HKBGH15/H20   Heartwood Hide steps (+15% at 5 and 10, +20% at 15 and 20)
+//   HKBGWS        Wild Stride: hold, paralysis and slow           (CLAB, level 12)
+//   HKBGENT/BRK/IRN  Innate Entangle, Barkskin, Iron Skins (copies)
+//   HKBGOAK       Strength of the Oak; HKBGDRR its Deep Roots regeneration
+//   HKBGEB/EB3    Entangled for 1 / 3 rounds (Wild Stride is immune)
+//   HKBGENE.eff   Hedge guardians' on-hit entangle (save vs breath)
+//   HKBGHDG       Wake the Hedge: HKBGBRM / HKBGTHN / HKBGTRE.cre by level
+//   HKBGTH1/TH2   1d6 / 2d6 thorn damage to whoever hit the wearer
+//   HKBGBP        Briar Patch                                         HLA
+//   HKBGCP        Call the Pack: HKBGBEA / HKBGWLF.cre                HLA
+//   HKBGHW        Heartwood                                           HLA
+//   HKBGDR        Deep Roots                                          HLA
+//   HKBGIW/IW3/IW4  Ironwood                                          HLA
+//   HKBGBF        Badger's Fury                                       HLA
+//   HKBGTH        Thornhide                                           HLA
+//   HKBGHS        Hedge Shelter                                       HLA
+//
+// Not yet built (a later pass; scriptable, not EEex):
+//   - Find Familiar and the five badger forms, and the badger's part of
+//     Badger's Fury. A true familiar needs a script (it follows the
+//     party, rides in the pack, adds hit points to its master, and its
+//     death costs Constitution).
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells, creatures and tables
+/////////////////////////////////////////////////////////////////////
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~   // Bless: party-only area
+  RET hk_bless_projectile = projectile hk_bless_target = target hk_bless_range = range
+      hk_bless_icon = icon
+END
+
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Entangle~     RET hk_entangle_found = found hk_entangle_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Barkskin~     RET hk_bark_found = found hk_bark_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Iron Skins~   RET hk_iron_found = found hk_iron_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Spike Growth~ RET hk_spike_found = found hk_spike_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Death Spell~ pattern = ~^spwi[0-9][0-9][0-9]\.spl$~
+  RET hk_death_found = found hk_death_spell = spell
+END
+ACTION_IF (hk_entangle_found) BEGIN
+  LAF HK_READ_SPELL_AREA STR_VAR spell = EVAL ~%hk_entangle_spell%~
+    RET hk_ent_projectile = projectile hk_ent_target = target hk_ent_range = range hk_ent_icon = icon
+  END
+END
+
+LAF HK_FIND_CRE_BY_NAME STR_VAR name = ~Shambling Mound~ RET hk_mound_found = found hk_mound_cre = cre END
+LAF HK_FIND_CRE_BY_NAME STR_VAR name = ~Treant~          RET hk_treant_found = found hk_treant_cre = cre END
+LAF HK_FIND_CRE_BY_NAME STR_VAR name = ~Cave Bear~       RET hk_bear_found = found hk_bear_cre = cre END
+LAF HK_FIND_CRE_BY_NAME STR_VAR name = ~Dire Wolf~       RET hk_wolf_found = found hk_wolf_cre = cre END
+
+ACTION_DEFINE_ARRAY hk_bg_std_hla BEGIN ~Hardiness~ ~Resist Magic~ ~Critical Strike~ ~Whirlwind Attack~ ~Greater Whirlwind Attack~ END
+OUTER_FOR (i = 0; i < 5; ++i) BEGIN
+  OUTER_SPRINT hla $hk_bg_std_hla(~%i%~)
+  LAF HK_FIND_HLA STR_VAR name = EVAL ~%hla%~
+    RET found ability icon strref min_lev max_lev num_allowed prereq
+  END
+  // Critical Strike drops its Power Attack prerequisite (Power Attack is dropped)
+  ACTION_IF (~%hla%~ STRING_EQUAL ~Critical Strike~) BEGIN
+    OUTER_SPRINT prereq ~*~
+  END
+  OUTER_SET    $hk_bg_hla_found(~%i%~)   = found
+  OUTER_SPRINT $hk_bg_hla_ability(~%i%~) ~%ability%~
+  OUTER_SPRINT $hk_bg_hla_icon(~%i%~)    ~%icon%~
+  OUTER_SET    $hk_bg_hla_strref(~%i%~)  = strref
+  OUTER_SET    $hk_bg_hla_min(~%i%~)     = min_lev
+  OUTER_SET    $hk_bg_hla_max(~%i%~)     = max_lev
+  OUTER_SET    $hk_bg_hla_num(~%i%~)     = num_allowed
+  OUTER_SPRINT $hk_bg_hla_prereq(~%i%~)  ~%prereq%~
+END
+
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_BG_WILD_STRIDE~ RET hk_state_stride = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_BG_DEEP_ROOTS~  RET hk_state_roots  = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_BG_IRONWOOD~    RET hk_state_iron   = id END
+
+OUTER_SET hk_save_breath = 2   // saving throw type bit: breath
+
+
+/////////////////////////////////////////////////////////////////////
+// Level 1: Small and Nimble, Heartwood Hide 10%, Wild Stride
+// Heartwood Hide: fire, cold, electricity, acid, magic fire, magic cold
+// (opcodes 30, 28, 29, 27, 84, 85). Wild Stride uses separate
+// immunities, not Free Action, so speed bonuses still work; it also
+// sets a spell state that the kit's own entangles check.
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_BG_HIDE INT_VAR amount = 10 BEGIN
+  PATCH_FOR_EACH resist IN ~30~ ~28~ ~29~ ~27~ ~84~ ~85~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = resist parameter1 = amount timing = HK_TIMING_PERMANENT END
+  END
+END
+
+CREATE SPL ~HKBGL1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 0 parameter1 = 2 timing = HK_TIMING_PERMANENT END   // Small and Nimble
+  LPF HK_BG_HIDE INT_VAR amount = 10 END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 154 timing = HK_TIMING_PERMANENT END   // entangle
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 157 timing = HK_TIMING_PERMANENT END   // web
+  PATCH_IF (hk_entangle_found) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 206 timing = HK_TIMING_PERMANENT STR_VAR resource = EVAL ~%hk_entangle_spell%~ END
+  END
+  PATCH_IF (hk_spike_found) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 206 timing = HK_TIMING_PERMANENT STR_VAR resource = EVAL ~%hk_spike_spell%~ END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_state_stride special = 1 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKBGH15~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_BG_HIDE INT_VAR amount = 15 END
+
+CREATE SPL ~HKBGH20~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_BG_HIDE INT_VAR amount = 20 END
+
+CREATE SPL ~HKBGWS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  PATCH_FOR_EACH blocked IN ~109~ ~175~ ~185~ ~40~ BEGIN   // hold (3), slow
+    LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = blocked timing = HK_TIMING_PERMANENT END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// Innate druid spells
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_entangle_found) BEGIN
+  LAF HK_INNATE_COPY INT_VAR name = RESOLVE_STR_REF (@120) STR_VAR source = EVAL ~%hk_entangle_spell%~ dest = ~HKBGENT~ END
+END
+ACTION_IF (hk_bark_found) BEGIN
+  LAF HK_INNATE_COPY INT_VAR name = RESOLVE_STR_REF (@121) STR_VAR source = EVAL ~%hk_bark_spell%~ dest = ~HKBGBRK~ END
+END
+ACTION_IF (hk_iron_found) BEGIN
+  LAF HK_INNATE_COPY INT_VAR name = RESOLVE_STR_REF (@122) STR_VAR source = EVAL ~%hk_iron_spell%~ dest = ~HKBGIRN~ END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Strength of the Oak: +2 Strength and Constitution for 1 turn. With
+// Deep Roots (a spell state), it also regenerates 3 HP per round
+// (opcode 98 type 3: 1 HP every 2 seconds).
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKBGDRR~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_roots parameter2 = 111 duration = 1 STR_VAR resource = ~HKBGDRR~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 98 parameter1 = 2 parameter2 = 3 duration = HK_ONE_TURN END
+
+CREATE SPL ~HKBGOAK~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@125) desc = RESOLVE_STR_REF (@126) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGOAK~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 44  parameter1 = 2 duration = HK_ONE_TURN END   // Strength
+  LPF HK_SPELL_FX INT_VAR opcode = 10  parameter1 = 2 duration = HK_ONE_TURN END   // Constitution
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGDRR~ END
+
+CREATE SPL ~HKBGDR~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_state_roots special = 1 timing = HK_TIMING_PERMANENT END
+
+
+/////////////////////////////////////////////////////////////////////
+// Entangled: the entangle overlay (opcode 154) plus movement stopped
+// (opcode 176 set to 0). Creatures with Wild Stride are protected (SPLPROT
+// row 110: SPLSTATE = n). Callers apply it with one save vs breath.
+/////////////////////////////////////////////////////////////////////
+ACTION_FOR_EACH entangle IN ~HKBGEB~ ~HKBGEB3~ BEGIN
+  OUTER_SET rounds = (~%entangle%~ STRING_EQUAL ~HKBGEB~ ? 1 : 3)
+  CREATE SPL ~%entangle%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+    LPF HK_SPELL_FX INT_VAR opcode = 318 target = 2 parameter1 = hk_state_stride parameter2 = 110 duration = 1 STR_VAR resource = EVAL ~%entangle%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 154 target = 2 duration = rounds * 6 resist_dispel = 1 END
+    LPF HK_SPELL_FX INT_VAR opcode = 176 target = 2 parameter1 = 0 parameter2 = 1 duration = rounds * 6 resist_dispel = 1 END
+END
+
+CREATE EFF ~HKBGENE~
+  LPF HK_INIT_EFF INT_VAR opcode = 326 timing = HK_TIMING_INSTANT savingthrow = hk_save_breath STR_VAR resource = ~HKBGEB~ END
+
+// Thorns: damage to whoever hit the wearer (cast on LastHitter by 232)
+ACTION_FOR_EACH thorns IN ~HKBGTH1~ ~HKBGTH2~ BEGIN
+  OUTER_SET dice = (~%thorns%~ STRING_EQUAL ~HKBGTH1~ ? 1 : 2)
+  CREATE SPL ~%thorns%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@170) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+    LPF HK_SPELL_FX INT_VAR opcode = 12 target = 2 parameter2 = 0x100000 dicenumber = dice dicesize = 6 timing = HK_TIMING_INSTANT END   // piercing
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Wake the Hedge: plant guardians copied from vanilla creatures
+//   Bramble Man        (Shambling Mound) 60 HP, AC 2
+//   Thornwood Guardian (Shambling Mound) 90 HP, AC 0, thorns 1d6
+//   Young Treant       (Treant)         120 HP, AC -2, needs +1 weapons,
+//                                        regenerates 3 HP per round
+// All: on-hit entangle, immune to Death Spell, 50% weaker to fire.
+// Their attacks keep the source creature's damage.
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_BG_PLANT BEGIN
+  LPF ADD_CRE_EFFECT INT_VAR opcode = 248 target = 1 timing = 9 STR_VAR resource = ~HKBGENE~ END
+  LPF ADD_CRE_EFFECT INT_VAR opcode = 30  target = 1 timing = 9 parameter1 = "-50" END
+  PATCH_IF (hk_death_found) BEGIN
+    LPF ADD_CRE_EFFECT INT_VAR opcode = 206 target = 1 timing = 9 STR_VAR resource = EVAL ~%hk_death_spell%~ END
+  END
+END
+
+OUTER_SET hk_hedge = (hk_mound_found && hk_treant_found)
+ACTION_IF (hk_hedge) BEGIN
+  COPY_EXISTING ~%hk_mound_cre%.cre~ ~override/HKBGBRM.cre~
+    LPF HK_SUMMON_COPY INT_VAR name = RESOLVE_STR_REF (@132) hp = 60 ac = 2 END
+    LPF HK_BG_PLANT END
+  COPY_EXISTING ~%hk_mound_cre%.cre~ ~override/HKBGTHN.cre~
+    LPF HK_SUMMON_COPY INT_VAR name = RESOLVE_STR_REF (@133) hp = 90 ac = 0 END
+    LPF HK_BG_PLANT END
+    LPF ADD_CRE_EFFECT INT_VAR opcode = 232 target = 1 timing = 9 parameter1 = 1 parameter2 = 0 STR_VAR resource = ~HKBGTH1~ END
+  COPY_EXISTING ~%hk_treant_cre%.cre~ ~override/HKBGTRE.cre~
+    LPF HK_SUMMON_COPY INT_VAR name = RESOLVE_STR_REF (@134) hp = 120 ac = "-2" END
+    LPF HK_BG_PLANT END
+    LPF ADD_CRE_EFFECT INT_VAR opcode = 120 target = 1 timing = 9 parameter1 = 1 parameter2 = 0 END   // needs +1 weapons
+    LPF ADD_CRE_EFFECT INT_VAR opcode = 98  target = 1 timing = 9 parameter1 = 2 parameter2 = 3 END   // 3 HP per round
+
+  CREATE SPL ~HKBGHDG~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) STR_VAR icon = EVAL ~%hk_ent_icon%~ END
+    LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 1  STR_VAR icon = EVAL ~%hk_ent_icon%~ END
+    LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 18 STR_VAR icon = EVAL ~%hk_ent_icon%~ END
+    LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 22 STR_VAR icon = EVAL ~%hk_ent_icon%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 67 duration = 120 header = 1 STR_VAR resource = ~HKBGBRM~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 67 duration = 120 header = 2 STR_VAR resource = ~HKBGTHN~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 67 duration = 120 header = 3 STR_VAR resource = ~HKBGTRE~ END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Briar Patch - Entangle's area: entangled 3 rounds (save vs
+// breath; Wild Stride protects the Briarguard) and 2d6 piercing each
+// round for 3 rounds. The damage hits everyone in the area.
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_entangle_found) BEGIN
+  CREATE SPL ~HKBGBP~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141) STR_VAR icon = EVAL ~%hk_ent_icon%~ END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_ent_target range = hk_ent_range projectile = hk_ent_projectile
+      STR_VAR icon = EVAL ~%hk_ent_icon%~
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT savingthrow = hk_save_breath STR_VAR resource = ~HKBGEB3~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 12 target = 2 parameter2 = 0x100000 dicenumber = 2 dicesize = 6 timing = HK_TIMING_INSTANT END
+    FOR (round = 1; round <= 2; ++round) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 12 target = 2 parameter2 = 0x100000 dicenumber = 2 dicesize = 6 timing = HK_TIMING_DELAYED duration = round * 6 END
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Call the Pack - a cave bear and two dire wolves for 1 turn,
+// immune to Death Spell; +2 to hit and immune to fear meanwhile.
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_pack = (hk_bear_found && hk_wolf_found)
+ACTION_IF (hk_pack) BEGIN
+  COPY_EXISTING ~%hk_bear_cre%.cre~ ~override/HKBGBEA.cre~
+    LPF HK_SUMMON_COPY INT_VAR name = RESOLVE_STR_REF (@147) END
+    PATCH_IF (hk_death_found) BEGIN
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 206 target = 1 timing = 9 STR_VAR resource = EVAL ~%hk_death_spell%~ END
+    END
+  COPY_EXISTING ~%hk_wolf_cre%.cre~ ~override/HKBGWLF.cre~
+    LPF HK_SUMMON_COPY INT_VAR name = RESOLVE_STR_REF (@148) END
+    PATCH_IF (hk_death_found) BEGIN
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 206 target = 1 timing = 9 STR_VAR resource = EVAL ~%hk_death_spell%~ END
+    END
+
+  CREATE SPL ~HKBGCP~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146) END
+    LPF HK_ADD_SPELL_HEADER END
+    LPF HK_SPELL_FX INT_VAR opcode = 67 duration = HK_ONE_TURN STR_VAR resource = ~HKBGBEA~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 67 duration = HK_ONE_TURN STR_VAR resource = ~HKBGWLF~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 67 duration = HK_ONE_TURN STR_VAR resource = ~HKBGWLF~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 278 parameter1 = 2 duration = HK_ONE_TURN END
+    LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 24 duration = HK_ONE_TURN END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: Heartwood (+5% physical resistance per pick), Badger's Fury,
+// Thornhide, Hedge Shelter
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKBGHW~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) END
+  LPF HK_ADD_SPELL_HEADER END
+  FOR (op = 86; op <= 89; ++op) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = op parameter1 = 5 timing = HK_TIMING_PERMANENT END
+  END
+
+// TODO (familiar pass): the badger familiar rages too
+CREATE SPL ~HKBGBF~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGBF~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 1   parameter1 = 1  duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 73  parameter1 = 2  duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 5  duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 128 duration = HK_ONE_TURN END
+
+// Thornhide: opcode 232 condition 0 (hit by anyone) casts 2d6 piercing
+// at the attacker (Parameter 1 = 1: LastHitter); Special 0 keeps it
+// running for the full 3 turns.
+CREATE SPL ~HKBGTH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@170) desc = RESOLVE_STR_REF (@171) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGTH~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 232 parameter1 = 1 parameter2 = 0 duration = 3 * HK_ONE_TURN STR_VAR resource = ~HKBGTH2~ END
+
+CREATE SPL ~HKBGHS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@175) desc = RESOLVE_STR_REF (@176) END
+  LPF HK_ADD_SPELL_HEADER
+    INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
+    STR_VAR icon = EVAL ~%hk_bless_icon%~
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGHS~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 0   target = 2 parameter1 = 3 duration = HK_ONE_TURN END
+  PATCH_FOR_EACH resist IN ~30~ ~28~ ~29~ ~27~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = resist target = 2 parameter1 = 25 duration = HK_ONE_TURN END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Ironwood - weapons count as +3 (+4 with a second pick) for what
+// they can hit (opcode 345, both hands). The first pick sets a spell
+// state; on the second pick, HKBGIW4 sees it and replaces the +3.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKBGIW3~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_iron parameter2 = 110 duration = 1 STR_VAR resource = ~HKBGIW3~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 345 parameter1 = 3 parameter2 = 0 special = 3 timing = HK_TIMING_PERMANENT END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_state_iron special = 1 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKBGIW4~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_iron parameter2 = 111 duration = 1 STR_VAR resource = ~HKBGIW4~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGIW3~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 345 parameter1 = 4 parameter2 = 0 special = 3 timing = HK_TIMING_PERMANENT END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_state_iron special = 1 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKBGIW~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGIW4~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGIW3~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHBG.2da)
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+
+ACTION_IF (hk_entangle_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@140) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKBGBP~ icon = EVAL ~%hk_ent_icon%~ RET hk_rows = rows hk_n = number END
+END
+ACTION_IF (hk_pack) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 2
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKBGCP~ icon = EVAL ~%hk_ent_icon%~ RET hk_rows = rows hk_n = number END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKBGHW~ icon = EVAL ~%hk_ent_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKBGDR~ icon = EVAL ~%hk_ent_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKBGIW~ icon = EVAL ~%hk_ent_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@165) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKBGBF~ icon = EVAL ~%hk_ent_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@170) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKBGTH~ icon = EVAL ~%hk_ent_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@175) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKBGHS~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+OUTER_FOR (i = 0; i < 5; ++i) BEGIN
+  ACTION_IF ($hk_bg_hla_found(~%i%~)) BEGIN
+    OUTER_SPRINT ability $hk_bg_hla_ability(~%i%~)
+    OUTER_SPRINT icon    $hk_bg_hla_icon(~%i%~)
+    OUTER_SPRINT prereq  $hk_bg_hla_prereq(~%i%~)
+    LAF HK_HLA_ROW
+      INT_VAR number = hk_n strref = $hk_bg_hla_strref(~%i%~) picks = $hk_bg_hla_num(~%i%~)
+              min_level = $hk_bg_hla_min(~%i%~) max_level = $hk_bg_hla_max(~%i%~)
+      STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%ability%~ icon = EVAL ~%icon%~ prereq = EVAL ~%prereq%~
+      RET hk_rows = rows hk_n = number
+    END
+  END
+END
+
+COPY ~%MOD_FOLDER%/kits/11-briarguard/luhbg.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+/////////////////////////////////////////////////////////////////////
+LAF HK_WEAPPROF_LINE
+  STR_VAR kit = ~HK_BRIARGUARD~ skilled = ~CLUB QUARTERSTAFF SLING SHORTBOW~
+  RET hk_bg_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_bg_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_BRIARGUARD~ values = ~STR=9 WIS=13~ RET hk_bg_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_BRIARGUARD~ allowed = ~NEUTRAL_GOOD NEUTRAL~ RET hk_bg_align = line END
+
+ADD_KIT ~HK_BRIARGUARD~
+  ~HK_BRIARGUARD            1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_bg_weapprof%~                                          // WEAPPROF (column)
+  ~%hk_bg_abclasrq%~                                          // ABCLASRQ: Str 9, Wis 13
+  ~HK_BRIARGUARD            0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_BRIARGUARD            17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_BRIARGUARD            17 0 0 0 0 0~                     // ABDCSCRQ
+  ~%hk_bg_align%~                                             // ALIGNMNT: neutral good or true neutral
+  ~HK_BRIARGUARD            0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/11-briarguard/hkbgclab.2da~              // CLAB
+  ~K_F_H~                                                     // halfling fighters only
+  ~0x00004000 2~                                              // fighter usability, class 2
+  ~HBG~                                                       // LUHBG.2da
+  ~%hk_bg_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment: clubs, quarterstaffs, slings and short bows; bucklers and
+// small shields; natural armour only, by item name. Corrections go in
+// hkbgarm.2da (one row per item: resref, then ALLOW or DENY).
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_bg_kit_id = IDS_OF_SYMBOL (~kit~ ~HK_BRIARGUARD~)
+
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id          = hk_bg_kit_id
+          message         = RESOLVE_STR_REF (@180)
+          max_shield_size = 2
+  STR_VAR allowed_profs   = ~115 102 107 105~
+END
+
+LAF HK_RESTRICT_ARMOUR_BY_NAME
+  INT_VAR kit_id  = hk_bg_kit_id
+          message = RESOLVE_STR_REF (@180)
+  STR_VAR allow     = ~leather\|hide\|ankheg\|dragon~
+          deny      = ~studded~
+          overrides = EVAL ~%MOD_FOLDER%/kits/11-briarguard/hkbgarm.2da~
+END

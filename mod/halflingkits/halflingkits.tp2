@@ -47,3 +47,13 @@ REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
 
 LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/nettle.tra~
 INCLUDE ~%MOD_FOLDER%/kits/09-nettle/nettle.tpa~
+
+/////////////////////////////////////////////////////////////////////
+// Briarguard (fighter, halfling only)
+/////////////////////////////////////////////////////////////////////
+BEGIN @9 DESIGNATED 11
+LABEL ~halflingkits-briarguard~
+REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
+
+LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/briarguard.tra~
+INCLUDE ~%MOD_FOLDER%/kits/11-briarguard/briarguard.tpa~
