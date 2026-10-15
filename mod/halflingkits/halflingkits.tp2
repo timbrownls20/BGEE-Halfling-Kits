@@ -2,11 +2,11 @@ BACKUP ~weidu_external/backup/halflingkits~
 AUTHOR ~Tim Brown~
 VERSION ~v0.1~
 
-LANGUAGE ~English~ ~english~ ~halflingkits/tra/english/setup.tra~
-
 ALWAYS
   INCLUDE ~%MOD_FOLDER%/lib/hk_lib.tpa~
 END
+
+LANGUAGE ~English~ ~english~ ~halflingkits/tra/english/setup.tra~
 
 /////////////////////////////////////////////////////////////////////
 // Tymora's Champion (fighter, halfling only)

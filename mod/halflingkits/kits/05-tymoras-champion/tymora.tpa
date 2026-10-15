@@ -110,7 +110,7 @@ CREATE SPL ~HKTCFAV~
   LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 40 STR_VAR icon = ~%hk_bless_icon%~ END
 
   // Refresh rather than stack (must be the first effect)
-  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 STR_VAR resource = ~HKTCFAV~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFAV~ END
   LPF HK_SPELL_FX INT_VAR opcode = 22  parameter1 = 3 duration = HK_ONE_TURN END
   LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 3 duration = HK_ONE_TURN END
   LPF HK_SPELL_FX INT_VAR opcode = 126 parameter1 = 3 duration = HK_ONE_TURN END
@@ -166,7 +166,7 @@ ACTION_IF (hk_enemy_found) BEGIN
     LPF HK_ADD_SPELL_HEADER
       INT_VAR target = hk_enemy_target range = hk_enemy_range projectile = hk_enemy_projectile
     END
-    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 STR_VAR resource = ~HKTCFTE~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFTE~ END
     LPF HK_SPELL_FX INT_VAR opcode = 22  target = 2 parameter1 = "-2" duration = HK_ONE_TURN resist_dispel = 1 END
 
   CREATE SPL ~HKTCFWE~
@@ -174,8 +174,8 @@ ACTION_IF (hk_enemy_found) BEGIN
     LPF HK_ADD_SPELL_HEADER
       INT_VAR target = hk_enemy_target range = hk_enemy_range projectile = hk_enemy_projectile
     END
-    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 STR_VAR resource = ~HKTCFWE~ END
-    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 STR_VAR resource = ~HKTCFTE~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFWE~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFTE~ END
     LPF HK_SPELL_FX INT_VAR opcode = 22  target = 2 parameter1 = "-3" duration = HK_ONE_TURN resist_dispel = 1 END
 END
 
@@ -185,7 +185,7 @@ CREATE SPL ~HKTCFT~
     STR_VAR icon = ~%hk_chant_book_icon%~
   END
   LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_chant_icon%~ END
-  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 STR_VAR resource = ~HKTCFT~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFT~ END
   LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 2 duration = HK_ONE_TURN END
   PATCH_IF (hk_enemy_found) BEGIN
     LPF HK_SPELL_FX INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFTE~ END
@@ -197,8 +197,8 @@ CREATE SPL ~HKTCFW~
     STR_VAR icon = ~%hk_chant_book_icon%~
   END
   LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_chant_icon%~ END
-  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 STR_VAR resource = ~HKTCFW~ END
-  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 STR_VAR resource = ~HKTCFT~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFW~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFT~ END
   LPF HK_SPELL_FX INT_VAR opcode = 206 duration = HK_ONE_TURN STR_VAR resource = ~HKTCFT~ END
   LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 4 duration = HK_ONE_TURN END
   PATCH_IF (hk_enemy_found) BEGIN
@@ -218,7 +218,7 @@ CREATE SPL ~HKTCBL~
     INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
     STR_VAR icon = ~%hk_bless_icon%~
   END
-  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 STR_VAR resource = ~HKTCBL~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCBL~ END
   LPF HK_SPELL_FX INT_VAR opcode = 22  target = 2 parameter1 = 3 duration = HK_ONE_TURN END
   LPF HK_SPELL_FX INT_VAR opcode = 139 target = 2 parameter1 = RESOLVE_STR_REF (@152) timing = HK_TIMING_INSTANT END
 
@@ -257,7 +257,7 @@ CREATE SPL ~HKTCSC~
     INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
     STR_VAR icon = ~%hk_clw_icon%~
   END
-  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 STR_VAR resource = ~HKTCSC~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCSC~ END
   LPF HK_SPELL_FX
     INT_VAR opcode = 232 target = 2 parameter1 = 0 parameter2 = 4 special = 1 duration = HK_ONE_TURN
     STR_VAR resource = ~HKTCSCH~

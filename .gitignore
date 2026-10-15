@@ -1,2 +1,6 @@
+# Local tools (WeiDU binary and stub game folder for syntax checks)
+tools/
+
+# macOS
 .DS_Store
 docs/HANDOVER.md
