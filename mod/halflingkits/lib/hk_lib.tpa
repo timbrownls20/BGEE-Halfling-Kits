@@ -1,0 +1,443 @@
+/////////////////////////////////////////////////////////////////////
+// Halfling Kits shared library
+//
+// Helpers every kit uses: building spells from scratch, reading data
+// from vanilla spells and tables, building the 2DA lines ADD_KIT needs,
+// and restricting items to a kit's allowed weapons and armour.
+/////////////////////////////////////////////////////////////////////
+
+// Spell type values (SPL offset 0x1c)
+OUTER_SET HK_SPELL_INNATE = 4
+
+// Effect timing modes
+OUTER_SET HK_TIMING_DURATION      = 0
+OUTER_SET HK_TIMING_INSTANT       = 1
+OUTER_SET HK_TIMING_DELAYED       = 4
+OUTER_SET HK_TIMING_PERMANENT     = 9   // survives death; used for kit passives
+
+// Ability header target types
+OUTER_SET HK_TARGET_CASTER = 5
+
+// One turn in seconds, and one game day in seconds (1 game hour = 300 s)
+OUTER_SET HK_ONE_TURN = 60
+OUTER_SET HK_ONE_DAY  = 7200
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_INIT_SPELL (patch)
+// Turns a freshly CREATEd SPL into an empty spell with the given name,
+// description, type and icon. No ability headers or effects.
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_INIT_SPELL
+  INT_VAR name  = "-1"
+          desc  = "-1"
+          type  = 4
+          level = 1
+  STR_VAR icon  = ""
+BEGIN
+  WRITE_LONG   0x08 name
+  WRITE_LONG   0x0c "-1"
+  WRITE_SHORT  0x1c type
+  WRITE_LONG   0x34 level
+  WRITE_ASCIIE 0x3a ~%icon%~ #8
+  WRITE_LONG   0x50 desc
+  WRITE_LONG   0x54 desc
+  WRITE_LONG   0x64 0x72   // ability headers start straight after the main header
+  WRITE_SHORT  0x68 0
+  WRITE_LONG   0x6a 0x72   // effects follow the ability headers
+  WRITE_SHORT  0x6e 0
+  WRITE_SHORT  0x70 0
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_ADD_SPELL_HEADER (patch)
+// Appends an ability header. Add headers in ascending min_level order:
+// the engine uses the highest header the caster's level qualifies for.
+// Add all headers before any effects.
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_ADD_SPELL_HEADER
+  INT_VAR location     = 4    // 4 = innate
+          target       = 5    // 5 = caster
+          target_count = 0
+          range        = 0
+          min_level    = 1
+          speed        = 0
+          projectile   = 1    // 1 = none
+  STR_VAR icon         = ""
+BEGIN
+  READ_LONG  0x64 hdr_off
+  READ_SHORT 0x68 hdr_cnt
+  READ_LONG  0x6a fx_off
+
+  // New header's first effect sits after every effect already owned by
+  // earlier headers.
+  SET fx_index = 0
+  FOR (i = 0; i < hdr_cnt; ++i) BEGIN
+    READ_SHORT (hdr_off + i * 0x28 + 0x1e) cnt
+    READ_SHORT (hdr_off + i * 0x28 + 0x20) idx
+    PATCH_IF (idx + cnt > fx_index) BEGIN
+      SET fx_index = idx + cnt
+    END
+  END
+
+  SET new = hdr_off + hdr_cnt * 0x28
+  INSERT_BYTES new 0x28
+  WRITE_BYTE   new          1   // spell form: standard
+  WRITE_SHORT  (new + 0x02) location
+  WRITE_ASCIIE (new + 0x04) ~%icon%~ #8
+  WRITE_BYTE   (new + 0x0c) target
+  WRITE_BYTE   (new + 0x0d) target_count
+  WRITE_SHORT  (new + 0x0e) range
+  WRITE_SHORT  (new + 0x10) min_level
+  WRITE_SHORT  (new + 0x12) speed
+  WRITE_SHORT  (new + 0x1e) 0
+  WRITE_SHORT  (new + 0x20) fx_index
+  WRITE_SHORT  (new + 0x22) 1   // charges
+  WRITE_SHORT  (new + 0x26) projectile
+
+  WRITE_SHORT 0x68 (hdr_cnt + 1)
+  PATCH_IF (fx_off >= new) BEGIN
+    WRITE_LONG 0x6a (fx_off + 0x28)
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_SPELL_FX (patch)
+// ADD_SPELL_EFFECT with the defaults the kits use: targets the caster,
+// not dispellable. header = 0 adds to every header.
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_SPELL_FX
+  INT_VAR opcode        = 0
+          target        = 1
+          parameter1    = 0
+          parameter2    = 0
+          timing        = 0
+          duration      = 0
+          resist_dispel = 0
+          special       = 0
+          header        = 0
+  STR_VAR resource      = ""
+BEGIN
+  LPF ADD_SPELL_EFFECT
+    INT_VAR opcode
+            target
+            parameter1
+            parameter2
+            timing
+            duration
+            resist_dispel
+            special
+            header
+            power = 0
+            probability1 = 100
+            probability2 = 0
+    STR_VAR resource
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_READ_SPELL_AREA (action)
+// Reads the first ability header of a vanilla spell so a new spell can
+// reuse its targeting (for example, Bless's party-only area).
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_READ_SPELL_AREA
+  STR_VAR spell = ""
+  RET found projectile target range icon book_icon
+BEGIN
+  OUTER_SET found      = 0
+  OUTER_SET projectile = 1
+  OUTER_SET target     = HK_TARGET_CASTER
+  OUTER_SET range      = 0
+  OUTER_SPRINT icon      ~~
+  OUTER_SPRINT book_icon ~~
+  ACTION_IF (FILE_EXISTS_IN_GAME ~%spell%.spl~) BEGIN
+    COPY_EXISTING ~%spell%.spl~ ~override~
+      READ_ASCII 0x3a book_icon (8) NULL
+      READ_LONG  0x64 hdr_off
+      READ_SHORT 0x68 hdr_cnt
+      PATCH_IF (hdr_cnt > 0) BEGIN
+        SET found = 1
+        READ_ASCII (hdr_off + 0x04) icon (8) NULL
+        READ_BYTE  (hdr_off + 0x0c) target
+        READ_SHORT (hdr_off + 0x0e) range
+        READ_SHORT (hdr_off + 0x26) projectile
+      END
+    BUT_ONLY
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_FIND_FIGHTER_HLA (action)
+// Finds a standard fighter HLA in LUFI0.2da by its English name, so kits
+// can keep standard HLAs without hard-coding SPCL resrefs. Returns the
+// row's columns (ability, icon, strref, min level, max level, picks) and
+// the bare spell resref.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_FIND_FIGHTER_HLA
+  STR_VAR name = ""
+  RET found ability icon strref min_lev max_lev num_allowed spell
+BEGIN
+  OUTER_SET found = 0
+  OUTER_SPRINT ability     ~*~
+  OUTER_SPRINT icon        ~*~
+  OUTER_SPRINT strref      ~-1~
+  OUTER_SPRINT min_lev     ~1~
+  OUTER_SPRINT max_lev     ~99~
+  OUTER_SPRINT num_allowed ~1~
+  OUTER_SPRINT spell       ~~
+
+  ACTION_IF (FILE_EXISTS_IN_GAME ~lufi0.2da~) BEGIN
+  COPY_EXISTING ~lufi0.2da~ ~override~
+    COUNT_2DA_COLS cols
+    READ_2DA_ENTRIES_NOW ~hk_lu~ cols
+    FOR (r = 0; r < hk_lu && found == 0; ++r) BEGIN
+      READ_2DA_ENTRY_FORMER ~hk_lu~ r 1 res
+      PATCH_IF (STRING_LENGTH ~%res%~ > 3) BEGIN
+        // Strip the GA_ / AP_ prefix
+        INNER_PATCH_SAVE spl ~%res%~ BEGIN
+          DELETE_BYTES 0 3
+        END
+        PATCH_IF (FILE_EXISTS_IN_GAME ~%spl%.spl~) BEGIN
+          INNER_PATCH_FILE ~%spl%.spl~ BEGIN
+            READ_LONG 0x08 nm
+          END
+          PATCH_IF (nm > 0) BEGIN
+            GET_STRREF nm txt
+            PATCH_IF (~%txt%~ STRING_EQUAL_CASE ~%name%~) BEGIN
+              SET found = 1
+              SPRINT spell ~%spl%~
+              READ_2DA_ENTRY_FORMER ~hk_lu~ r 1 ability
+              READ_2DA_ENTRY_FORMER ~hk_lu~ r 2 icon
+              READ_2DA_ENTRY_FORMER ~hk_lu~ r 3 strref
+              READ_2DA_ENTRY_FORMER ~hk_lu~ r 4 min_lev
+              READ_2DA_ENTRY_FORMER ~hk_lu~ r 5 max_lev
+              READ_2DA_ENTRY_FORMER ~hk_lu~ r 6 num_allowed
+            END
+          END
+        END
+      END
+    END
+  BUT_ONLY
+  END
+
+  ACTION_IF (found == 0) BEGIN
+    OUTER_SPRINT hk_hla_name ~%name%~
+    WARN @2
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_WEAPPROF_LINE (action)
+// Builds the WEAPPROF.2da line for ADD_KIT, one value per proficiency
+// row, in the game's own row order (so the row count is never guessed).
+//   grandmastery: proficiency row names the kit can take to 5 pips
+//   styles:       fighting-style rows copied from the FIGHTER column
+// Everything else is 0.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_WEAPPROF_LINE
+  STR_VAR kit          = ""
+          grandmastery = ""
+          styles       = "2HANDED SWORDANDSHIELD SINGLEWEAPON 2WEAPON"
+  RET line
+BEGIN
+  OUTER_SPRINT line ~%kit%~
+  OUTER_SET hk_wp_matched  = 0
+  OUTER_SET hk_wp_expected = 0
+  OUTER_PATCH ~ %grandmastery% ~ BEGIN
+    // Count expected names: one per space-separated token
+    SET hk_wp_expected = 0
+    REPLACE_EVALUATE ~[^ ]+~ BEGIN SET hk_wp_expected += 1 END ~%MATCH0%~
+  END
+
+  COPY_EXISTING ~weapprof.2da~ ~override~
+    COUNT_2DA_COLS cols
+    // Header row has one token fewer than data rows (no row label)
+    SET fighter_col = "-1"
+    FOR (c = 0; c < cols - 1; ++c) BEGIN
+      READ_2DA_ENTRY 0 c (cols - 1) head
+      PATCH_IF (~%head%~ STRING_EQUAL_CASE ~FIGHTER~) BEGIN
+        SET fighter_col = c + 1
+      END
+    END
+    READ_2DA_ENTRIES_NOW ~hk_wp~ cols
+    FOR (r = 0; r < hk_wp; ++r) BEGIN
+      READ_2DA_ENTRY_FORMER ~hk_wp~ r 0 label
+      SET value = 0
+      PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %grandmastery% ~) >= 0) BEGIN
+        SET value = 5
+        SET hk_wp_matched += 1
+      END ELSE PATCH_IF (fighter_col >= 0 &&
+                         INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %styles% ~) >= 0) BEGIN
+        READ_2DA_ENTRY_FORMER ~hk_wp~ r fighter_col value
+      END
+      SPRINT line ~%line% %value%~
+    END
+  BUT_ONLY
+
+  ACTION_IF (hk_wp_matched != hk_wp_expected) BEGIN
+    WARN @3
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_EMPTY_COLUMN_LINE (action)
+// A line of "*", one per data row of a column-wise 2DA (25STWEAP.2da),
+// for kits that start with no special equipment.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_EMPTY_COLUMN_LINE
+  STR_VAR file = ""
+  RET line
+BEGIN
+  OUTER_SPRINT line ~~
+  ACTION_IF (FILE_EXISTS_IN_GAME ~%file%~) BEGIN
+    COPY_EXISTING ~%file%~ ~override~
+      COUNT_2DA_COLS cols
+      COUNT_2DA_ROWS cols rows
+      FOR (r = 0; r < rows; ++r) BEGIN
+        SPRINT line ~%line% *~
+      END
+    BUT_ONLY
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_RESTRICT_ITEMS (action)
+// Makes items unusable by one kit (opcode 319, power 0 = matching
+// creatures cannot use it). Used for kit weapon and armour limits that
+// the vanilla usability flags cannot express.
+//   kit_id:          the kit's KIT.IDS value
+//   message:         strref shown when the restriction blocks the item
+//   allowed_profs:   space-separated proficiency IDs the kit may wield;
+//                    any other weapon is blocked (ammunition is skipped)
+//   min_base_ac:     armour that sets base AC below this is blocked
+//                    (4 allows splint mail, blocks plate and full plate)
+//   max_shield_size: shields above this size are blocked
+//                    (D1 buckler, D2 small, D3 medium, D4 large)
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_RESTRICT_ITEMS
+  INT_VAR kit_id          = 0
+          message         = "-1"
+          min_base_ac     = "-100"
+          max_shield_size = 4
+  STR_VAR allowed_profs   = ""
+BEGIN
+  COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
+    PATCH_IF (SOURCE_SIZE > 0x71) BEGIN
+      READ_SHORT 0x1c item_type
+      READ_BYTE  0x31 prof
+      READ_ASCII 0x22 anim (2)
+      SET restrict = 0
+
+      // Weapons: blocked unless their proficiency is allowed. Arrows (5),
+      // bullets (14) and bolts (31) follow their launcher.
+      PATCH_IF (item_type != 5 && item_type != 14 && item_type != 31 &&
+                prof >= 89 && prof <= 115) BEGIN
+        PATCH_IF (INDEX (EXACT_MATCH ~ %prof% ~ ~ %allowed_profs% ~) < 0) BEGIN
+          SET restrict = 1
+        END
+      END
+
+      // Shields (12): size from the paperdoll animation, D1 to D4
+      PATCH_IF (item_type == 12) BEGIN
+        INNER_PATCH ~%anim%~ BEGIN
+          READ_BYTE 0 letter
+          READ_BYTE 1 digit
+        END
+        PATCH_IF ((letter == 68 || letter == 100) && (digit - 48) > max_shield_size) BEGIN
+          SET restrict = 1
+        END
+      END
+
+      // Armour (2): heaviness from the equipped "set base AC" effect
+      // (opcode 0, type 16). Enchantment is a separate effect.
+      PATCH_IF (item_type == 2) BEGIN
+        READ_LONG  0x6a fx_off
+        READ_SHORT 0x6e fx_idx
+        READ_SHORT 0x70 fx_cnt
+        FOR (i = fx_idx; i < fx_idx + fx_cnt; ++i) BEGIN
+          READ_SHORT (fx_off + i * 0x30)     op
+          READ_SLONG (fx_off + i * 0x30 + 4) p1
+          READ_LONG  (fx_off + i * 0x30 + 8) p2
+          PATCH_IF (op == 0 && p2 == 16 && p1 < min_base_ac) BEGIN
+            SET restrict = 1
+          END
+        END
+      END
+
+      PATCH_IF (restrict) BEGIN
+        LPF ADD_ITEM_EQEFFECT
+          INT_VAR opcode     = 319
+                  target     = 1
+                  timing     = 2
+                  parameter1 = kit_id
+                  parameter2 = 9      // KIT.IDS
+                  power      = 0      // matching creatures cannot use it
+                  special    = message
+        END
+      END
+    END
+  BUT_ONLY
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_ALIGNMENT_LINE (action)
+// Builds the ALIGNMNT.2da line for ADD_KIT from the file's own column
+// names, so the column order is never guessed.
+//   allowed: space-separated column names, e.g. ~CHAOTIC_GOOD~
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_ALIGNMENT_LINE
+  STR_VAR kit     = ""
+          allowed = ""
+  RET line
+BEGIN
+  OUTER_SPRINT line ~%kit%~
+  OUTER_SET hk_al_matched = 0
+  COPY_EXISTING ~alignmnt.2da~ ~override~
+    COUNT_2DA_COLS cols
+    FOR (c = 0; c < cols - 1; ++c) BEGIN
+      READ_2DA_ENTRY 0 c (cols - 1) head
+      PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %head% ~ ~ %allowed% ~) >= 0) BEGIN
+        SPRINT line ~%line% 1~
+        SET hk_al_matched += 1
+      END ELSE BEGIN
+        SPRINT line ~%line% 0~
+      END
+    END
+  BUT_ONLY
+  ACTION_IF (hk_al_matched == 0) BEGIN
+    FAIL ~Halfling Kits: no ALIGNMNT.2da column matched "%allowed%".~
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_HLA_ROW (action)
+// Appends one row to an HLA table (LU*.2da) being built in a variable.
+// Rows are numbered from 1 by the running counter `number`.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_HLA_ROW
+  INT_VAR number    = 0
+          strref    = "-1"
+          picks     = 1
+          min_level = 1
+          max_level = 99
+  STR_VAR rows      = ""
+          ability   = ""
+          icon      = "*"
+          prereq    = "*"
+  RET rows number
+BEGIN
+  ACTION_IF (~%icon%~ STRING_EQUAL ~~) BEGIN
+    OUTER_SPRINT icon ~*~
+  END
+  OUTER_SET number += 1
+  OUTER_SPRINT rows ~%rows%%number% %ability% %icon% %strref% %min_level% %max_level% %picks% %prereq% * *%LNL%~
+END

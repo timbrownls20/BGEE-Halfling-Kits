@@ -1,0 +1,4 @@
+@1 = ~This component needs Baldur's Gate: Enhanced Edition, Baldur's Gate II: Enhanced Edition or EET.~
+@2 = ~WARNING: Halfling Kits could not find the fighter High Level Ability "%hk_hla_name%" in LUFI0.2da. It has been left out of this kit's ability list.~
+@3 = ~WARNING: Halfling Kits matched only %hk_wp_matched% of %hk_wp_expected% weapon proficiency rows in WEAPPROF.2da. Check the kit's proficiencies in game.~
+@5 = ~Tymora's Champion (halfling fighter kit)~

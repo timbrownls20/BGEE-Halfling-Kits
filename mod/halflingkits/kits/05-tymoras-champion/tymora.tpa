@@ -1,0 +1,383 @@
+/////////////////////////////////////////////////////////////////////
+// Tymora's Champion
+// Design: docs/kits/05-tymoras-champion/design.md
+//
+// Resource prefix HKTC. Spells:
+//   HKTCLK1-5  Luck of the Lady: Luck, AC, movement and save steps (CLAB, levels 1/10/20/30/40)
+//   HKTCFAV    Lady's Favour (innate)
+//   HKTCSMA    Tymora Smiles: arms the low-HP contingency (CLAB, level 10)
+//   HKTCSMH    Tymora Smiles: the heal, which re-arms itself one day later
+//   HKTCFT/FTE Fortune's Turn (self / enemy area)          HLA
+//   HKTCFW/FWE Fortune's Wheel (self / enemy area)         HLA
+//   HKTCBL     Tymora's Blessing                           HLA
+//   HKTCGR     Lady's Grace                                HLA
+//   HKTCSC/SCH Second Chance (arm / heal)                  HLA
+//   HKTCLB     Lucky Break                                 HLA
+//   HKTCLW     Lucky Blow                                  HLA
+//
+// Not implemented:
+//   Critical Strike ignoring critical-hit immunity (needs EEex). The
+//   standard Critical Strike is kept, without its Power Attack
+//   prerequisite.
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells
+/////////////////////////////////////////////////////////////////////
+
+// Bless: party-only area, reused by Tymora's Blessing and Second Chance
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~
+  RET hk_bless_projectile = projectile hk_bless_target = target hk_bless_range = range
+      hk_bless_icon = icon hk_bless_book_icon = book_icon
+END
+// Chant and Cure Light Wounds: icons only
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr203~
+  RET hk_chant_icon = icon hk_chant_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr103~
+  RET hk_clw_icon = icon hk_clw_book_icon = book_icon
+END
+
+// Standard fighter HLAs: War Cry's enemy-only area (for Fortune's Turn and
+// Wheel), and the Critical Strike and Resist Magic rows the kit keeps.
+LAF HK_FIND_FIGHTER_HLA STR_VAR name = ~War Cry~
+  RET hk_warcry_found = found hk_warcry_spell = spell
+END
+OUTER_SET hk_enemy_found = 0
+ACTION_IF (hk_warcry_found) BEGIN
+  LAF HK_READ_SPELL_AREA STR_VAR spell = ~%hk_warcry_spell%~
+    RET hk_enemy_found = found hk_enemy_projectile = projectile
+        hk_enemy_target = target hk_enemy_range = range
+  END
+END
+
+LAF HK_FIND_FIGHTER_HLA STR_VAR name = ~Critical Strike~
+  RET hk_crit_found = found hk_crit_ability = ability hk_crit_icon = icon
+      hk_crit_strref = strref hk_crit_min = min_lev hk_crit_max = max_lev hk_crit_num = num_allowed
+END
+LAF HK_FIND_FIGHTER_HLA STR_VAR name = ~Resist Magic~
+  RET hk_rm_found = found hk_rm_ability = ability hk_rm_icon = icon
+      hk_rm_strref = strref hk_rm_min = min_lev hk_rm_max = max_lev hk_rm_num = num_allowed
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Luck of the Lady: one permanent step per Luck point
+// +1 Luck, +1 AC (Lucky Dodge), +1 movement (Fortune's Path), plus the
+// save bonus for the new Luck total: +1 at Luck 1, +2 at 3, +3 at 5.
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ASSOCIATIVE_ARRAY hk_tc_luck_steps BEGIN
+  ~HKTCLK1~ => 1
+  ~HKTCLK2~ => 0
+  ~HKTCLK3~ => 1
+  ~HKTCLK4~ => 0
+  ~HKTCLK5~ => 1
+END
+
+ACTION_PHP_EACH hk_tc_luck_steps AS resref => save_step BEGIN
+  CREATE SPL ~%resref%~
+    LPF HK_INIT_SPELL
+      INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111)
+      STR_VAR icon = ~%hk_bless_book_icon%~
+    END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_bless_icon%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 22  parameter1 = 1 timing = HK_TIMING_PERMANENT END   // Luck
+    LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 1 timing = HK_TIMING_PERMANENT END   // AC, all types
+    LPF HK_SPELL_FX INT_VAR opcode = 126 parameter1 = 1 timing = HK_TIMING_PERMANENT END   // movement
+    PATCH_IF (save_step > 0) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = save_step timing = HK_TIMING_PERMANENT END   // all saves
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Lady's Favour: +3 Luck for 1 turn, with the matching AC, movement and
+// save bonuses. The save bonus depends on how far +3 Luck lifts the
+// kit's own Luck, so it is set per ability header (by caster level):
+//   level 1-9   Luck 1 -> 4: +1 (save bonus +1 -> +2)
+//   level 10-19 Luck 2 -> 5: +2 (+1 -> +3)
+//   level 20-39 Luck 3 -> 6, 4 -> 7: +1 (+2 -> +3)
+//   level 40    Luck 5 -> 8: +0 (already at the +3 cap)
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKTCFAV~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121)
+    STR_VAR icon = ~%hk_bless_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 1  STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 10 STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 20 STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 40 STR_VAR icon = ~%hk_bless_icon%~ END
+
+  // Refresh rather than stack (must be the first effect)
+  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 STR_VAR resource = ~HKTCFAV~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 22  parameter1 = 3 duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 3 duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 126 parameter1 = 3 duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@122) timing = HK_TIMING_INSTANT END
+
+  LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 1 duration = HK_ONE_TURN header = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 2 duration = HK_ONE_TURN header = 2 END
+  LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 1 duration = HK_ONE_TURN header = 3 END
+
+
+/////////////////////////////////////////////////////////////////////
+// Tymora Smiles: once a day, heal to about half below 10% HP.
+// HKTCSMA arms a contingency (opcode 232, condition 4 = HP below 10%,
+// special bit 0 = remove after firing). HKTCSMH heals and re-arms the
+// contingency one game day later, so it recovers by game time rather
+// than on rest.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKTCSMA~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131)
+    STR_VAR icon = ~%hk_clw_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_clw_icon%~ END
+  LPF HK_SPELL_FX
+    INT_VAR opcode = 232 parameter1 = 0 parameter2 = 4 special = 1 timing = HK_TIMING_PERMANENT
+    STR_VAR resource = ~HKTCSMH~
+  END
+
+CREATE SPL ~HKTCSMH~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131)
+    STR_VAR icon = ~%hk_clw_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_clw_icon%~ END
+  // Heal 45% of maximum HP: from below 10% this lands at about half
+  LPF HK_SPELL_FX INT_VAR opcode = 17  parameter1 = 45 parameter2 = 2 timing = HK_TIMING_INSTANT END
+  LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@132) timing = HK_TIMING_INSTANT END
+  LPF HK_SPELL_FX
+    INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_DELAYED duration = HK_ONE_DAY
+    STR_VAR resource = ~HKTCSMA~
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Fortune's Turn and Fortune's Wheel
+// Self: +2 / +4 saves for 1 turn. Enemies in the area: -2 / -3 Luck,
+// using War Cry's enemy-only area. The two do not stack: Wheel removes
+// Turn and blocks it while running.
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_enemy_found) BEGIN
+  CREATE SPL ~HKTCFTE~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141) END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_enemy_target range = hk_enemy_range projectile = hk_enemy_projectile
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 STR_VAR resource = ~HKTCFTE~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 22  target = 2 parameter1 = "-2" duration = HK_ONE_TURN resist_dispel = 1 END
+
+  CREATE SPL ~HKTCFWE~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146) END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_enemy_target range = hk_enemy_range projectile = hk_enemy_projectile
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 STR_VAR resource = ~HKTCFWE~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 STR_VAR resource = ~HKTCFTE~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 22  target = 2 parameter1 = "-3" duration = HK_ONE_TURN resist_dispel = 1 END
+END
+
+CREATE SPL ~HKTCFT~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141)
+    STR_VAR icon = ~%hk_chant_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_chant_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 STR_VAR resource = ~HKTCFT~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 2 duration = HK_ONE_TURN END
+  PATCH_IF (hk_enemy_found) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFTE~ END
+  END
+
+CREATE SPL ~HKTCFW~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146)
+    STR_VAR icon = ~%hk_chant_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_chant_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 STR_VAR resource = ~HKTCFW~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 STR_VAR resource = ~HKTCFT~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 206 duration = HK_ONE_TURN STR_VAR resource = ~HKTCFT~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 4 duration = HK_ONE_TURN END
+  PATCH_IF (hk_enemy_found) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFWE~ END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Tymora's Blessing - the party gains +3 Luck for 1 turn (Bless's area)
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKTCBL~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151)
+    STR_VAR icon = ~%hk_bless_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER
+    INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
+    STR_VAR icon = ~%hk_bless_icon%~
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 STR_VAR resource = ~HKTCBL~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 22  target = 2 parameter1 = 3 duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 139 target = 2 parameter1 = RESOLVE_STR_REF (@152) timing = HK_TIMING_INSTANT END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Lady's Grace - one more daily use of Lady's Favour per pick
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKTCGR~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156)
+    STR_VAR icon = ~%hk_bless_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFAV~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Second Chance - for 1 turn, each ally in the area who drops below
+// 10% HP is healed to about half, once (the contingency removes itself).
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKTCSCH~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161)
+    STR_VAR icon = ~%hk_clw_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_clw_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 17  parameter1 = 45 parameter2 = 2 timing = HK_TIMING_INSTANT END
+  LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@162) timing = HK_TIMING_INSTANT END
+
+CREATE SPL ~HKTCSC~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161)
+    STR_VAR icon = ~%hk_clw_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER
+    INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
+    STR_VAR icon = ~%hk_clw_icon%~
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 STR_VAR resource = ~HKTCSC~ END
+  LPF HK_SPELL_FX
+    INT_VAR opcode = 232 target = 2 parameter1 = 0 parameter2 = 4 special = 1 duration = HK_ONE_TURN
+    STR_VAR resource = ~HKTCSCH~
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Lucky Break - per pick, +5% physical, magic damage and magic
+// resistance (up to 5 picks)
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKTCLB~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166)
+    STR_VAR icon = ~%hk_bless_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 86  parameter1 = 5 timing = HK_TIMING_PERMANENT END   // slashing
+  LPF HK_SPELL_FX INT_VAR opcode = 87  parameter1 = 5 timing = HK_TIMING_PERMANENT END   // crushing
+  LPF HK_SPELL_FX INT_VAR opcode = 88  parameter1 = 5 timing = HK_TIMING_PERMANENT END   // piercing
+  LPF HK_SPELL_FX INT_VAR opcode = 89  parameter1 = 5 timing = HK_TIMING_PERMANENT END   // missile
+  LPF HK_SPELL_FX INT_VAR opcode = 31  parameter1 = 5 timing = HK_TIMING_PERMANENT END   // magic damage
+  LPF HK_SPELL_FX INT_VAR opcode = 166 parameter1 = 5 timing = HK_TIMING_PERMANENT END   // magic resistance
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Lucky Blow - critical-hit range +1 per pick (19-20, then 18-20).
+// Instances of opcode 301 stack from game version 2.5.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKTCLW~
+  LPF HK_INIT_SPELL
+    INT_VAR name = RESOLVE_STR_REF (@170) desc = RESOLVE_STR_REF (@171)
+    STR_VAR icon = ~%hk_bless_book_icon%~
+  END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 301 parameter1 = 1 parameter2 = 0 timing = HK_TIMING_PERMANENT END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHTC.2da). ADD_KIT does not copy custom HLA tables.
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@140) picks = 3
+  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKTCFT~ icon = ~%hk_chant_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 1
+  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKTCFW~ icon = ~%hk_chant_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 3
+  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKTCBL~ icon = ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 4
+  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKTCGR~ icon = ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 1
+  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKTCSC~ icon = ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@165) picks = 5
+  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKTCLB~ icon = ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@170) picks = 2
+  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKTCLW~ icon = ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+
+// Standard fighter HLAs kept. Critical Strike loses its Power Attack
+// prerequisite (HK_HLA_ROW writes "*" for it).
+ACTION_IF (hk_crit_found) BEGIN
+  LAF HK_HLA_ROW
+    INT_VAR number = hk_n strref = hk_crit_strref picks = hk_crit_num min_level = hk_crit_min max_level = hk_crit_max
+    STR_VAR rows = ~%hk_rows%~ ability = ~%hk_crit_ability%~ icon = ~%hk_crit_icon%~
+    RET hk_rows = rows hk_n = number
+  END
+END
+ACTION_IF (hk_rm_found) BEGIN
+  LAF HK_HLA_ROW
+    INT_VAR number = hk_n strref = hk_rm_strref picks = hk_rm_num min_level = hk_rm_min max_level = hk_rm_max
+    STR_VAR rows = ~%hk_rows%~ ability = ~%hk_rm_ability%~ icon = ~%hk_rm_icon%~
+    RET hk_rows = rows hk_n = number
+  END
+END
+
+COPY ~%MOD_FOLDER%/kits/05-tymoras-champion/luhtc.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+/////////////////////////////////////////////////////////////////////
+LAF HK_WEAPPROF_LINE
+  STR_VAR kit = ~HK_TYMORA~
+          grandmastery = ~SHORTSWORD FLAILMORNINGSTAR MACE CLUB DAGGER DART SLING SHORTBOW~
+  RET hk_tc_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_tc_stweap = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_TYMORA~ allowed = ~CHAOTIC_GOOD~ RET hk_tc_align = line END
+
+ADD_KIT ~HK_TYMORA~
+  ~HK_TYMORA                1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_tc_weapprof%~                                          // WEAPPROF (column)
+  ~HK_TYMORA                9 0 0 0 0 0~                      // ABCLASRQ: Str 9
+  ~HK_TYMORA                0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_TYMORA                17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_TYMORA                17 0 0 0 0 0~                     // ABDCSCRQ
+  ~%hk_tc_align%~                                             // ALIGNMNT: chaotic good only
+  ~HK_TYMORA                0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/05-tymoras-champion/hktclab.2da~         // CLAB
+  ~K_F_H~                                                     // halfling fighters only
+  ~0x00004000 2~                                              // fighter usability, class 2
+  ~HTC~                                                       // LUHTC.2da
+  ~%hk_tc_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment limits: short swords, flails and morning stars, maces,
+// clubs, daggers, darts, slings and short bows; armour up to splint
+// mail (base AC 4); bucklers and small shields only.
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_tc_kit_id = IDS_OF_SYMBOL (~kit~ ~HK_TYMORA~)
+
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id          = hk_tc_kit_id
+          message         = RESOLVE_STR_REF (@180)
+          min_base_ac     = 4
+          max_shield_size = 2
+  STR_VAR allowed_profs   = ~91 100 101 115 96 106 107 105~
+END

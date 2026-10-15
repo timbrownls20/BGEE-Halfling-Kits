@@ -1,0 +1,19 @@
+BACKUP ~weidu_external/backup/halflingkits~
+AUTHOR ~Tim Brown~
+VERSION ~v0.1~
+
+LANGUAGE ~English~ ~english~ ~halflingkits/tra/english/setup.tra~
+
+ALWAYS
+  INCLUDE ~%MOD_FOLDER%/lib/hk_lib.tpa~
+END
+
+/////////////////////////////////////////////////////////////////////
+// Tymora's Champion (fighter, halfling only)
+/////////////////////////////////////////////////////////////////////
+BEGIN @5 DESIGNATED 5
+LABEL ~halflingkits-tymoras-champion~
+REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
+
+LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/tymora.tra~
+INCLUDE ~%MOD_FOLDER%/kits/05-tymoras-champion/tymora.tpa~

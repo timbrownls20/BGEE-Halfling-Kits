@@ -1,0 +1,75 @@
+// Tymora's Champion
+
+@100 = ~Tymora's Champion~
+@101 = ~Tymora's Champion~
+@102 = ~TYMORA'S CHAMPION: Every halfling knows a lucky one: the cousin who fell off the roof onto a haycart, the uncle who won the farm at cards. Tymora's Champion is that cousin, grown up and sworn to the Lady. Arrows miss by a whisker, blades turn on a buckle, and when death finally comes calling, Tymora rolls the dice one more time.
+
+Advantages:
+– Luck: +1 at levels 1, 10, 20, 30 and 40.
+– Lucky Dodge: +1 AC for every point of the Champion's own Luck.
+– Fortune's Path: +1 movement for every point of the Champion's own Luck.
+– +1 to all saves at Luck 1 and 2, +2 at Luck 3 and 4, and +3 at Luck 5.
+– May use Lady's Favour once per day at level 1, plus once more at levels 6, 11, 16 and every 5 levels after.
+  LADY'S FAVOUR: +3 Luck for 1 turn, with the matching AC, movement and save bonuses.
+– From level 10: Tymora Smiles. Once a day, if the Champion falls below 10% of its hit points, it is instantly healed to about half.
+– May reach grandmastery in all its weapons.
+
+Disadvantages:
+– May wear armour up to splint mail.
+– May only use bucklers and small shields.
+– May only use short swords, flails and morning stars, maces, clubs, daggers, darts, slings and short bows.
+– Must be a chaotic good halfling.~
+
+@110 = ~Luck of the Lady~
+@111 = ~The Lady's favour grows as Tymora's Champion does: +1 Luck, +1 AC and +1 movement at levels 1, 10, 20, 30 and 40, with better saves as the Luck builds.~
+
+@120 = ~Lady's Favour~
+@121 = ~Lady's Favour
+
+For 1 turn, the Champion gains +3 Luck, +3 AC, +3 movement and better saves. Using it again while it is still running starts the turn afresh.~
+@122 = ~Lady's Favour~
+
+@130 = ~Tymora Smiles~
+@131 = ~Tymora Smiles
+
+Once a day, when the Champion falls below 10% of its hit points, Tymora steps in and heals it to about half. It recovers one game day after it last fired.~
+@132 = ~Tymora smiles!~
+
+@140 = ~Fortune's Turn~
+@141 = ~Fortune's Turn
+
+For 1 turn, the Champion gains +2 to all saves, and enemies within 30 feet suffer -2 Luck. Does not stack with Fortune's Wheel.~
+
+@145 = ~Fortune's Wheel~
+@146 = ~Fortune's Wheel
+
+For 1 turn, the Champion gains +4 to all saves, and enemies within 30 feet suffer -3 Luck. Replaces Fortune's Turn if it is running.~
+
+@150 = ~Tymora's Blessing~
+@151 = ~Tymora's Blessing
+
+The Champion and its allies nearby gain +3 Luck for 1 turn. This Luck does not raise the Champion's Lucky Dodge, Fortune's Path or save bonuses.~
+@152 = ~Tymora's Blessing~
+
+@155 = ~Lady's Grace~
+@156 = ~Lady's Grace
+
+Each time this ability is chosen, the Champion can use Lady's Favour one more time per day.~
+
+@160 = ~Second Chance~
+@161 = ~Second Chance
+
+For 1 turn, any ally near the Champion who falls below 10% of their hit points is instantly healed to about half. Each ally can be saved once.~
+@162 = ~A second chance!~
+
+@165 = ~Lucky Break~
+@166 = ~Lucky Break
+
+Each time this ability is chosen, the Champion gains +5% resistance to physical damage, +5% resistance to magic damage and +5% magic resistance.~
+
+@170 = ~Lucky Blow~
+@171 = ~Lucky Blow
+
+The dice favour the Champion's strikes. Each time this ability is chosen, its critical-hit range widens by 1: critical hits on 19–20 with one pick, and 18–20 with two.~
+
+@180 = ~Tymora's Champions cannot use this item.~
