@@ -19,10 +19,15 @@
 //   HKFFAI      Afterimage                                            HLA
 //   HKFFRL      Relentless; HKFFRL3 adds its level-30 resistance      HLA
 //   HKFFHM      Hamstring; HKFFHMA.eff / HKFFHMS deliver the wound    HLA
+//   HKFFEV      Halfling Evasion (copy of the thief's Evasion)        HLA
 //   HKFFQS      Quicksilver                                           HLA
 //   HKFFTR      Fleet Training                                        HLA
 //
 // Not implemented:
+//   TODO (EEex): Halfling Evasion as designed - no damage from save-for-half
+//   area effects on a successful save, half damage on a failed one. The
+//   engine has no hook for this; until EEex, it is the standard thief
+//   Evasion under the new name.
 //   Critical Strike ignoring critical-hit immunity (needs EEex). The
 //   standard Critical Strike is kept, without its Power Attack
 //   prerequisite.
@@ -59,7 +64,7 @@ LAF HK_FIND_HLA STR_VAR name = ~Critical Strike~
 END
 LAF HK_FIND_HLA STR_VAR name = ~Evasion~ table = ~luth0~
   RET hk_evasion_found = found hk_evasion_ability = ability hk_evasion_icon = icon
-      hk_evasion_strref = strref hk_evasion_min = min_lev hk_evasion_max = max_lev
+      hk_evasion_min = min_lev hk_evasion_max = max_lev hk_evasion_spell = spell
 END
 
 // Relentless sets this state so the level-30 step knows it was taken
@@ -241,6 +246,23 @@ END
 
 
 /////////////////////////////////////////////////////////////////////
+// HLA: Halfling Evasion
+// TODO (EEex): currently the standard thief Evasion under a new name,
+// keeping its own description. See the header comment.
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_evasion_found) BEGIN
+  COPY_EXISTING ~%hk_evasion_spell%.spl~ ~override/HKFFEV.spl~
+    SAY 0x08 @185
+  // Keep the row's GA_ / AP_ prefix
+  OUTER_PATCH_SAVE hk_evasion_ability ~%hk_evasion_ability%~ BEGIN
+    DELETE_BYTES 3 (BUFFER_LENGTH - 3)
+    INSERT_BYTES 3 6
+    WRITE_ASCII 3 ~HKFFEV~
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
 // HLA: Afterimage - 4 mirror images for 1 turn, not dispellable
 /////////////////////////////////////////////////////////////////////
 CREATE SPL ~HKFFAI~
@@ -348,7 +370,7 @@ ACTION_IF (hk_timestop_found) BEGIN
 END
 ACTION_IF (hk_evasion_found) BEGIN
   LAF HK_HLA_ROW
-    INT_VAR number = hk_n strref = hk_evasion_strref picks = 1 min_level = hk_evasion_min max_level = hk_evasion_max
+    INT_VAR number = hk_n strref = RESOLVE_STR_REF (@185) picks = 1 min_level = hk_evasion_min max_level = hk_evasion_max
     STR_VAR rows = ~%hk_rows%~ ability = ~%hk_evasion_ability%~ icon = ~%hk_evasion_icon%~
     RET hk_rows = rows hk_n = number
   END

@@ -79,7 +79,7 @@ How hard it is to kill or disable, across the whole game.
 | 18 | Cleric (incl. Priest of Lathander) | Class | Plate and self-healing |
 | 19 | **Unbeguiled** | New kit | Magic resistance to about 68% and immunity to mind control; weaker AC without magic cloaks or rings |
 | 20 | Dragon Disciple | Sorcerer kit | Extra HP and natural armour behind sorcerer protections |
-| 21 | **Fleet Foot Fighter** | New kit | Very low AC, Evasion, Afterimage and Relentless |
+| 21 | **Fleet Foot Fighter** | New kit | Very low AC, Halfling Evasion, Afterimage and Relentless |
 | 22 | Blackguard | Paladin kit | Plate and absorb-health tricks |
 | 23 | Monk | Class | Late magic resistance and immunities |
 | 24 | Fighter/Thief | Multiclass | Medium armour, no protections |

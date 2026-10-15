@@ -82,7 +82,7 @@ Full HLA list. Fleet Foot abilities are listed first, then the standard fighter 
 | Flicker Step (time chain 1) | Steps out of time for about 7 seconds, as the Shadowdancer's Shadowstep: it can move freely while everyone else is frozen, but cannot attack or cast until the effect ends. Used to reach kiting casters and archers | Up to 3 |
 | Time Slow (time chain 2) | Requires Flicker Step. Innate Time Stop for 1 round | Up to 2 |
 | Time Pause (time chain 3) | Requires Time Slow. Innate Time Stop for 2 rounds | Once |
-| Evasion | Passive: no damage from save-for-half area effects (fireballs, breath weapons) on a successful save, half damage on a failed one | Once |
+| Halfling Evasion | Passive: no damage from save-for-half area effects (fireballs, breath weapons) on a successful save, half damage on a failed one | Once |
 | Afterimage | For 1 turn, leaves 4 blurred copies that work like Mirror Image; a physical ability, so it cannot be dispelled | Up to 4 |
 | Relentless | Passive: Free Action (immune to hold, slow, web, entangle and paralysis) and immunity to stun and fear; from level 30, +10% physical damage resistance | Once |
 | Hamstring | For 1 round, every hit hamstrings the target for 2 rounds: -1 attack per round, -2 to hit and half movement. No save, and not blocked by Free Action, since it is a wound rather than magic. Further hits refresh the duration but do not stack | Up to 3 |
@@ -94,7 +94,7 @@ Full HLA list. Fleet Foot abilities are listed first, then the standard fighter 
 
 ## Balance notes
 
-The kit is a high-offence, medium-defence glass cannon rated 9 overall: the deadliest halfling kit, level with the Fighter/Cleric and above the Berserker. Passive Evasion is its main late-game defence.
+The kit is a high-offence, medium-defence glass cannon rated 9 overall: the deadliest halfling kit, level with the Fighter/Cleric and above the Berserker. Passive Halfling Evasion is its main late-game defence.
 
 Attacks per round when dual-wielding, assuming standard fighter proficiency progression:
 
@@ -110,7 +110,7 @@ Attacks per round when dual-wielding, assuming standard fighter proficiency prog
 | Berserker | High (rage) | Medium (rage immunities) | Low |
 | Barbarian | High | Medium (late resistances) | Movement speed |
 | Dwarven Defender | Medium | Very high | Low |
-| Fleet Foot | High (APR, Rapid Strike) | Medium (scaling AC, Small Target, Evasion) | Very high movement, Time Stop HLAs |
+| Fleet Foot | High (APR, Rapid Strike) | Medium (scaling AC, Small Target, Halfling Evasion) | Very high movement, Time Stop HLAs |
 
 Before Throne of Bhaal it has no protection against hold, slow or web and relies on a Ring of Free Action and halfling saves; the Relentless HLA closes that gap. Its time HLAs form a chain (Flicker Step, then Time Slow, then Time Pause), so its strongest burst combo, Rapid Strike with Time Pause, needs three HLA picks and arrives later in Throne of Bhaal. From level 19 it sits at the 5 APR cap, so ordinary Haste adds no attacks; Improved Haste and Rapid Strike still double them.
 
@@ -156,15 +156,15 @@ As above, plus an off-hand weapon one enchantment lower and Two-Weapon Style (2 
 | Late SoA (18) | 3.5 + 1 | 104 | 208 | 26 |
 | Late ToB (30) | 4 + 1 | 130 | 259 | 57 |
 
-**Reading the numbers:** bleeding is shown separately, as the extra damage per round once a fight has run long enough for wounds to stack (about 3 rounds), and only against creatures that bleed. Against living enemies in a longer fight, late-game DPR reaches roughly 150 single-weapon and 185 dual-wielding, about level with a geared Kensai; against undead and golems it falls back to the weapon damage alone. During Rapid Strike it doubles its hits and its wounds, and in Throne of Bhaal Hamstring blunts whatever it is fighting rather than adding damage. Its THAC0 is overkill from mid-SoA. Defensively it relies on AC (-15 late with gear) and avoidance (Evasion, Afterimage, Flicker Step, speed); it has almost no physical resistance and only 20% magic resistance, so anything that gets past its AC hurts.
+**Reading the numbers:** bleeding is shown separately, as the extra damage per round once a fight has run long enough for wounds to stack (about 3 rounds), and only against creatures that bleed. Against living enemies in a longer fight, late-game DPR reaches roughly 150 single-weapon and 185 dual-wielding, about level with a geared Kensai; against undead and golems it falls back to the weapon damage alone. During Rapid Strike it doubles its hits and its wounds, and in Throne of Bhaal Hamstring blunts whatever it is fighting rather than adding damage. Its THAC0 is overkill from mid-SoA. Defensively it relies on AC (-15 late with gear) and avoidance (Halfling Evasion, Afterimage, Flicker Step, speed); it has almost no physical resistance and only 20% magic resistance, so anything that gets past its AC hurts.
 
 ## Implementation notes
 
 For anyone building this kit as a mod (for example with WeiDU):
 
 - **Easy:** AC, movement and weapon speed bonuses, extra attacks, Time Slow and Time Pause (Time Stop effects), Relentless (standard immunities), Flicker Step (reuses the Shadowdancer's Shadowstep), Quicksilver (permanent magic resistance), Fleet Training (movement and weapon speed bonuses), Razor's Edge (damage over time on hit, like poison weapons, limited to bladed weapons and creatures that can bleed).
-- **Moderate:** Rapid Strike (attack doubling with a THAC0 penalty that scales by level), Afterimage (Mirror Image flagged as undispellable), Evasion (half damage on failed saves needs a custom effect), Hamstring (needs a movement penalty that Free Action doesn't block).
-- **Hard:** none.
+- **Moderate:** Rapid Strike (attack doubling with a THAC0 penalty that scales by level), Afterimage (Mirror Image flagged as undispellable), Hamstring (needs a movement penalty that Free Action doesn't block).
+- **Hard:** Halfling Evasion (half damage on a failed save needs damage changed as it lands, so probably EEex).
 
 ### As built (not yet tested in game)
 
@@ -179,7 +179,7 @@ Code: `mod/halflingkits/kits/01-fleet-foot-fighter/`. Where the build differs fr
 - **Weapon speed** steps replace each other, because the game's weapon-speed effect doesn't stack. **Fleet Training** gives movement only: by level 16 every allowed weapon is already at speed 0, so its weapon-speed bonus would do nothing.
 - **Two-Weapon Style's 2 starting pips** are granted by a permanent proficiency effect. Check that a third pip can still be added at level-up.
 - **Flicker Step** is a renamed copy of the Shadowdancer's Shadowstep. **Time Slow** and **Time Pause** are innate copies of Time Stop.
-- **Evasion** is the standard thief HLA, so it behaves as the engine's Evasion does, which may differ from the design's half damage on a failed save.
+- **Halfling Evasion (TODO, needs EEex):** for now it is the standard thief Evasion under the new name, keeping that ability's own description. The design's version (no damage on a successful save, half on a failed one) needs damage changed as it lands. Without EEex the only route is patching every area spell at install, which was judged too large and fragile.
 - **Relentless** uses separate immunities rather than Free Action, so speed bonuses still work. Its +10% physical resistance at level 30 is tracked with a new spell state, so it works whether Relentless is taken before or after level 30.
 - **Critical Strike** is the standard one without the Power Attack prerequisite. It does not get past critical-hit immunity (needs EEex).
 
