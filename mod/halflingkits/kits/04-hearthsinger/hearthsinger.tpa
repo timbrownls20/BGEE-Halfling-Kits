@@ -1,0 +1,465 @@
+/////////////////////////////////////////////////////////////////////
+// Hearthsinger
+// Design: docs/kits/04-hearthsinger/design.md
+//
+// Resource prefix HKHS. Files:
+//   HKHSL1        Small and Nimble (+2 AC) and the 5th-level spell cap  (CLAB)
+//   HKHSONG       Hearthsong: opens the song menu (HKHSMENU.2da)        (CLAB)
+//   HKHSSTP       Stop Singing                                          (CLAB)
+//   HKHSINV       Invigorating Song (on the singer)
+//   HKHSSOO       Soothing Song (on the singer)
+//   HKHSBTH       Song of Hearth and Home: both songs at once
+//   HKHSI1-3      Invigorating pulse, tiers 1-3 (allies in the area)
+//   HKHSS1-3      Soothing pulse, tiers 1-3
+//   HKHSIE1-3.eff, HKHSSE1-3.eff   repeat each pulse every round
+//   HKHSHH        Song of Hearth and Home (HLA: swaps Hearthsong uses)
+//   HKHSHYM       Homeward Hymn                                         HLA
+//   HKHSHS        Harmonic Song                                         HLA
+//   HKHSNOL       No One Left Behind (Raise Dead, healed to half)       HLA
+//   HKHSKS        Kin's Shield                                          HLA
+//   HKHSGRD       Hearth Guardians; HKHSANC.cre the ancestor spirit     HLA
+//   HKHSH1-6      Innate Heal, Iron Skins, Resurrection, Greater
+//                 Restoration, Regeneration, Shield of the Archons      HLA
+//
+// How the songs work: the song spell puts a repeating effect (opcode
+// 272) on the singer that casts an area pulse on allies every round
+// (each pulse lasts 7 seconds and replaces the last), and disables the
+// singer's priest spells (opcode 145) for the song's duration. Stop
+// Singing removes both. Harmonic Song makes the singer immune to
+// opcode 145.
+//
+// Not implemented (TODO, EEex):
+//   - Casting a spell ending the song. The engine has no "cast a spell"
+//     trigger, so instead the singer cannot cast while singing and has
+//     Stop Singing. The outcome is the same: casting costs the song.
+//   - Kin's Shield's immunity to critical hits. The engine only grants
+//     that through helmets.
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells and tables
+/////////////////////////////////////////////////////////////////////
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~   // Bless: party-only area
+  RET hk_bless_projectile = projectile hk_bless_target = target hk_bless_range = range
+      hk_bless_icon = icon hk_bless_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr203~   // Chant: song icon
+  RET hk_chant_icon = icon hk_chant_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr103~   // Cure Light Wounds
+  RET hk_clw_icon = icon hk_clw_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr107~   // Protection from Evil
+  RET hk_prot_icon = icon hk_prot_book_icon = book_icon
+END
+
+OUTER_SET hk_hs_song_rounds_max = 23
+
+
+/////////////////////////////////////////////////////////////////////
+// Level 1: Small and Nimble, and the 5th-level spell cap.
+// Opcode 62 with Parameter 2 = 96 (bits 5 and 6: spell levels 6 and 7).
+// Slots are stored unsigned, so separate -1 steps are used: each step
+// stops at 0 instead of wrapping. 12 steps cover every 6th- and
+// 7th-level slot a cleric can gain, including Wisdom bonuses.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKHSL1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) STR_VAR icon = EVAL ~%hk_prot_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_prot_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 0 parameter1 = 2 timing = HK_TIMING_PERMANENT END
+  FOR (i = 0; i < 12; ++i) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 62 parameter1 = "-1" parameter2 = 96 timing = HK_TIMING_PERMANENT END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// Song pulses: area spells on allies, recast every round
+//   Invigorating tier n: +n to hit and damage; immune to fear (and
+//     charm from tier 2, hold from tier 3)
+//   Soothing tier n: heal n; +n to saves; cures poison (tier 2+),
+//     disease and confusion (tier 3)
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_pulse = 7   // seconds; a little over a round so pulses overlap
+
+DEFINE_ACTION_FUNCTION HK_HS_PULSE
+  INT_VAR tier = 1
+  STR_VAR kind = ~I~   // I = Invigorating, S = Soothing
+BEGIN
+  OUTER_SPRINT resref ~HKHS%kind%%tier%~
+  CREATE SPL ~%resref%~
+    PATCH_IF (~%kind%~ STRING_EQUAL ~I~) BEGIN
+      LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@125) desc = RESOLVE_STR_REF (@126) END
+    END ELSE BEGIN
+      LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) END
+    END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%resref%~ END
+
+    PATCH_IF (~%kind%~ STRING_EQUAL ~I~) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 54  target = 2 parameter1 = tier duration = hk_pulse END   // to hit
+      LPF HK_SPELL_FX INT_VAR opcode = 73  target = 2 parameter1 = tier duration = hk_pulse END   // damage
+      LPF HK_SPELL_FX INT_VAR opcode = 161 target = 2 timing = HK_TIMING_INSTANT END              // cure fear
+      LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 24 duration = hk_pulse END     // fear
+      PATCH_IF (tier >= 2) BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 5 duration = hk_pulse END    // charm
+      END
+      PATCH_IF (tier >= 3) BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 109 duration = hk_pulse END  // hold
+        LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 175 duration = hk_pulse END
+        LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 185 duration = hk_pulse END
+      END
+    END ELSE BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 17  target = 2 parameter1 = tier timing = HK_TIMING_INSTANT END   // heal
+      LPF HK_SPELL_FX INT_VAR opcode = 325 target = 2 parameter1 = tier duration = hk_pulse END          // saves
+      PATCH_IF (tier >= 2) BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 11 target = 2 timing = HK_TIMING_INSTANT END                    // poison
+      END
+      PATCH_IF (tier >= 3) BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 79  target = 2 timing = HK_TIMING_INSTANT END                   // disease
+        LPF HK_SPELL_FX INT_VAR opcode = 337 target = 2 parameter1 = "-1" parameter2 = 128 timing = HK_TIMING_INSTANT END   // confusion
+      END
+    END
+
+  // Repeats the pulse every round (opcode 272 type 3: every Amount_1 seconds)
+  CREATE EFF ~HKHS%kind%E%tier%~
+    LPF HK_INIT_EFF INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%resref%~ END
+END
+
+OUTER_FOR (tier = 1; tier <= 3; ++tier) BEGIN
+  LAF HK_HS_PULSE INT_VAR tier STR_VAR kind = ~I~ END
+  LAF HK_HS_PULSE INT_VAR tier STR_VAR kind = ~S~ END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// The songs (cast on the singer)
+// One header per level from 1 to 20: the song lasts 3 rounds + 1 per
+// level (23 at level 20); the tier rises at levels 9 and 18.
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_HS_SONG_EFFECTS
+  INT_VAR header = 0
+          rounds = 4
+          tier   = 1
+  STR_VAR kinds  = ~I~   // ~I~, ~S~ or ~I S~
+BEGIN
+  SET duration = rounds * 6
+  // Only one song at a time
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT header STR_VAR resource = ~HKHSINV~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT header STR_VAR resource = ~HKHSSOO~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT header STR_VAR resource = ~HKHSBTH~ END
+  PATCH_FOR_EACH kind IN ~I~ ~S~ BEGIN
+    PATCH_IF (INDEX (EXACT_MATCH ~%kind%~ ~%kinds%~) >= 0) BEGIN
+      // First pulse now, then one every 6 seconds
+      LPF HK_SPELL_FX INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT header STR_VAR resource = EVAL ~HKHS%kind%%tier%~ END
+      LPF HK_SPELL_FX INT_VAR opcode = 272 parameter1 = 6 parameter2 = 3 duration header STR_VAR resource = EVAL ~HKHS%kind%E%tier%~ END
+    END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 145 parameter2 = 1 duration header END   // no priest spells while singing
+END
+
+ACTION_FOR_EACH song IN ~INV~ ~SOO~ BEGIN
+  ACTION_IF (~%song%~ STRING_EQUAL ~INV~) BEGIN
+    OUTER_SPRINT kind ~I~
+    OUTER_SET name_ref = RESOLVE_STR_REF (@125)
+    OUTER_SET desc_ref = RESOLVE_STR_REF (@126)
+  END ELSE BEGIN
+    OUTER_SPRINT kind ~S~
+    OUTER_SET name_ref = RESOLVE_STR_REF (@130)
+    OUTER_SET desc_ref = RESOLVE_STR_REF (@131)
+  END
+  CREATE SPL ~HKHS%song%~
+    LPF HK_INIT_SPELL INT_VAR name = name_ref desc = desc_ref STR_VAR icon = EVAL ~%hk_chant_book_icon%~ END
+    FOR (level = 1; level <= 20; ++level) BEGIN
+      LPF HK_ADD_SPELL_HEADER INT_VAR min_level = level STR_VAR icon = EVAL ~%hk_chant_icon%~ END
+    END
+    FOR (level = 1; level <= 20; ++level) BEGIN
+      SET rounds = 3 + level
+      SET tier = (level >= 18 ? 3 : level >= 9 ? 2 : 1)
+      LPF HK_HS_SONG_EFFECTS INT_VAR header = level rounds tier STR_VAR kinds = EVAL ~%kind%~ END
+    END
+END
+
+// Song of Hearth and Home: both songs at tier 3, full length
+CREATE SPL ~HKHSBTH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@135) desc = RESOLVE_STR_REF (@136) STR_VAR icon = EVAL ~%hk_chant_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_chant_icon%~ END
+  LPF HK_HS_SONG_EFFECTS INT_VAR header = 1 rounds = hk_hs_song_rounds_max tier = 3 STR_VAR kinds = ~I S~ END
+
+// Hearthsong: choose a song (opcode 214 shows the menu in HKHSMENU.2da)
+COPY ~%MOD_FOLDER%/kits/04-hearthsinger/hkhsmenu.2da~ ~override~
+
+CREATE SPL ~HKHSONG~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) STR_VAR icon = EVAL ~%hk_chant_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_chant_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 214 parameter2 = 0 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKHSMENU~ END
+
+// Stop Singing: ends whichever song is running
+CREATE SPL ~HKHSSTP~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141) STR_VAR icon = EVAL ~%hk_chant_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_chant_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKHSINV~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKHSSOO~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKHSBTH~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@142) timing = HK_TIMING_INSTANT END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Song of Hearth and Home - swaps every Hearthsong use for the
+// combined song. HLAs open after level 22, when all 8 uses are known.
+// (Opcode 172 with a 7-character key removes every memorised copy.)
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKHSHH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@135) desc = RESOLVE_STR_REF (@136) STR_VAR icon = EVAL ~%hk_chant_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_chant_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 172 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKHSONG~ END
+  FOR (i = 0; i < 8; ++i) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKHSBTH~ END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Homeward Hymn - 3 rounds: +4 to hit and damage, +1 attack,
+// 5 HP per round, immune to fear, charm, hold, confusion and stun
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKHSHYM~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146) STR_VAR icon = EVAL ~%hk_chant_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER
+    INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
+    STR_VAR icon = EVAL ~%hk_chant_icon%~
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKHSHYM~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 54  target = 2 parameter1 = 4 duration = 18 END
+  LPF HK_SPELL_FX INT_VAR opcode = 73  target = 2 parameter1 = 4 duration = 18 END
+  LPF HK_SPELL_FX INT_VAR opcode = 1   target = 2 parameter1 = 1 duration = 18 END
+  FOR (round = 1; round <= 3; ++round) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 17 target = 2 parameter1 = 5 timing = HK_TIMING_DELAYED duration = round * 6 END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 161 target = 2 timing = HK_TIMING_INSTANT END
+  // fear, charm, hold (3), confusion, stun
+  PATCH_FOR_EACH blocked IN ~24~ ~5~ ~109~ ~175~ ~185~ ~128~ ~45~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = blocked duration = 18 END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Harmonic Song - immune to the songs' spellcasting lock (opcode
+// 145). This also blocks any other effect that uses opcode 145.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKHSHS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) STR_VAR icon = EVAL ~%hk_chant_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_chant_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 145 timing = HK_TIMING_PERMANENT END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Kin's Shield - 3 rounds: +4 AC, +2 saves, 25% physical, fire,
+// cold and electrical resistance.
+// TODO (EEex): immunity to critical hits.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKHSKS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) STR_VAR icon = EVAL ~%hk_prot_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER
+    INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
+    STR_VAR icon = EVAL ~%hk_prot_icon%~
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKHSKS~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 0   target = 2 parameter1 = 4 duration = 18 END
+  LPF HK_SPELL_FX INT_VAR opcode = 325 target = 2 parameter1 = 2 duration = 18 END
+  // slashing, crushing, piercing, missile, fire, cold, electricity
+  PATCH_FOR_EACH resist IN ~86~ ~87~ ~88~ ~89~ ~30~ ~28~ ~29~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = resist target = 2 parameter1 = 25 duration = 18 END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: innate copies of priest spells, found by name
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ARRAY hk_hs_innate_names BEGIN ~Heal~ ~Iron Skins~ ~Resurrection~ ~Greater Restoration~ ~Regeneration~ ~Shield of the Archons~ END
+OUTER_SET $hk_hs_innate_strref(~1~) = RESOLVE_STR_REF (@170)
+OUTER_SET $hk_hs_innate_strref(~2~) = RESOLVE_STR_REF (@171)
+OUTER_SET $hk_hs_innate_strref(~3~) = RESOLVE_STR_REF (@172)
+OUTER_SET $hk_hs_innate_strref(~4~) = RESOLVE_STR_REF (@173)
+OUTER_SET $hk_hs_innate_strref(~5~) = RESOLVE_STR_REF (@174)
+OUTER_SET $hk_hs_innate_strref(~6~) = RESOLVE_STR_REF (@175)
+
+OUTER_FOR (n = 1; n <= 6; ++n) BEGIN
+  OUTER_SET i = n - 1
+  OUTER_SPRINT spell_name $hk_hs_innate_names(~%i%~)
+  OUTER_SET $hk_hs_innate_found(~%n%~) = 0
+  LAF HK_FIND_SPELL_BY_NAME STR_VAR name = EVAL ~%spell_name%~ RET found spell END
+  ACTION_IF (found) BEGIN
+    OUTER_SET $hk_hs_innate_found(~%n%~) = 1
+    LAF HK_INNATE_COPY INT_VAR name = $hk_hs_innate_strref(~%n%~) STR_VAR source = EVAL ~%spell%~ dest = EVAL ~HKHSH%n%~ END
+  END
+END
+
+// No One Left Behind: Raise Dead, then heal to half
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Raise Dead~ RET hk_raise_found = found hk_raise_spell = spell END
+ACTION_IF (hk_raise_found) BEGIN
+  LAF HK_INNATE_COPY INT_VAR name = RESOLVE_STR_REF (@155) STR_VAR source = EVAL ~%hk_raise_spell%~ dest = ~HKHSNOL~ END
+  COPY_EXISTING ~HKHSNOL.spl~ ~override~
+    SAY 0x50 @156
+    SAY 0x54 @156
+    LPF HK_SPELL_FX INT_VAR opcode = 17 target = 2 parameter1 = 50 parameter2 = 2 timing = HK_TIMING_INSTANT END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Hearth Guardians - two ancestor spirits for 1 turn.
+// The spirit is built from scratch: a level 15 halfling fighter with a
+// mace and sling, immune to fear and charm, and translucent. It has no
+// AI script, so the player directs it like any other summon.
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_anim = "-1"
+ACTION_FOR_EACH candidate IN ~HALFLING_MALE_FIGHTER~ ~HALFLING_FIGHTER_MALE~ BEGIN
+  ACTION_IF (hk_anim < 0) BEGIN
+    OUTER_SET hk_anim = IDS_OF_SYMBOL (~animate~ ~%candidate%~)
+  END
+END
+OUTER_SET hk_race_halfling = IDS_OF_SYMBOL (~race~ ~HALFLING~)
+OUTER_SET hk_guardians = (hk_anim >= 0 && hk_race_halfling >= 0)
+
+ACTION_IF (hk_guardians) BEGIN
+  CREATE CRE ~HKHSANC~
+    SAY 0x08 @167
+    SAY 0x0c @167
+    WRITE_SHORT 0x24 120          // current HP
+    WRITE_SHORT 0x26 120          // maximum HP
+    WRITE_LONG  0x28 hk_anim
+    WRITE_SHORT 0x46 2            // natural AC
+    WRITE_SHORT 0x48 2            // effective AC
+    WRITE_BYTE  0x52 6            // THAC0
+    WRITE_BYTE  0x53 2            // attacks per round
+    WRITE_BYTE  0x54 4            // save vs death
+    WRITE_BYTE  0x55 6            // wands
+    WRITE_BYTE  0x56 5            // polymorph
+    WRITE_BYTE  0x57 4            // breath
+    WRITE_BYTE  0x58 7            // spells
+    WRITE_BYTE  0x234 15          // level
+    WRITE_BYTE  0x237 1           // sex: male
+    WRITE_BYTE  0x238 18          // Strength
+    WRITE_BYTE  0x239 50          // exceptional Strength
+    WRITE_BYTE  0x23a 10          // Intelligence
+    WRITE_BYTE  0x23b 10          // Wisdom
+    WRITE_BYTE  0x23c 17          // Dexterity
+    WRITE_BYTE  0x23d 16          // Constitution
+    WRITE_BYTE  0x23e 10          // Charisma
+    WRITE_BYTE  0x23f 20          // morale
+    WRITE_BYTE  0x270 IDS_OF_SYMBOL (~ea~ ~ALLY~)
+    WRITE_BYTE  0x271 IDS_OF_SYMBOL (~general~ ~HUMANOID~)
+    WRITE_BYTE  0x272 hk_race_halfling
+    WRITE_BYTE  0x273 IDS_OF_SYMBOL (~class~ ~FIGHTER~)
+    WRITE_BYTE  0x275 IDS_OF_SYMBOL (~gender~ ~MALE~)
+    WRITE_BYTE  0x27b IDS_OF_SYMBOL (~align~ ~NEUTRAL_GOOD~)
+    // Mastery in mace (101) and sling (107); immune to fear and charm;
+    // translucent
+    LPF ADD_CRE_EFFECT INT_VAR opcode = 233 target = 1 timing = 9 parameter1 = 3 parameter2 = 101 END
+    LPF ADD_CRE_EFFECT INT_VAR opcode = 233 target = 1 timing = 9 parameter1 = 3 parameter2 = 107 END
+    LPF ADD_CRE_EFFECT INT_VAR opcode = 101 target = 1 timing = 9 parameter2 = 24 END
+    LPF ADD_CRE_EFFECT INT_VAR opcode = 101 target = 1 timing = 9 parameter2 = 5 END
+    LPF ADD_CRE_EFFECT INT_VAR opcode = 66  target = 1 timing = 9 parameter1 = 96 END
+    PATCH_IF (FILE_EXISTS_IN_GAME ~mace01.itm~) BEGIN
+      ADD_CRE_ITEM ~MACE01~ #0 #0 #0 ~IDENTIFIED~ ~WEAPON1~ EQUIP
+    END
+    PATCH_IF (FILE_EXISTS_IN_GAME ~slng01.itm~) BEGIN
+      ADD_CRE_ITEM ~SLNG01~ #0 #0 #0 ~IDENTIFIED~ ~WEAPON2~
+    END
+    PATCH_IF (FILE_EXISTS_IN_GAME ~bull01.itm~) BEGIN
+      ADD_CRE_ITEM ~BULL01~ #40 #0 #0 ~IDENTIFIED~ ~QUIVER1~
+    END
+
+  CREATE SPL ~HKHSGRD~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) STR_VAR icon = EVAL ~%hk_prot_book_icon%~ END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_prot_icon%~ END
+    FOR (i = 0; i < 2; ++i) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 67 duration = HK_ONE_TURN STR_VAR resource = ~HKHSANC~ END
+    END
+END ELSE BEGIN
+  OUTER_SPRINT hk_ability_name ~halfling fighter animation~
+  OUTER_SPRINT hk_ability_kit  ~Hearth Guardians~
+  WARN @4
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHHS.2da): 24 picks in all
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@135) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKHSHH~ icon = EVAL ~%hk_chant_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKHSHYM~ icon = EVAL ~%hk_chant_icon%~ prereq = ~AP_HKHSHH~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 1 min_level = 24
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKHSHS~ icon = EVAL ~%hk_chant_icon%~ RET hk_rows = rows hk_n = number END
+ACTION_IF (hk_raise_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKHSNOL~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKHSKS~ icon = EVAL ~%hk_prot_icon%~ RET hk_rows = rows hk_n = number END
+ACTION_IF (hk_guardians) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@165) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKHSGRD~ icon = EVAL ~%hk_prot_icon%~ RET hk_rows = rows hk_n = number END
+END
+OUTER_FOR (n = 1; n <= 6; ++n) BEGIN
+  ACTION_IF ($hk_hs_innate_found(~%n%~)) BEGIN
+    LAF HK_HLA_ROW INT_VAR number = hk_n strref = $hk_hs_innate_strref(~%n%~) picks = 2
+      STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~GA_HKHSH%n%~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+  END
+END
+
+COPY ~%MOD_FOLDER%/kits/04-hearthsinger/luhhs.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (NOT FILE_EXISTS_IN_GAME ~k_c_h.2da~) BEGIN
+  OUTER_SPRINT hk_ability_name ~K_C_H.2da (halfling clerics)~
+  OUTER_SPRINT hk_ability_kit  ~game~
+  WARN @4
+END
+
+LAF HK_WEAPPROF_LINE
+  INT_VAR copy_all = 1 pips = 3
+  STR_VAR kit = ~HK_HEARTHSINGER~ base = ~CLERIC~ skilled = ~MACE SLING~
+  RET hk_hs_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_hs_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_HEARTHSINGER~ values = ~WIS=9~ RET hk_hs_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_HEARTHSINGER~ allowed = ~*~ RET hk_hs_align = line END
+
+ADD_KIT ~HK_HEARTHSINGER~
+  ~HK_HEARTHSINGER          1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_hs_weapprof%~                                          // WEAPPROF (column)
+  ~%hk_hs_abclasrq%~                                          // ABCLASRQ: Wis 9
+  ~HK_HEARTHSINGER          0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_HEARTHSINGER          0 0 0 0 17 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_HEARTHSINGER          0 0 0 0 17 0~                     // ABDCSCRQ
+  ~%hk_hs_align%~                                             // ALIGNMNT: any
+  ~HK_HEARTHSINGER          0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/04-hearthsinger/hkhsclab.2da~            // CLAB
+  ~K_C_H~                                                     // halfling clerics only
+  ~0x00004000 3~                                              // cleric usability, class 3
+  ~HHS~                                                       // LUHHS.2da
+  ~%hk_hs_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment: no large shields (the cleric's own weapon limits apply)
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_hs_kit_id = IDS_OF_SYMBOL (~kit~ ~HK_HEARTHSINGER~)
+
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id          = hk_hs_kit_id
+          message         = RESOLVE_STR_REF (@180)
+          max_shield_size = 3
+END

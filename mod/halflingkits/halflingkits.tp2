@@ -19,6 +19,16 @@ LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/fleetfoot.tra~
 INCLUDE ~%MOD_FOLDER%/kits/01-fleet-foot-fighter/fleetfoot.tpa~
 
 /////////////////////////////////////////////////////////////////////
+// Hearthsinger (cleric, halfling only)
+/////////////////////////////////////////////////////////////////////
+BEGIN @7 DESIGNATED 4
+LABEL ~halflingkits-hearthsinger~
+REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
+
+LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/hearthsinger.tra~
+INCLUDE ~%MOD_FOLDER%/kits/04-hearthsinger/hearthsinger.tpa~
+
+/////////////////////////////////////////////////////////////////////
 // Tymora's Champion (fighter, halfling only)
 /////////////////////////////////////////////////////////////////////
 BEGIN @5 DESIGNATED 5

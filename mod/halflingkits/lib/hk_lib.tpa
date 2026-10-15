@@ -238,45 +238,52 @@ END
 // HK_WEAPPROF_LINE (action)
 // Builds the WEAPPROF.2da line for ADD_KIT, one value per proficiency
 // row, in the game's own row order (so the row count is never guessed).
-//   grandmastery: proficiency row names the kit can take to 5 pips
-//   styles:       fighting-style rows copied from the FIGHTER column
+//   base:     class column to copy from (FIGHTER, CLERIC, THIEF...)
+//   copy_all: 0 = copy only the fighting-style rows from the base column;
+//             1 = copy every row from the base column
+//   skilled:  proficiency row names raised to `pips`
+//   pips:     5 = grandmastery, 3 = mastery
 // Everything else is 0.
 /////////////////////////////////////////////////////////////////////
 DEFINE_ACTION_FUNCTION HK_WEAPPROF_LINE
-  STR_VAR kit          = ""
-          grandmastery = ""
-          styles       = "2HANDED SWORDANDSHIELD SINGLEWEAPON 2WEAPON"
+  INT_VAR copy_all = 0
+          pips     = 5
+  STR_VAR kit      = ""
+          base     = "FIGHTER"
+          skilled  = ""
+          styles   = "2HANDED SWORDANDSHIELD SINGLEWEAPON 2WEAPON"
   RET line
 BEGIN
   OUTER_SPRINT line ~%kit%~
   OUTER_SET hk_wp_matched  = 0
   OUTER_SET hk_wp_expected = 0
-  OUTER_PATCH ~ %grandmastery% ~ BEGIN
-    // Count expected names: one per space-separated token
-    SET hk_wp_expected = 0
+  OUTER_PATCH ~ %skilled% ~ BEGIN
     REPLACE_EVALUATE ~[^ ]+~ BEGIN SET hk_wp_expected += 1 END ~%MATCH0%~
   END
 
   COPY_EXISTING ~weapprof.2da~ ~override~
     COUNT_2DA_COLS cols
     // Header row has one token fewer than data rows (no row label)
-    SET fighter_col = "-1"
+    SET base_col = "-1"
     FOR (c = 0; c < cols - 1; ++c) BEGIN
       READ_2DA_ENTRY 0 c (cols - 1) head
-      PATCH_IF (~%head%~ STRING_EQUAL_CASE ~FIGHTER~) BEGIN
-        SET fighter_col = c + 1
+      PATCH_IF (~%head%~ STRING_EQUAL_CASE ~%base%~) BEGIN
+        SET base_col = c + 1
       END
+    END
+    PATCH_IF (base_col < 0) BEGIN
+      PATCH_FAIL ~Halfling Kits: no %base% column in WEAPPROF.2da.~
     END
     READ_2DA_ENTRIES_NOW ~hk_wp~ cols
     FOR (r = 0; r < hk_wp; ++r) BEGIN
       READ_2DA_ENTRY_FORMER ~hk_wp~ r 0 label
       SET value = 0
-      PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %grandmastery% ~) >= 0) BEGIN
-        SET value = 5
+      PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %skilled% ~) >= 0) BEGIN
+        SET value = pips
         SET hk_wp_matched += 1
-      END ELSE PATCH_IF (fighter_col >= 0 &&
+      END ELSE PATCH_IF (copy_all ||
                          INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %styles% ~) >= 0) BEGIN
-        READ_2DA_ENTRY_FORMER ~hk_wp~ r fighter_col value
+        READ_2DA_ENTRY_FORMER ~hk_wp~ r base_col value
       END
       SPRINT line ~%line% %value%~
     END
@@ -285,6 +292,35 @@ BEGIN
   ACTION_IF (hk_wp_matched != hk_wp_expected) BEGIN
     WARN @3
   END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_STAT_LINE (action)
+// Builds an ability-score line for ADD_KIT (ABCLASRQ.2da) from the
+// file's own column names, so the column order is never guessed.
+//   values: space-separated NAME=value pairs, e.g. ~WIS=9~; others 0
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_STAT_LINE
+  STR_VAR kit    = ""
+          file   = "abclasrq.2da"
+          values = ""
+  RET line
+BEGIN
+  OUTER_SPRINT line ~%kit%~
+  COPY_EXISTING ~%file%~ ~override~
+    COUNT_2DA_COLS cols
+    FOR (c = 0; c < cols - 1; ++c) BEGIN
+      READ_2DA_ENTRY 0 c (cols - 1) head
+      SET value = 0
+      INNER_PATCH ~ %values% ~ BEGIN
+        REPLACE_EVALUATE CASE_INSENSITIVE ~ %head%=\([0-9]+\) ~ BEGIN
+          SET value = MATCH1
+        END ~~
+      END
+      SPRINT line ~%line% %value%~
+    END
+  BUT_ONLY
 END
 
 
@@ -318,7 +354,8 @@ END
 //   kit_id:          the kit's KIT.IDS value
 //   message:         strref shown when the restriction blocks the item
 //   allowed_profs:   space-separated proficiency IDs the kit may wield;
-//                    any other weapon is blocked (ammunition is skipped)
+//                    any other weapon is blocked (ammunition is skipped);
+//                    empty = no weapon limits
 //   min_base_ac:     armour that sets base AC below this is blocked
 //                    (4 allows splint mail, blocks plate and full plate)
 //   max_shield_size: shields above this size are blocked
@@ -343,7 +380,8 @@ BEGIN
 
       // Weapons: blocked unless their proficiency is allowed. Arrows (5),
       // bullets (14) and bolts (31) follow their launcher.
-      PATCH_IF (item_type != 5 && item_type != 14 && item_type != 31 &&
+      PATCH_IF (NOT ~%allowed_profs%~ STRING_EQUAL ~~ &&
+                item_type != 5 && item_type != 14 && item_type != 31 &&
                 prof >= 89 && prof <= 115) BEGIN
         PATCH_IF (INDEX (EXACT_MATCH ~ %prof% ~ ~ %allowed_profs% ~) < 0) BEGIN
           SET restrict = 1
@@ -576,4 +614,57 @@ BEGIN
     END
     APPEND ~splstate.ids~ ~%id% %name%~
   END
+END
+
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_FIND_SPELL_BY_NAME (action)
+// Finds a vanilla spell by its English name among files matching
+// `pattern` (default: priest spells SPPRnnn), so kits can reuse spells
+// such as Heal without hard-coding resrefs. Returns the first match.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_FIND_SPELL_BY_NAME
+  STR_VAR name    = ""
+          pattern = "^sppr[0-9][0-9][0-9]\.spl$"
+  RET found spell
+BEGIN
+  OUTER_SET found = 0
+  OUTER_SPRINT spell ~~
+  COPY_EXISTING_REGEXP GLOB ~%pattern%~ ~override~
+    PATCH_IF (found == 0 && SOURCE_SIZE > 0x71) BEGIN
+      READ_LONG 0x08 nm
+      PATCH_IF (nm > 0) BEGIN
+        GET_STRREF nm txt
+        PATCH_IF (~%txt%~ STRING_EQUAL_CASE ~%name%~) BEGIN
+          SET found = 1
+          SPRINT spell ~%SOURCE_RES%~
+        END
+      END
+    END
+  BUT_ONLY
+  ACTION_IF (found == 0) BEGIN
+    OUTER_SPRINT hk_ability_name ~%name%~
+    OUTER_SPRINT hk_ability_kit  ~spell~
+    WARN @4
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_INNATE_COPY (action)
+// Copies a spell as an innate ability under a new name, keeping its
+// effects, level scaling and description.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_INNATE_COPY
+  INT_VAR name   = "-1"
+  STR_VAR source = ""
+          dest   = ""
+BEGIN
+  COPY_EXISTING ~%source%.spl~ ~override/%dest%.spl~
+    WRITE_SHORT 0x1c 4      // innate
+    PATCH_IF (name >= 0) BEGIN
+      WRITE_LONG 0x08 name
+    END
+    LPF ALTER_SPELL_HEADER INT_VAR location = 4 END
 END

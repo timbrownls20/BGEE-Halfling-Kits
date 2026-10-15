@@ -1,0 +1,84 @@
+// Hearthsinger
+
+@100 = ~Hearthsinger~
+@101 = ~Hearthsinger~
+@102 = ~HEARTHSINGER: Far from home, halflings remember the songs of the hearth: the kettle on the fire, the harvest table, the faces of kin. The Hearthsinger, blessed by Cyrrollalee, the halfling goddess of hearth and hospitality, carries those songs into battle. One verse and tired companions stand straighter, strike harder and forget their fear; another and wounds close and, in time, the confused find their way back. Wherever the Hearthsinger stands, there is home, and home is worth defending.
+
+Advantages:
+– Hearthsong: 1 use per day at level 1, plus 1 more every 3 levels afterwards, up to 8 uses at level 22. Each use, the Hearthsinger chooses a song:
+  INVIGORATING SONG: Allies within 30 feet gain +1 to hit and damage and are immune to fear. From level 9, +2 and immunity to charm too; from level 18, +3 and immunity to hold too.
+  SOOTHING SONG: Allies within 30 feet regenerate 1 hit point per round and gain +1 to saves. From level 9, 2 hit points, +2 and poison is cured; from level 18, 3 hit points, +3, and poison, disease and confusion are cured.
+  A song lasts 3 rounds plus 1 round per level, up to 23 rounds at level 20. The Hearthsinger can fight while singing.
+– Small and Nimble: +2 AC.
+– May reach mastery in maces and slings.
+
+Disadvantages:
+– Cannot cast spells while singing. Stop Singing ends the song early, and that Hearthsong use is spent.
+– Spells are limited to 5th level.
+– Cannot use large shields.
+– Must be a halfling.~
+
+@110 = ~Small and Nimble~
+@111 = ~The Hearthsinger gains +2 AC, and its prayers reach no higher than 5th level.~
+
+@120 = ~Hearthsong~
+@121 = ~Hearthsong
+
+The Hearthsinger chooses a song: the Invigorating Song or the Soothing Song. Either affects all allies within 30 feet and lasts 3 rounds plus 1 round per level, up to 23 rounds. While singing, the Hearthsinger cannot cast spells.~
+
+@125 = ~Invigorating Song~
+@126 = ~Invigorating Song
+
+Allies within 30 feet gain +1 to hit and damage and are immune to fear. From level 9, +2 and immunity to charm too; from level 18, +3 and immunity to hold too. While singing, the Hearthsinger cannot cast spells.~
+
+@130 = ~Soothing Song~
+@131 = ~Soothing Song
+
+Allies within 30 feet regenerate 1 hit point per round and gain +1 to saves. From level 9, 2 hit points, +2 and poison is cured; from level 18, 3 hit points, +3, and poison, disease and confusion are cured. While singing, the Hearthsinger cannot cast spells.~
+
+@135 = ~Song of Hearth and Home~
+@136 = ~Song of Hearth and Home
+
+Replaces the Hearthsong. Every song is now both the Invigorating and the Soothing Song at once, at full strength: allies within 30 feet gain +3 to hit and damage, regenerate 3 hit points per round, gain +3 to saves, are cured of poison, disease and confusion, and are immune to fear, charm and hold.~
+
+@140 = ~Stop Singing~
+@141 = ~Stop Singing
+
+Ends the current song so the Hearthsinger can cast spells again. That song's use is spent.~
+
+@142 = ~The song ends.~
+
+@145 = ~Homeward Hymn~
+@146 = ~Homeward Hymn
+
+For 3 rounds, all allies within 30 feet gain +4 to hit and damage, +1 attack per round and regenerate 5 hit points per round, and are immune to fear, charm, hold, confusion and stun.~
+
+@150 = ~Harmonic Song~
+@151 = ~Harmonic Song
+
+The Hearthsinger can cast spells while singing.~
+
+@155 = ~No One Left Behind~
+@156 = ~No One Left Behind
+
+Raises a fallen ally with half of their hit points.~
+
+@160 = ~Kin's Shield~
+@161 = ~Kin's Shield
+
+For 3 rounds, all allies within 30 feet gain +4 AC, +2 to saves, and 25% resistance to physical, fire, cold and electrical damage.~
+
+@165 = ~Hearth Guardians~
+@166 = ~Hearth Guardians
+
+Summons two ancestor spirits, halfling warriors of the Hearthsinger's family line, for 1 turn. Each is a strong warrior armed with a mace and sling, immune to fear and charm, fighting alongside the party.~
+@167 = ~Ancestor Spirit~
+
+@170 = ~Hearth's Mending~
+@171 = ~Tough as Old Boots~
+@172 = ~Welcome Home~
+@173 = ~Kin Restored~
+@174 = ~Slow Mending~
+@175 = ~Hearthstone Ward~
+
+@180 = ~Hearthsingers cannot use this item.~

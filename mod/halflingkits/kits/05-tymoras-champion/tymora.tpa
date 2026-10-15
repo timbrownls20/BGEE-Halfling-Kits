@@ -45,7 +45,7 @@ LAF HK_FIND_HLA STR_VAR name = ~War Cry~
 END
 OUTER_SET hk_enemy_found = 0
 ACTION_IF (hk_warcry_found) BEGIN
-  LAF HK_READ_SPELL_AREA STR_VAR spell = ~%hk_warcry_spell%~
+  LAF HK_READ_SPELL_AREA STR_VAR spell = EVAL ~%hk_warcry_spell%~
     RET hk_enemy_found = found hk_enemy_projectile = projectile
         hk_enemy_target = target hk_enemy_range = range
   END
@@ -78,9 +78,9 @@ ACTION_PHP_EACH hk_tc_luck_steps AS resref => save_step BEGIN
   CREATE SPL ~%resref%~
     LPF HK_INIT_SPELL
       INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111)
-      STR_VAR icon = ~%hk_bless_book_icon%~
+      STR_VAR icon = EVAL ~%hk_bless_book_icon%~
     END
-    LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_bless_icon%~ END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
     LPF HK_SPELL_FX INT_VAR opcode = 22  parameter1 = 1 timing = HK_TIMING_PERMANENT END   // Luck
     LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 1 timing = HK_TIMING_PERMANENT END   // AC, all types
     LPF HK_SPELL_FX INT_VAR opcode = 126 parameter1 = 1 timing = HK_TIMING_PERMANENT END   // movement
@@ -102,12 +102,12 @@ END
 CREATE SPL ~HKTCFAV~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121)
-    STR_VAR icon = ~%hk_bless_book_icon%~
+    STR_VAR icon = EVAL ~%hk_bless_book_icon%~
   END
-  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 1  STR_VAR icon = ~%hk_bless_icon%~ END
-  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 10 STR_VAR icon = ~%hk_bless_icon%~ END
-  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 20 STR_VAR icon = ~%hk_bless_icon%~ END
-  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 40 STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 1  STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 10 STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 20 STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 40 STR_VAR icon = EVAL ~%hk_bless_icon%~ END
 
   // Refresh rather than stack (must be the first effect)
   LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFAV~ END
@@ -131,9 +131,9 @@ CREATE SPL ~HKTCFAV~
 CREATE SPL ~HKTCSMA~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131)
-    STR_VAR icon = ~%hk_clw_book_icon%~
+    STR_VAR icon = EVAL ~%hk_clw_book_icon%~
   END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_clw_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_clw_icon%~ END
   LPF HK_SPELL_FX
     INT_VAR opcode = 232 parameter1 = 0 parameter2 = 4 special = 1 timing = HK_TIMING_PERMANENT
     STR_VAR resource = ~HKTCSMH~
@@ -142,9 +142,9 @@ CREATE SPL ~HKTCSMA~
 CREATE SPL ~HKTCSMH~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131)
-    STR_VAR icon = ~%hk_clw_book_icon%~
+    STR_VAR icon = EVAL ~%hk_clw_book_icon%~
   END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_clw_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_clw_icon%~ END
   // Heal 45% of maximum HP: from below 10% this lands at about half
   LPF HK_SPELL_FX INT_VAR opcode = 17  parameter1 = 45 parameter2 = 2 timing = HK_TIMING_INSTANT END
   LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@132) timing = HK_TIMING_INSTANT END
@@ -182,9 +182,9 @@ END
 CREATE SPL ~HKTCFT~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141)
-    STR_VAR icon = ~%hk_chant_book_icon%~
+    STR_VAR icon = EVAL ~%hk_chant_book_icon%~
   END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_chant_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_chant_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFT~ END
   LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 2 duration = HK_ONE_TURN END
   PATCH_IF (hk_enemy_found) BEGIN
@@ -194,9 +194,9 @@ CREATE SPL ~HKTCFT~
 CREATE SPL ~HKTCFW~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146)
-    STR_VAR icon = ~%hk_chant_book_icon%~
+    STR_VAR icon = EVAL ~%hk_chant_book_icon%~
   END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_chant_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_chant_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFW~ END
   LPF HK_SPELL_FX INT_VAR opcode = 321 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFT~ END
   LPF HK_SPELL_FX INT_VAR opcode = 206 duration = HK_ONE_TURN STR_VAR resource = ~HKTCFT~ END
@@ -212,11 +212,11 @@ CREATE SPL ~HKTCFW~
 CREATE SPL ~HKTCBL~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151)
-    STR_VAR icon = ~%hk_bless_book_icon%~
+    STR_VAR icon = EVAL ~%hk_bless_book_icon%~
   END
   LPF HK_ADD_SPELL_HEADER
     INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
-    STR_VAR icon = ~%hk_bless_icon%~
+    STR_VAR icon = EVAL ~%hk_bless_icon%~
   END
   LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCBL~ END
   LPF HK_SPELL_FX INT_VAR opcode = 22  target = 2 parameter1 = 3 duration = HK_ONE_TURN END
@@ -229,9 +229,9 @@ CREATE SPL ~HKTCBL~
 CREATE SPL ~HKTCGR~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156)
-    STR_VAR icon = ~%hk_bless_book_icon%~
+    STR_VAR icon = EVAL ~%hk_bless_book_icon%~
   END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCFAV~ END
 
 
@@ -242,20 +242,20 @@ CREATE SPL ~HKTCGR~
 CREATE SPL ~HKTCSCH~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161)
-    STR_VAR icon = ~%hk_clw_book_icon%~
+    STR_VAR icon = EVAL ~%hk_clw_book_icon%~
   END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_clw_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_clw_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 17  parameter1 = 45 parameter2 = 2 timing = HK_TIMING_INSTANT END
   LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@162) timing = HK_TIMING_INSTANT END
 
 CREATE SPL ~HKTCSC~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161)
-    STR_VAR icon = ~%hk_clw_book_icon%~
+    STR_VAR icon = EVAL ~%hk_clw_book_icon%~
   END
   LPF HK_ADD_SPELL_HEADER
     INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
-    STR_VAR icon = ~%hk_clw_icon%~
+    STR_VAR icon = EVAL ~%hk_clw_icon%~
   END
   LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 parameter2 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTCSC~ END
   LPF HK_SPELL_FX
@@ -271,9 +271,9 @@ CREATE SPL ~HKTCSC~
 CREATE SPL ~HKTCLB~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166)
-    STR_VAR icon = ~%hk_bless_book_icon%~
+    STR_VAR icon = EVAL ~%hk_bless_book_icon%~
   END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 86  parameter1 = 5 timing = HK_TIMING_PERMANENT END   // slashing
   LPF HK_SPELL_FX INT_VAR opcode = 87  parameter1 = 5 timing = HK_TIMING_PERMANENT END   // crushing
   LPF HK_SPELL_FX INT_VAR opcode = 88  parameter1 = 5 timing = HK_TIMING_PERMANENT END   // piercing
@@ -289,9 +289,9 @@ CREATE SPL ~HKTCLB~
 CREATE SPL ~HKTCLW~
   LPF HK_INIT_SPELL
     INT_VAR name = RESOLVE_STR_REF (@170) desc = RESOLVE_STR_REF (@171)
-    STR_VAR icon = ~%hk_bless_book_icon%~
+    STR_VAR icon = EVAL ~%hk_bless_book_icon%~
   END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 301 parameter1 = 1 parameter2 = 0 timing = HK_TIMING_PERMANENT END
 
 
@@ -302,33 +302,33 @@ OUTER_SET hk_n = 0
 OUTER_SPRINT hk_rows ~~
 
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@140) picks = 3
-  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKTCFT~ icon = ~%hk_chant_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKTCFT~ icon = EVAL ~%hk_chant_icon%~ RET hk_rows = rows hk_n = number END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 1
-  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKTCFW~ icon = ~%hk_chant_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKTCFW~ icon = EVAL ~%hk_chant_icon%~ RET hk_rows = rows hk_n = number END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 3
-  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKTCBL~ icon = ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKTCBL~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 4
-  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKTCGR~ icon = ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKTCGR~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 1
-  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKTCSC~ icon = ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKTCSC~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@165) picks = 5
-  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKTCLB~ icon = ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKTCLB~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@170) picks = 2
-  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKTCLW~ icon = ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKTCLW~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
 
 // Standard fighter HLAs kept. Critical Strike loses its Power Attack
 // prerequisite (HK_HLA_ROW writes "*" for it).
 ACTION_IF (hk_crit_found) BEGIN
   LAF HK_HLA_ROW
     INT_VAR number = hk_n strref = hk_crit_strref picks = hk_crit_num min_level = hk_crit_min max_level = hk_crit_max
-    STR_VAR rows = ~%hk_rows%~ ability = ~%hk_crit_ability%~ icon = ~%hk_crit_icon%~
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%hk_crit_ability%~ icon = EVAL ~%hk_crit_icon%~
     RET hk_rows = rows hk_n = number
   END
 END
 ACTION_IF (hk_rm_found) BEGIN
   LAF HK_HLA_ROW
     INT_VAR number = hk_n strref = hk_rm_strref picks = hk_rm_num min_level = hk_rm_min max_level = hk_rm_max
-    STR_VAR rows = ~%hk_rows%~ ability = ~%hk_rm_ability%~ icon = ~%hk_rm_icon%~
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%hk_rm_ability%~ icon = EVAL ~%hk_rm_icon%~
     RET hk_rows = rows hk_n = number
   END
 END
@@ -342,16 +342,17 @@ COPY ~%MOD_FOLDER%/kits/05-tymoras-champion/luhtc.2da~ ~override~
 /////////////////////////////////////////////////////////////////////
 LAF HK_WEAPPROF_LINE
   STR_VAR kit = ~HK_TYMORA~
-          grandmastery = ~SHORTSWORD FLAILMORNINGSTAR MACE CLUB DAGGER DART SLING SHORTBOW~
+          skilled = ~SHORTSWORD FLAILMORNINGSTAR MACE CLUB DAGGER DART SLING SHORTBOW~
   RET hk_tc_weapprof = line
 END
 LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_tc_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_TYMORA~ values = ~STR=9~ RET hk_tc_abclasrq = line END
 LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_TYMORA~ allowed = ~CHAOTIC_GOOD~ RET hk_tc_align = line END
 
 ADD_KIT ~HK_TYMORA~
   ~HK_TYMORA                1 1 1 1 1 1 1 1~                  // CLASWEAP
   ~%hk_tc_weapprof%~                                          // WEAPPROF (column)
-  ~HK_TYMORA                9 0 0 0 0 0~                      // ABCLASRQ: Str 9
+  ~%hk_tc_abclasrq%~                                          // ABCLASRQ: Str 9
   ~HK_TYMORA                0 0 0 0 0 0~                      // ABCLSMOD
   ~HK_TYMORA                17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
   ~HK_TYMORA                17 0 0 0 0 0~                     // ABDCSCRQ

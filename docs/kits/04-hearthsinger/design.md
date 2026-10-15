@@ -79,4 +79,18 @@ For anyone building this kit as a mod (for example with WeiDU):
 
 - **Easy:** No One Left Behind (Raise Dead), mastery in maces and slings, the six innate spell HLAs (Heal, Iron Skins, Resurrection, Greater Restoration, Regeneration and Shield of the Archons as innate abilities, so the 5th-level spell cap doesn't get in the way).
 - **Moderate:** the two Hearthsong modes, Song of Hearth and Home and Homeward Hymn (area auras as innate abilities), casting a spell ending the song (and spending that use) and Harmonic Song (casting no longer ends the song), Kin's Shield, Hearth Guardians (a custom ancestor-spirit creature, copied from a halfling warrior and the Summon Deva spell), and the cleric spell table capped at 5th level.
-- **Hard:** none.
+- **Hard:** casting a spell ending the song (the engine has no "cast a spell" trigger), and Kin's Shield's immunity to critical hits (the engine only grants it through helmets). Both probably need EEex.
+
+### As built (not yet tested in game)
+
+Code: `mod/halflingkits/kits/04-hearthsinger/`. Where the build differs from the design, or relies on something to check in game:
+
+- **Casting ends the song (TODO, needs EEex):** the engine can't tell when a spell is cast. Instead, the Hearthsinger can't cast priest spells while singing, and gains a **Stop Singing** ability (one per Hearthsong use) that ends the song. The rule plays the same way: to cast, it gives up the rest of the song. **Harmonic Song** makes it immune to the casting lock. As a side effect, that also protects it from anything else that disables spellcasting the same way.
+- **Kin's Shield's immunity to critical hits (TODO, needs EEex):** left out. The rest of Kin's Shield is built.
+- **Songs** refresh every round on allies within the area (reusing Bless's party-only area, so the radius is Bless's, not exactly 30 feet). The Hearthsong menu works only when the Hearthsinger is the only character selected, as with any game ability that opens a choice menu.
+- **Soothing Song** heals its 1, 2 or 3 hit points once per round. Cures fire every round.
+- **5th-level spell cap:** removes 6th- and 7th-level priest slots in 12 single steps. Check in game that it removes them all and that a slot count never wraps around.
+- **Song of Hearth and Home** swaps every Hearthsong use for the combined song when it is taken. HLAs open at level 22, when all 8 uses are already known.
+- **Innate spell HLAs** (Heal, Iron Skins, Resurrection, Greater Restoration, Regeneration, Shield of the Archons) and **No One Left Behind** (Raise Dead) are copies of the game's own spells, found by name at install. Any spell not found is left out of the list with a warning.
+- **Hearth Guardians:** the ancestor spirit is a new creature: a level 15 halfling fighter (120 HP, THAC0 6, 2 attacks, mastery in mace and sling, immune to fear and charm), drawn translucent. It has no AI script, so the player directs it. Its animation is looked up by name, and the ability is left out if no halfling fighter animation is found.
+

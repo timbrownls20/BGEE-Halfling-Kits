@@ -2,7 +2,7 @@
 
 Eleven halfling-only character kits for Baldur's Gate: Enhanced Edition and Baldur's Gate II: Enhanced Edition (including Siege of Dragonspear and Throne of Bhaal). Each kit is built around one idea and tuned to be strong but not overpowered.
 
-**Status:** design complete for all eleven kits. Two are coded as a WeiDU mod, the Fleet Foot Fighter and Tymora's Champion. Neither has been installed or playtested yet.
+**Status:** design complete for all eleven kits. Three are coded as a WeiDU mod: the Fleet Foot Fighter, the Hearthsinger and Tymora's Champion. None has been installed or playtested yet.
 
 ## Start here
 
@@ -18,7 +18,7 @@ Eleven halfling-only character kits for Baldur's Gate: Enhanced Edition and Bald
 | [Fleet Foot Fighter](docs/kits/01-fleet-foot-fighter/design.md) | Fighter | Melee damage, mobility | Yes |
 | [True Heart](docs/kits/02-true-heart/design.md) | Fighter | Front-line healer and protector | |
 | [Surefoot Fighter](docs/kits/03-surefoot-fighter/design.md) | Fighter | Tank | |
-| [Hearthsinger](docs/kits/04-hearthsinger/design.md) | Cleric | Party support (songs) | |
+| [Hearthsinger](docs/kits/04-hearthsinger/design.md) | Cleric | Party support (songs) | Yes |
 | [Tymora's Champion](docs/kits/05-tymoras-champion/design.md) | Fighter | Lucky all-rounder | Yes |
 | [Slinger](docs/kits/06-slinger/design.md) | Fighter | Ranged damage | |
 | [Magpie](docs/kits/07-magpie/design.md) | Thief | Scrolls, wands and loot | |

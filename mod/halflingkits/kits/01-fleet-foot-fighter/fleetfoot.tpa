@@ -78,8 +78,8 @@ LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_FF_RELENTLESS~ RET hk_ff_relentless_sta
 //   Two-Weapon Style (proficiency 114).
 /////////////////////////////////////////////////////////////////////
 CREATE SPL ~HKFFL1~
-  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) STR_VAR icon = ~%hk_haste_book_icon%~ END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_haste_icon%~ END
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) STR_VAR icon = EVAL ~%hk_haste_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_haste_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2                  timing = HK_TIMING_PERMANENT END   // AC, all
   LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2 parameter2 = 2   timing = HK_TIMING_PERMANENT END   // AC, missile
   LPF HK_SPELL_FX INT_VAR opcode = 176 parameter1 = 2                  timing = HK_TIMING_PERMANENT END   // movement
@@ -116,7 +116,7 @@ OUTER_FOR (step = 2; step <= 8; ++step) BEGIN
     LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
     LPF HK_ADD_SPELL_HEADER END
     PATCH_IF (previous > 1) BEGIN
-      LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFWS%previous%~ END
+      LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKFFWS%previous%~ END
     END
     LPF HK_SPELL_FX INT_VAR opcode = 190 parameter1 = step timing = HK_TIMING_PERMANENT END
 END
@@ -139,10 +139,10 @@ ACTION_DEFINE_ARRAY hk_ff_rapid_rounds  BEGIN 4  4  5  5  5  6  6  7  8  9 10 EN
 OUTER_SET hk_ff_rapid_count = 11
 
 CREATE SPL ~HKFFRS~
-  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) STR_VAR icon = ~%hk_haste_book_icon%~ END
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) STR_VAR icon = EVAL ~%hk_haste_book_icon%~ END
   FOR (i = 0; i < hk_ff_rapid_count; ++i) BEGIN
     SET level = $hk_ff_rapid_level(~%i%~)
-    LPF HK_ADD_SPELL_HEADER INT_VAR min_level = level STR_VAR icon = ~%hk_haste_icon%~ END
+    LPF HK_ADD_SPELL_HEADER INT_VAR min_level = level STR_VAR icon = EVAL ~%hk_haste_icon%~ END
   END
   LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFRS~ END
   LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@122) timing = HK_TIMING_INSTANT END
@@ -266,8 +266,8 @@ END
 // HLA: Afterimage - 4 mirror images for 1 turn, not dispellable
 /////////////////////////////////////////////////////////////////////
 CREATE SPL ~HKFFAI~
-  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) STR_VAR icon = ~%hk_mirror_book_icon%~ END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_mirror_icon%~ END
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) STR_VAR icon = EVAL ~%hk_mirror_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_mirror_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFAI~ END
   LPF HK_SPELL_FX INT_VAR opcode = 159 parameter1 = 4 duration = HK_ONE_TURN END
 
@@ -281,9 +281,9 @@ CREATE SPL ~HKFFAI~
 // at level 30, which only lands on characters with the Relentless state.
 /////////////////////////////////////////////////////////////////////
 CREATE SPL ~HKFFRL~
-  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) STR_VAR icon = ~%hk_free_book_icon%~ END
-  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 1  STR_VAR icon = ~%hk_free_icon%~ END
-  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 30 STR_VAR icon = ~%hk_free_icon%~ END
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) STR_VAR icon = EVAL ~%hk_free_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 1  STR_VAR icon = EVAL ~%hk_free_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR min_level = 30 STR_VAR icon = EVAL ~%hk_free_icon%~ END
   // 109 paralyse/hold, 175 hold, 185 hold (II), 40 slow, 154 entangle,
   // 157 web, 45 stun, 24 panic
   FOR (i = 0; i < 8; ++i) BEGIN
@@ -324,8 +324,8 @@ CREATE EFF ~HKFFHMA~
   LPF HK_INIT_EFF INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFHMS~ END
 
 CREATE SPL ~HKFFHM~
-  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) STR_VAR icon = ~%hk_slow_book_icon%~ END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_slow_icon%~ END
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) STR_VAR icon = EVAL ~%hk_slow_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_slow_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFHM~ END
   LPF HK_SPELL_FX INT_VAR opcode = 248 duration = 6 STR_VAR resource = ~HKFFHMA~ END
 
@@ -336,13 +336,13 @@ CREATE SPL ~HKFFHM~
 // the kit's own weapon speed already takes every allowed weapon to 0.
 /////////////////////////////////////////////////////////////////////
 CREATE SPL ~HKFFQS~
-  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@170) desc = RESOLVE_STR_REF (@171) STR_VAR icon = ~%hk_bless_book_icon%~ END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_bless_icon%~ END
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@170) desc = RESOLVE_STR_REF (@171) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 166 parameter1 = 10 timing = HK_TIMING_PERMANENT END
 
 CREATE SPL ~HKFFTR~
-  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@175) desc = RESOLVE_STR_REF (@176) STR_VAR icon = ~%hk_haste_book_icon%~ END
-  LPF HK_ADD_SPELL_HEADER STR_VAR icon = ~%hk_haste_icon%~ END
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@175) desc = RESOLVE_STR_REF (@176) STR_VAR icon = EVAL ~%hk_haste_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_haste_icon%~ END
   LPF HK_SPELL_FX INT_VAR opcode = 176 parameter1 = 1 timing = HK_TIMING_PERMANENT END
 
 
@@ -357,41 +357,41 @@ OUTER_SPRINT hk_time_prereq ~*~
 
 ACTION_IF (hk_shadowstep_found) BEGIN
   LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@140) picks = 3
-    STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKFFFS~ icon = ~%hk_haste_icon%~ RET hk_rows = rows hk_n = number END
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKFFFS~ icon = EVAL ~%hk_haste_icon%~ RET hk_rows = rows hk_n = number END
   OUTER_SPRINT hk_time_prereq ~GA_HKFFFS~
 END
 ACTION_IF (hk_timestop_found) BEGIN
   LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 2
-    STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKFFTS1~ icon = ~%hk_timestop_icon%~ prereq = ~%hk_time_prereq%~
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKFFTS1~ icon = EVAL ~%hk_timestop_icon%~ prereq = EVAL ~%hk_time_prereq%~
     RET hk_rows = rows hk_n = number END
   LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 1
-    STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKFFTS2~ icon = ~%hk_timestop_icon%~ prereq = ~GA_HKFFTS1~
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKFFTS2~ icon = EVAL ~%hk_timestop_icon%~ prereq = ~GA_HKFFTS1~
     RET hk_rows = rows hk_n = number END
 END
 ACTION_IF (hk_evasion_found) BEGIN
   LAF HK_HLA_ROW
     INT_VAR number = hk_n strref = RESOLVE_STR_REF (@185) picks = 1 min_level = hk_evasion_min max_level = hk_evasion_max
-    STR_VAR rows = ~%hk_rows%~ ability = ~%hk_evasion_ability%~ icon = ~%hk_evasion_icon%~
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%hk_evasion_ability%~ icon = EVAL ~%hk_evasion_icon%~
     RET hk_rows = rows hk_n = number
   END
 END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 4
-  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKFFAI~ icon = ~%hk_mirror_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKFFAI~ icon = EVAL ~%hk_mirror_icon%~ RET hk_rows = rows hk_n = number END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 1
-  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKFFRL~ icon = ~%hk_free_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKFFRL~ icon = EVAL ~%hk_free_icon%~ RET hk_rows = rows hk_n = number END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@165) picks = 3
-  STR_VAR rows = ~%hk_rows%~ ability = ~GA_HKFFHM~ icon = ~%hk_slow_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKFFHM~ icon = EVAL ~%hk_slow_icon%~ RET hk_rows = rows hk_n = number END
 ACTION_IF (hk_crit_found) BEGIN
   LAF HK_HLA_ROW
     INT_VAR number = hk_n strref = hk_crit_strref picks = hk_crit_num min_level = hk_crit_min max_level = hk_crit_max
-    STR_VAR rows = ~%hk_rows%~ ability = ~%hk_crit_ability%~ icon = ~%hk_crit_icon%~
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%hk_crit_ability%~ icon = EVAL ~%hk_crit_icon%~
     RET hk_rows = rows hk_n = number
   END
 END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@170) picks = 2
-  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKFFQS~ icon = ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKFFQS~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
 LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@175) picks = 3
-  STR_VAR rows = ~%hk_rows%~ ability = ~AP_HKFFTR~ icon = ~%hk_haste_icon%~ RET hk_rows = rows hk_n = number END
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKFFTR~ icon = EVAL ~%hk_haste_icon%~ RET hk_rows = rows hk_n = number END
 
 COPY ~%MOD_FOLDER%/kits/01-fleet-foot-fighter/luhff.2da~ ~override~
   EVALUATE_BUFFER
@@ -402,16 +402,17 @@ COPY ~%MOD_FOLDER%/kits/01-fleet-foot-fighter/luhff.2da~ ~override~
 /////////////////////////////////////////////////////////////////////
 LAF HK_WEAPPROF_LINE
   STR_VAR kit = ~HK_FLEETFOOT~
-          grandmastery = ~DAGGER SHORTSWORD KATANA QUARTERSTAFF~
+          skilled = ~DAGGER SHORTSWORD KATANA QUARTERSTAFF~
   RET hk_ff_weapprof = line
 END
 LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_ff_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_FLEETFOOT~ values = ~STR=9~ RET hk_ff_abclasrq = line END
 LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_FLEETFOOT~ allowed = ~*~ RET hk_ff_align = line END
 
 ADD_KIT ~HK_FLEETFOOT~
   ~HK_FLEETFOOT             1 1 1 1 1 1 1 1~                  // CLASWEAP
   ~%hk_ff_weapprof%~                                          // WEAPPROF (column)
-  ~HK_FLEETFOOT             9 0 0 0 0 0~                      // ABCLASRQ: Str 9
+  ~%hk_ff_abclasrq%~                                          // ABCLASRQ: Str 9
   ~HK_FLEETFOOT             0 0 0 0 0 0~                      // ABCLSMOD
   ~HK_FLEETFOOT             17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
   ~HK_FLEETFOOT             17 0 0 0 0 0~                     // ABDCSCRQ
