@@ -254,23 +254,27 @@ END
 //   cap:      copied rows (other than fighting styles) are capped at
 //             this many pips; 0 = no cap
 //   none:     proficiency row names forced to 0
+//   skilled2/pips2: a second set of rows at a different level (for
+//             example mastery, 3, alongside grandmastery)
 // Everything else is 0.
 /////////////////////////////////////////////////////////////////////
 DEFINE_ACTION_FUNCTION HK_WEAPPROF_LINE
   INT_VAR copy_all = 0
           pips     = 5
           cap      = 0
+          pips2    = 3
   STR_VAR kit      = ""
           base     = "FIGHTER"
           skilled  = ""
           none     = ""
+          skilled2 = ""
           styles   = "2HANDED SWORDANDSHIELD SINGLEWEAPON 2WEAPON"
   RET line
 BEGIN
   OUTER_SPRINT line ~%kit%~
   OUTER_SET hk_wp_matched  = 0
   OUTER_SET hk_wp_expected = 0
-  OUTER_PATCH ~ %skilled% ~ BEGIN
+  OUTER_PATCH ~ %skilled% %skilled2% ~ BEGIN
     REPLACE_EVALUATE ~[^ ]+~ BEGIN SET hk_wp_expected += 1 END ~%MATCH0%~
   END
 
@@ -296,6 +300,9 @@ BEGIN
         SET value = 0
       END ELSE PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %skilled% ~) >= 0) BEGIN
         SET value = pips
+        SET hk_wp_matched += 1
+      END ELSE PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %skilled2% ~) >= 0) BEGIN
+        SET value = pips2
         SET hk_wp_matched += 1
       END ELSE PATCH_IF (copy_all || is_style) BEGIN
         READ_2DA_ENTRY_FORMER ~hk_wp~ r base_col value
@@ -393,6 +400,8 @@ END
 //   forbidden_profs: space-separated proficiency IDs blocked outright
 //   name_types/name_deny: items of these types whose English name
 //                    matches the regexp are blocked (e.g. heavy crossbows)
+//   magical_types:   items of these types are blocked if flagged magical
+//                    (flag 0x40), e.g. 1 amulets, 10 rings, 32 cloaks
 /////////////////////////////////////////////////////////////////////
 DEFINE_ACTION_FUNCTION HK_RESTRICT_ITEMS
   INT_VAR kit_id          = 0
@@ -404,6 +413,7 @@ DEFINE_ACTION_FUNCTION HK_RESTRICT_ITEMS
           forbidden_profs = ""
           name_types      = ""
           name_deny       = ""
+          magical_types   = ""
 BEGIN
   COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
     PATCH_IF (SOURCE_SIZE > 0x71) BEGIN
@@ -428,6 +438,12 @@ BEGIN
       PATCH_IF (item_type != 5 && item_type != 14 && item_type != 31 &&
                 INDEX (EXACT_MATCH ~ %prof% ~ ~ %forbidden_profs% ~) >= 0) BEGIN
         SET restrict = 1
+      END
+      PATCH_IF (INDEX (EXACT_MATCH ~ %item_type% ~ ~ %magical_types% ~) >= 0) BEGIN
+        READ_LONG 0x18 item_flags
+        PATCH_IF (item_flags & 0x40) BEGIN
+          SET restrict = 1
+        END
       END
       PATCH_IF (NOT ~%name_deny%~ STRING_EQUAL ~~ &&
                 INDEX (EXACT_MATCH ~ %item_type% ~ ~ %name_types% ~) >= 0) BEGIN

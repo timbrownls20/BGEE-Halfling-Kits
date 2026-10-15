@@ -49,6 +49,16 @@ LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/tymora.tra~
 INCLUDE ~%MOD_FOLDER%/kits/05-tymoras-champion/tymora.tpa~
 
 /////////////////////////////////////////////////////////////////////
+// Unbeguiled (fighter, halfling only)
+/////////////////////////////////////////////////////////////////////
+BEGIN @11 DESIGNATED 8
+LABEL ~halflingkits-unbeguiled~
+REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
+
+LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/unbeguiled.tra~
+INCLUDE ~%MOD_FOLDER%/kits/08-unbeguiled/unbeguiled.tpa~
+
+/////////////////////////////////////////////////////////////////////
 // Nettle (thief, halfling only)
 /////////////////////////////////////////////////////////////////////
 BEGIN @8 DESIGNATED 9

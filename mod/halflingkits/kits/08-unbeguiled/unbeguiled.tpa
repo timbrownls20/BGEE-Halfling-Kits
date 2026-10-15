@@ -1,0 +1,383 @@
+/////////////////////////////////////////////////////////////////////
+// Unbeguiled
+// Design: docs/kits/08-unbeguiled/design.md
+//
+// Resource prefix HKUB. Spells and EFFs:
+//   HKUBL1        Small and Nimble, Stubborn Will, Sees Through It, Lore 0,
+//                 10% magic resistance                         (CLAB, level 1)
+//   HKUBMR1/MR2   +1% / +2% magic resistance (alternating; 1.5% a level)
+//   HKUBCF/DM     Immune to confusion (6) / domination (10)
+//   HKUBSS        Spoiling Strike (activator); HKUBSPE.eff on each hit
+//   HKUBSP        Spoiling Strike's per-hit effects, by level
+//   HKUBSV        -2 saves vs spells (refreshes, doesn't stack)
+//   HKUBBR        Breach, once per target per round
+//   HKUBSO        Snap Out Of It
+//   HKUBCH1-3     Clear Heads aura (CLAB 8, 16, 24); HKUBCP/CE1-3 its pulse
+//   HKUBTS        True Sight (copy of True Seeing)
+//   HKUBMB        Make-Believe
+//   HKUBDS        Disenchanting Strike; HKUBDSE.eff on each hit      HLA
+//   HKUBHW        Hearth Wisdom                                      HLA
+//   HKUBSB        Stand Behind Me (base version)                     HLA
+//   HKUBUW        Unshakeable Wards                                  HLA
+//   HKUBSC        Steady Company                                     HLA
+//
+// Not implemented (TODO, EEex):
+//   - Stand Behind Me redirecting hostile spells aimed at allies to the
+//     Unbeguiled. The base version is shared resistance: +25% magic
+//     resistance for the Unbeguiled and allies nearby for 1 round.
+//   - Attacks ignoring Mirror Image and Blur (from level 12).
+//   - Spoiling Strike's weapons counting as non-magical, so Protection
+//     from Magical Weapons can't block its hits. The engine can raise a
+//     weapon's enchantment but not lower it.
+//   - Critical Strike ignoring critical-hit immunity.
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells and tables
+/////////////////////////////////////////////////////////////////////
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~   // Bless: party-only area
+  RET hk_bless_projectile = projectile hk_bless_target = target hk_bless_range = range
+      hk_bless_icon = icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr103~   // Cure Light Wounds: touch range
+  RET hk_clw_range = range hk_clw_icon = icon
+END
+
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~True Seeing~ RET hk_seeing_found = found hk_seeing_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Breach~       pattern = ~^spwi[0-9][0-9][0-9]\.spl$~ RET hk_breach_found = found hk_breach_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Secret Word~  pattern = ~^spwi[0-9][0-9][0-9]\.spl$~ RET hk_secret_found = found hk_secret_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Death Spell~  pattern = ~^spwi[0-9][0-9][0-9]\.spl$~ RET hk_death_found = found hk_death_spell = spell END
+ACTION_IF (hk_death_found) BEGIN
+  LAF HK_READ_SPELL_AREA STR_VAR spell = EVAL ~%hk_death_spell%~
+    RET hk_death_projectile = projectile hk_death_target = target hk_death_range = range hk_death_icon = icon
+  END
+END
+OUTER_SET hk_gender_summoned = IDS_OF_SYMBOL (~gender~ ~SUMMONED~)
+
+ACTION_DEFINE_ARRAY hk_ub_std_hla BEGIN ~Critical Strike~ ~Hardiness~ END
+OUTER_FOR (i = 0; i < 2; ++i) BEGIN
+  OUTER_SPRINT hla $hk_ub_std_hla(~%i%~)
+  LAF HK_FIND_HLA STR_VAR name = EVAL ~%hla%~
+    RET found ability icon strref min_lev max_lev num_allowed prereq
+  END
+  // Critical Strike drops its Power Attack prerequisite (Power Attack is dropped)
+  ACTION_IF (~%hla%~ STRING_EQUAL ~Critical Strike~) BEGIN
+    OUTER_SPRINT prereq ~*~
+  END
+  OUTER_SET    $hk_ub_hla_found(~%i%~)   = found
+  OUTER_SPRINT $hk_ub_hla_ability(~%i%~) ~%ability%~
+  OUTER_SPRINT $hk_ub_hla_icon(~%i%~)    ~%icon%~
+  OUTER_SET    $hk_ub_hla_strref(~%i%~)  = strref
+  OUTER_SET    $hk_ub_hla_min(~%i%~)     = min_lev
+  OUTER_SET    $hk_ub_hla_max(~%i%~)     = max_lev
+  OUTER_SET    $hk_ub_hla_num(~%i%~)     = num_allowed
+  OUTER_SPRINT $hk_ub_hla_prereq(~%i%~)  ~%prereq%~
+END
+
+DEFINE_PATCH_FUNCTION HK_UB_AREA_HEADER INT_VAR min_level = 1 BEGIN
+  LPF HK_ADD_SPELL_HEADER
+    INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile min_level
+    STR_VAR icon = EVAL ~%hk_bless_icon%~
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Passives
+// Magic resistance: 10% at level 1, then 1.5% a level, as alternating
+// +1% and +2% steps from the CLAB (40% at 21, 68% at 40).
+// Sees Through It: +2 saves vs illusions (opcode 346, school 5).
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKUBL1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2                timing = HK_TIMING_PERMANENT END   // Small and Nimble
+  LPF HK_SPELL_FX INT_VAR opcode = 166 parameter1 = 10               timing = HK_TIMING_PERMANENT END   // magic resistance
+  LPF HK_SPELL_FX INT_VAR opcode = 37  parameter1 = 2                timing = HK_TIMING_PERMANENT END   // save vs spells
+  LPF HK_SPELL_FX INT_VAR opcode = 34  parameter1 = 2                timing = HK_TIMING_PERMANENT END   // save vs wands
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 5                timing = HK_TIMING_PERMANENT END   // charm
+  LPF HK_SPELL_FX INT_VAR opcode = 346 parameter1 = 2 parameter2 = 5 timing = HK_TIMING_PERMANENT END   // saves vs illusion
+  LPF HK_SPELL_FX INT_VAR opcode = 21  parameter1 = 0 parameter2 = 1 timing = HK_TIMING_PERMANENT END   // Lore set to 0
+
+OUTER_FOR (step = 1; step <= 2; ++step) BEGIN
+  CREATE SPL ~HKUBMR%step%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+    LPF HK_ADD_SPELL_HEADER END
+    LPF HK_SPELL_FX INT_VAR opcode = 166 parameter1 = step timing = HK_TIMING_PERMANENT END
+END
+
+CREATE SPL ~HKUBCF~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 128 timing = HK_TIMING_PERMANENT END   // confusion
+
+CREATE SPL ~HKUBDM~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 241 timing = HK_TIMING_PERMANENT END   // domination
+
+
+/////////////////////////////////////////////////////////////////////
+// Spoiling Strike: for 1 round every hit, melee (opcode 248) or ranged
+// (249), casts HKUBSP on the target at the Unbeguiled's level:
+//   1  +15% spell failure (arcane and divine) for 3 rounds, per hit
+//   6  -2 saves vs spells for 3 rounds (refreshes)
+//  12  Breach on the first hit each round (ignores magic resistance)
+//  18  -10% magic resistance for 3 rounds, per hit
+// Per-hit effects stack without the design's caps (60% failure, -30%
+// magic resistance); a 1-round window rarely lands more than 4 hits.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKUBSV~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKUBSV~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 37  target = 2 parameter1 = "-2" duration = 18 resist_dispel = 1 END
+
+ACTION_IF (hk_breach_found) BEGIN
+  CREATE SPL ~HKUBBR~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+    LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%hk_breach_spell%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 206 target = 2 duration = 6 STR_VAR resource = ~HKUBBR~ END
+END
+
+CREATE SPL ~HKUBSP~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) END
+  PATCH_FOR_EACH level IN ~1~ ~6~ ~12~ ~18~ BEGIN
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = level END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 60 target = 2 parameter1 = 15 parameter2 = 0 duration = 18 resist_dispel = 1 END   // arcane
+  LPF HK_SPELL_FX INT_VAR opcode = 60 target = 2 parameter1 = 15 parameter2 = 1 duration = 18 resist_dispel = 1 END   // divine
+  FOR (header = 2; header <= 4; ++header) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT header STR_VAR resource = ~HKUBSV~ END
+    PATCH_IF (header >= 3 && hk_breach_found) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT header STR_VAR resource = ~HKUBBR~ END
+    END
+    PATCH_IF (header >= 4) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 166 target = 2 parameter1 = "-10" duration = 18 header resist_dispel = 1 END
+    END
+  END
+
+CREATE EFF ~HKUBSPE~
+  LPF HK_INIT_EFF INT_VAR opcode = 146 parameter1 = 0 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKUBSP~ END
+
+CREATE SPL ~HKUBSS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKUBSS~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 248 duration = 6 STR_VAR resource = ~HKUBSPE~ END   // melee hits
+  LPF HK_SPELL_FX INT_VAR opcode = 249 duration = 6 STR_VAR resource = ~HKUBSPE~ END   // ranged hits
+
+
+/////////////////////////////////////////////////////////////////////
+// Snap Out Of It: a touch that frees one ally
+//   3  sleep (2), charm (337: 5)
+//   9  also silence (48), confusion (242), domination (337: 241)
+//  15  also feeblemind (77)
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKUBSO~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@125) desc = RESOLVE_STR_REF (@126) END
+  PATCH_FOR_EACH level IN ~1~ ~9~ ~15~ BEGIN
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 range = hk_clw_range min_level = level STR_VAR icon = EVAL ~%hk_clw_icon%~ END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 2   target = 2 timing = HK_TIMING_INSTANT END
+  LPF HK_SPELL_FX INT_VAR opcode = 337 target = 2 parameter1 = "-1" parameter2 = 5 timing = HK_TIMING_INSTANT END
+  FOR (header = 2; header <= 3; ++header) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 48  target = 2 timing = HK_TIMING_INSTANT header END
+    LPF HK_SPELL_FX INT_VAR opcode = 242 target = 2 timing = HK_TIMING_INSTANT header END
+    LPF HK_SPELL_FX INT_VAR opcode = 337 target = 2 parameter1 = "-1" parameter2 = 241 timing = HK_TIMING_INSTANT header END
+    PATCH_IF (header == 3) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 77 target = 2 timing = HK_TIMING_INSTANT header END
+    END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// Clear Heads: a permanent repeating pulse on allies in Bless's area:
+// charm (8), plus confusion (16), plus domination (24)
+/////////////////////////////////////////////////////////////////////
+OUTER_FOR (tier = 1; tier <= 3; ++tier) BEGIN
+  CREATE SPL ~HKUBCP%tier%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) END
+    LPF HK_UB_AREA_HEADER END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKUBCP%tier%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 5 duration = 7 END
+    PATCH_IF (tier >= 2) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 128 duration = 7 END
+    END
+    PATCH_IF (tier >= 3) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 241 duration = 7 END
+    END
+  CREATE EFF ~HKUBCE%tier%~
+    LPF HK_INIT_EFF INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKUBCP%tier%~ END
+  OUTER_SET previous = tier - 1
+  CREATE SPL ~HKUBCH%tier%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) END
+    LPF HK_ADD_SPELL_HEADER END
+    PATCH_IF (previous > 0) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKUBCH%previous%~ END
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 272 parameter1 = 6 parameter2 = 3 timing = HK_TIMING_PERMANENT STR_VAR resource = EVAL ~HKUBCE%tier%~ END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// True Sight (the game's True Seeing) and Make-Believe (summons only:
+// SPLPROT row 117, GENDER != n, protects anything not summoned)
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_seeing_found) BEGIN
+  LAF HK_INNATE_COPY INT_VAR name = RESOLVE_STR_REF (@135) STR_VAR source = EVAL ~%hk_seeing_spell%~ dest = ~HKUBTS~ END
+END
+
+ACTION_IF (hk_death_found && hk_gender_summoned >= 0) BEGIN
+  CREATE SPL ~HKUBMB~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@136) desc = RESOLVE_STR_REF (@137) END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_death_target range = hk_death_range projectile = hk_death_projectile
+      STR_VAR icon = EVAL ~%hk_death_icon%~
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 318 target = 2 parameter1 = hk_gender_summoned parameter2 = 117 duration = 1 STR_VAR resource = ~HKUBMB~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 13  target = 2 parameter2 = 4 timing = HK_TIMING_INSTANT END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs
+/////////////////////////////////////////////////////////////////////
+// Disenchanting Strike: 1 round, every hit (melee or ranged) casts
+// Secret Word on the target
+ACTION_IF (hk_secret_found) BEGIN
+  CREATE EFF ~HKUBDSE~
+    LPF HK_INIT_EFF INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%hk_secret_spell%~ END
+  CREATE SPL ~HKUBDS~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141) END
+    LPF HK_ADD_SPELL_HEADER END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKUBDS~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 248 duration = 6 STR_VAR resource = ~HKUBDSE~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 249 duration = 6 STR_VAR resource = ~HKUBDSE~ END
+END
+
+// Hearth Wisdom: allies (not the Unbeguiled: SPLPROT row 43, source is
+// target) gain half its magic resistance for 1 turn. Headers by level
+// from the resistance curve: 19% at 20, then +3% every 4 levels.
+CREATE SPL ~HKUBHW~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146) END
+  PATCH_FOR_EACH level IN ~1~ ~24~ ~28~ ~32~ ~36~ ~40~ BEGIN
+    LPF HK_UB_AREA_HEADER INT_VAR min_level = level END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 target = 2 parameter2 = 43 duration = 1 STR_VAR resource = ~HKUBHW~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKUBHW~ END
+  FOR (header = 1; header <= 6; ++header) BEGIN
+    SET half = 19 + (header - 1) * 3
+    LPF HK_SPELL_FX INT_VAR opcode = 166 target = 2 parameter1 = half duration = HK_ONE_TURN header END
+  END
+
+// Stand Behind Me (base version): +25% magic resistance for 1 round to
+// the Unbeguiled and allies in the area.
+// TODO (EEex): redirect hostile single-target spells to the Unbeguiled.
+CREATE SPL ~HKUBSB~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) END
+  LPF HK_UB_AREA_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKUBSB~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 166 target = 2 parameter1 = 25 duration = 6 END
+
+// Unshakeable Wards: 1 turn; blocks dispelling (58) and removal by
+// level, school or secondary type (220, 221, 229, 230), which covers
+// Dispel Magic, Remove Magic, Breach and Spellstrike
+CREATE SPL ~HKUBUW~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) END
+  LPF HK_UB_AREA_HEADER END
+  PATCH_FOR_EACH blocked IN ~58~ ~220~ ~221~ ~229~ ~230~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = blocked duration = HK_ONE_TURN END
+  END
+
+// Steady Company: 1 turn; no silence (38), slow (40) or hold (109, 175, 185)
+CREATE SPL ~HKUBSC~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) END
+  LPF HK_UB_AREA_HEADER END
+  PATCH_FOR_EACH blocked IN ~38~ ~40~ ~109~ ~175~ ~185~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = blocked duration = HK_ONE_TURN END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHUB.2da)
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+
+ACTION_IF (hk_secret_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@140) picks = 4
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKUBDS~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 5
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKUBHW~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKUBSB~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKUBUW~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKUBSC~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+OUTER_FOR (i = 0; i < 2; ++i) BEGIN
+  ACTION_IF ($hk_ub_hla_found(~%i%~)) BEGIN
+    OUTER_SPRINT ability $hk_ub_hla_ability(~%i%~)
+    OUTER_SPRINT icon    $hk_ub_hla_icon(~%i%~)
+    OUTER_SPRINT prereq  $hk_ub_hla_prereq(~%i%~)
+    LAF HK_HLA_ROW
+      INT_VAR number = hk_n strref = $hk_ub_hla_strref(~%i%~) picks = $hk_ub_hla_num(~%i%~)
+              min_level = $hk_ub_hla_min(~%i%~) max_level = $hk_ub_hla_max(~%i%~)
+      STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%ability%~ icon = EVAL ~%icon%~ prereq = EVAL ~%prereq%~
+      RET hk_rows = rows hk_n = number
+    END
+  END
+END
+
+COPY ~%MOD_FOLDER%/kits/08-unbeguiled/luhub.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+/////////////////////////////////////////////////////////////////////
+LAF HK_WEAPPROF_LINE
+  INT_VAR pips = 5 pips2 = 3
+  STR_VAR kit = ~HK_UNBEGUILED~ skilled = ~DAGGER SHORTSWORD SLING SHORTBOW~ skilled2 = ~CLUB DART~
+  RET hk_ub_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_ub_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_UNBEGUILED~ values = ~STR=9 WIS=15~ RET hk_ub_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_UNBEGUILED~ allowed = ~LAWFUL_GOOD NEUTRAL_GOOD CHAOTIC_GOOD~ RET hk_ub_align = line END
+
+ADD_KIT ~HK_UNBEGUILED~
+  ~HK_UNBEGUILED            1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_ub_weapprof%~                                          // WEAPPROF (column)
+  ~%hk_ub_abclasrq%~                                          // ABCLASRQ: Str 9, Wis 15
+  ~HK_UNBEGUILED            0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_UNBEGUILED            17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_UNBEGUILED            17 0 0 0 0 0~                     // ABDCSCRQ
+  ~%hk_ub_align%~                                             // ALIGNMNT: any good
+  ~HK_UNBEGUILED            0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/08-unbeguiled/hkubclab.2da~              // CLAB
+  ~K_F_H~                                                     // halfling fighters only
+  ~0x00004000 2~                                              // fighter usability, class 2
+  ~HUB~                                                       // LUHUB.2da
+  ~%hk_ub_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment: small weapons only; no large shields; no wands (35) or
+// scrolls (11); no magical amulets (1), rings (10) or cloaks (32).
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_ub_kit_id = IDS_OF_SYMBOL (~kit~ ~HK_UNBEGUILED~)
+
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id          = hk_ub_kit_id
+          message         = RESOLVE_STR_REF (@180)
+          max_shield_size = 3
+  STR_VAR allowed_profs   = ~96 91 115 106 107 105~
+          forbidden_types = ~35 11~
+          magical_types   = ~1 10 32~
+END

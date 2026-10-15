@@ -80,6 +80,22 @@ For anyone building this kit as a mod (for example with WeiDU):
 
 - **Easy:** magic resistance and save bonuses, weapon and item limits, True Sight (the True Seeing spell as an innate ability), Make-Believe (a summons-only version of Death Spell as an innate ability), Clear Heads (an immunity aura), Snap Out Of It (a touch that removes magical effects), Steady Company (an immunity aura).
 - **Moderate:** Spoiling Strike (an activated ability built like the Archer's Called Shot, with spell failure based on the Wizard Slayer's ability but applied to both arcane and divine spells, plus Breach and lowered magic resistance on hit), Disenchanting Strike (a Secret Word effect on hit), Hearth Wisdom (a magic resistance aura), Unshakeable Wards (immunity to the dispel and Breach effects for allies in range).
-- **Hard:** Stand Behind Me (redirecting spells aimed at allies to the Unbeguiled; probably needs EEex), ignoring Mirror Image and Blur (an image absorbs the attack before any on-hit effect runs, so this probably needs EEex), Critical Strike ignoring critical-hit immunity (helmets block criticals in the engine, so this probably needs EEex).
+- **Hard:** Stand Behind Me (redirecting spells aimed at allies to the Unbeguiled; probably needs EEex; base version is shared resistance), Spoiling Strike's weapons counting as non-magical (the engine can't lower enchantment), ignoring Mirror Image and Blur (an image absorbs the attack before any on-hit effect runs, so this probably needs EEex), Critical Strike ignoring critical-hit immunity (helmets block criticals in the engine, so this probably needs EEex).
 - **Check:** friendly healing and buff spells are flagged to bypass magic resistance, so they still land despite its magic resistance. Spot-check any modded or unusual party buffs for the same flag. Make Spoiling Strike's Breach bypass magic resistance the same way.
 - **Check:** on-hit effects only apply if the hit lands. Spoiling Strike's weapons count as non-magical for its round (enchantment 0), so Protection from Magical Weapons doesn't block them. Test whether Stoneskin absorbs the hit before the Breach applies; if it does, the Breach may need to fire on the attack itself, which probably needs EEex.
+
+### As built (not yet tested in game)
+
+Code: `mod/halflingkits/kits/08-unbeguiled/`. Where the build differs from the design, or relies on something to check in game:
+
+- **Stand Behind Me (TODO, needs EEex):** the base version is shared resistance (decided 16 October 2026): for 1 round the Unbeguiled and its allies nearby gain +25% magic resistance. Redirecting hostile spells to the Unbeguiled is left for an EEex component.
+- **Ignoring Mirror Image and Blur (TODO, needs EEex):** not built; its attacks hit images and suffer Blur as normal.
+- **Spoiling Strike's weapons counting as non-magical (TODO, needs EEex):** the engine can raise a weapon's enchantment but not lower it, so Protection from Magical Weapons blocks Spoiling Strike's hits as normal.
+- **Critical Strike** is the standard one without the Power Attack prerequisite; it doesn't get past critical-hit immunity (needs EEex).
+- **Spoiling Strike** works on melee and ranged hits for 1 round, at the Unbeguiled's level. The spell failure and the -10% magic resistance stack per hit without the design's caps (60% and -30%); a 1-round window rarely lands more than 4 hits. The -2 to saves refreshes rather than stacks, and the Breach fires on the first hit each round only, ignoring magic resistance.
+- **Clear Heads** refreshes every round on allies in Bless's party-only area (not exactly 20 feet), as do the HLA auras. **Hearth Wisdom** doesn't apply to the Unbeguiled itself.
+- **Sees Through It** uses the engine's save-against-school bonus for illusions.
+- **True Sight** is the game's True Seeing, and **Make-Believe** kills only creatures the game marks as summoned, in Death Spell's area.
+- **Unshakeable Wards** blocks the engine's dispel and removal effects outright, so it covers Dispel Magic, Remove Magic, Breach, Spellstrike and anything else built the same way.
+- **Item limits:** magical rings, amulets and cloaks are blocked by their "magical" flag; plain ones stay usable.
+

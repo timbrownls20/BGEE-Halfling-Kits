@@ -2,7 +2,7 @@
 
 Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Baldur's Gate II: Enhanced Edition (including Siege of Dragonspear and Throne of Bhaal). Each kit is built around one idea and tuned to be strong but not overpowered.
 
-**Status:** design complete for eleven kits; the twelfth, the Ghostwise Rogue, is a placeholder still to be designed. Six are coded as a WeiDU mod: the Fleet Foot Fighter, the True Heart (without its reputation fall yet), the Hearthsinger, Tymora's Champion, the Nettle and the Briarguard (without its familiar yet). None has been installed or playtested yet.
+**Status:** design complete for eleven kits; the twelfth, the Ghostwise Rogue, is a placeholder still to be designed. Seven are coded as a WeiDU mod: the Fleet Foot Fighter, the True Heart (without its reputation fall yet), the Hearthsinger, Tymora's Champion, the Unbeguiled, the Nettle and the Briarguard (without its familiar yet). None has been installed or playtested yet.
 
 ## Start here
 
@@ -22,7 +22,7 @@ Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Bald
 | [Tymora's Champion](docs/kits/05-tymoras-champion/design.md) | Fighter | Lucky all-rounder | Yes | |
 | [Slinger](docs/kits/06-slinger/design.md) | Fighter | Ranged damage | | |
 | [Magpie](docs/kits/07-magpie/design.md) | Thief | Scrolls, wands and loot | | |
-| [Unbeguiled](docs/kits/08-unbeguiled/design.md) | Fighter | Mage-hunter | | |
+| [Unbeguiled](docs/kits/08-unbeguiled/design.md) | Fighter | Mage-hunter | Yes | |
 | [Nettle](docs/kits/09-nettle/design.md) | Thief | Anti-caster opener | Yes | |
 | [Greenhand](docs/kits/10-greenhand/design.md) | Cleric | Nature priest and summoner | | |
 | [Briarguard](docs/kits/11-briarguard/design.md) | Fighter | Nature warrior, elemental tank | Yes (no familiar yet) | |

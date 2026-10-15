@@ -1,0 +1,73 @@
+// Unbeguiled
+
+@100 = ~Unbeguiled~
+@101 = ~Unbeguiled~
+@102 = ~UNBEGUILED: Wizards are used to people being afraid of them. The Unbeguiled halfling just isn't. Charms slide off, illusions look faintly silly, and the grandest spell in the archmage's book seems somehow not to take. Small, quiet and entirely unimpressed, it walks up to the caster that everyone else is running from, and pokes it with something sharp.
+
+Advantages:
+– Stubborn Will: 10% magic resistance at level 1, rising by 1.5% a level (40% at level 21, 68% at level 40); +2 to saves against spells and wands; immune to charm, to confusion from level 6, and to domination from level 10.
+– Clear Heads: allies nearby are immune to charm from level 8, to confusion from level 16, and to domination from level 24.
+– Snap Out Of It: from level 3, a touch that ends sleep and charm on one ally; from level 9 also silence, confusion and domination; from level 15 also feeblemind. 1 use, plus 1 more at levels 9 and 15.
+– Sees Through It: +2 to saves against illusions; True Sight from level 9 (once a day, plus once more at levels 15 and 21).
+– Spoiling Strike: 1 use, plus 1 more every 5 levels. For one round every hit adds a 15% chance to fail spells for 3 rounds; from level 6 also -2 to saves against spells; from level 12 the first hit Breaches the target, ignoring magic resistance; from level 18 each hit also lowers magic resistance by 10%.
+– Make-Believe: from level 12, destroys the summoned creatures around it (once a day, plus once more at levels 18 and 24).
+– Small and Nimble: +2 AC.
+– Grandmastery in daggers, short swords, slings and short bows; mastery in clubs and darts.
+
+Disadvantages:
+– May only use daggers, short swords, clubs, darts, slings and short bows.
+– Cannot use large shields, magical rings, amulets or cloaks, wands or scrolls.
+– Lore is 0 and cannot be raised.
+– Requires Wisdom 15 or higher.
+– Must be a halfling of good alignment.~
+
+@110 = ~Unbeguiled~
+@111 = ~The Unbeguiled's stubborn will.~
+
+@120 = ~Spoiling Strike~
+@121 = ~Spoiling Strike
+
+For one round, every hit adds a 15% chance to fail spells for 3 rounds. From level 6 the target also takes -2 to saves against spells; from level 12 the first hit Breaches it, ignoring magic resistance; from level 18 each hit also lowers its magic resistance by 10% for 3 rounds.~
+
+@125 = ~Snap Out Of It~
+@126 = ~Snap Out Of It
+
+A touch that frees one ally from sleep and charm; from level 9 also silence, confusion and domination; from level 15 also feeblemind.~
+
+@130 = ~Clear Heads~
+@131 = ~Clear Heads
+
+Allies near the Unbeguiled are immune to charm, and from level 16 to confusion, and from level 24 to domination.~
+
+@135 = ~True Sight~
+@136 = ~Make-Believe~
+@137 = ~Make-Believe
+
+Summoned creatures around the Unbeguiled are destroyed. Only summoned creatures are affected.~
+
+@140 = ~Disenchanting Strike~
+@141 = ~Disenchanting Strike
+
+For 1 round, every hit strips one spell protection from its target, as Secret Word.~
+
+@145 = ~Hearth Wisdom~
+@146 = ~Hearth Wisdom
+
+For 1 turn, the Unbeguiled's allies nearby gain half of its magic resistance.~
+
+@150 = ~Stand Behind Me~
+@151 = ~Stand Behind Me
+
+For 1 round, the Unbeguiled and its allies nearby gain +25% magic resistance.~
+
+@155 = ~Unshakeable Wards~
+@156 = ~Unshakeable Wards
+
+For 1 turn, the protections and buffs of the Unbeguiled and its allies nearby can't be dispelled, removed or breached, including by the party's own spells.~
+
+@160 = ~Steady Company~
+@161 = ~Steady Company
+
+For 1 turn, the Unbeguiled and its allies nearby can't be silenced, slowed or held.~
+
+@180 = ~The Unbeguiled cannot use this item.~

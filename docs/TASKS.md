@@ -5,7 +5,7 @@ The working record for the halfling-only kit set for Baldur's Gate: Enhanced Edi
 ## Status
 
 - **Design:** complete for eleven kits, with several review and balance passes. A twelfth, the Ghostwise Rogue (fighter/thief with barbarian qualities and wilderness bonuses; no Open Locks or Pick Pockets), is a placeholder still to be designed (`docs/kits/12-ghostwise-rogue/design.md`).
-- **Implementation:** started. `mod/halflingkits/` holds the WeiDU mod: the shared library (`lib/hk_lib.tpa`), the Fleet Foot Fighter (`kits/01-fleet-foot-fighter/`), the Hearthsinger (`kits/04-hearthsinger/`), Tymora's Champion (`kits/05-tymoras-champion/`), the Nettle (`kits/09-nettle/`), the Briarguard (`kits/11-briarguard/`, without its familiar) and the True Heart (`kits/02-true-heart/`, without its reputation fall). All six pass WeiDU's syntax check (`utils/check-mod.sh`) but have not been installed in a game yet. Each kit's design file ends with an "As built" section listing where the code differs from the design.
+- **Implementation:** started. `mod/halflingkits/` holds the WeiDU mod: the shared library (`lib/hk_lib.tpa`), the Fleet Foot Fighter (`kits/01-fleet-foot-fighter/`), the Hearthsinger (`kits/04-hearthsinger/`), Tymora's Champion (`kits/05-tymoras-champion/`), the Nettle (`kits/09-nettle/`), the Briarguard (`kits/11-briarguard/`, without its familiar), the True Heart (`kits/02-true-heart/`, without its reputation fall) and the Unbeguiled (`kits/08-unbeguiled/`). All seven pass WeiDU's syntax check (`utils/check-mod.sh`) but have not been installed in a game yet. Each kit's design file ends with an "As built" section listing where the code differs from the design.
 - **Playtesting:** none yet. Every rating is an estimate.
 - **Source of truth:** these Markdown files, from the point they are committed. They were exported from the design document on 15 October 2026. Make further changes here, not in the original document, so git history stays the record.
 
@@ -13,31 +13,32 @@ The working record for the halfling-only kit set for Baldur's Gate: Enhanced Edi
 
 In priority order. Each kit's "As built" notes list its own smaller check-in-game items.
 
-1. **Finish the Mage-Breakers playtest party:** build the **Unbeguiled**, with plain-engine fallbacks for its Hard items. Decide open question 7 (Stand Behind Me) first.
-2. **Script pass** (no EEex needed):
+1. **Script pass** (no EEex needed):
    - The True Heart's fall when reputation drops to 8 or lower, and recovery.
    - The Briarguard's badger familiar (five forms; following the party, riding in the pack, bonus hit points to its master, losing Constitution if it dies) and the badger's part of Badger's Fury. The Greenhand's rabbit will share the same familiar script.
-3. **Remaining kits:**
+2. **Remaining kits** (Mage-Breakers is now fully coded):
    - **Surefoot Fighter** (Hearth and Home).
    - **Slinger** and **Greenhand** (The Wild Wood). The Greenhand needs open questions 1 and 2 decided.
    - **Magpie** (Hearth and Home), once open question 8 (Magpie's Knack) is decided.
-4. **Design the Ghostwise Rogue** (placeholder: `docs/kits/12-ghostwise-rogue/design.md`). Check the multiclass kit workaround first. Then add it to the Overview, Party Design and Strength Rankings.
-5. **EEex components** (optional, Windows only; see the EEex plan under Dependencies). Current TODOs:
+3. **Design the Ghostwise Rogue** (placeholder: `docs/kits/12-ghostwise-rogue/design.md`). Check the multiclass kit workaround first. Then add it to the Overview, Party Design and Strength Rankings.
+4. **EEex components** (optional, Windows only; see the EEex plan under Dependencies). Current TODOs:
    - Fleet Foot: Halfling Evasion's half damage on a failed save.
    - Fleet Foot and Tymora's Champion: Critical Strike ignoring critical-hit immunity.
    - Hearthsinger: casting a spell ending the song; Kin's Shield's immunity to critical hits.
    - Nettle: Spoiling Backstab draining priest spells.
-   - Plus the Hard items of the kits not yet built (Surefoot, Slinger, Unbeguiled).
-6. **First install on a game** (Windows): install every component, read WeiDU's log for warnings, check the "Game rules the design relies on" assumptions and each kit's "As built" check-in-game items, and fill in the README's Tested column.
-7. **Playtest** the three playtest parties through BG1, SoA and ToB against the playtest checklist, starting with Mage-Breakers. Record changes as commits with the reason in the message.
-8. **Resolve the remaining open questions.**
-9. **Commit** the baseline (Tim makes the commits).
+   - Unbeguiled: Stand Behind Me's redirect; ignoring Mirror Image and Blur; Spoiling Strike's non-magical hits; Critical Strike ignoring critical-hit immunity.
+   - Plus the Hard items of the kits not yet built (Surefoot, Slinger).
+5. **First install on a game** (Windows): install every component, read WeiDU's log for warnings, check the "Game rules the design relies on" assumptions and each kit's "As built" check-in-game items, and fill in the README's Tested column.
+6. **Playtest** the three playtest parties through BG1, SoA and ToB against the playtest checklist, starting with Mage-Breakers. Record changes as commits with the reason in the message.
+7. **Resolve the remaining open questions.**
+8. **Commit** the baseline (Tim makes the commits).
 
 ## Done
 
 Newest first.
 
 **16 October 2026**
+- Coded the **Unbeguiled**, completing the **Mage-Breakers** playtest party. Stand Behind Me's base version is shared resistance (open question 7 decided).
 - Added a **Playtest parties** section to Party Design: each party's positions, how it plays, what it tests and its difficulty.
 - Renamed the Handover to Tasks, with this log, the To do list and Constraints.
 - Coded the **True Heart** (everything except the reputation fall, left for the script pass).
@@ -159,7 +160,7 @@ Each kit file has Easy, Moderate and Hard notes. The Hard items:
 | Surefoot | Unmoving Stride's Time Stop immunity (probably EEex) |
 | Tymora's Champion | Critical Strike ignoring critical-hit immunity (probably EEex) |
 | Slinger | Eagle Eye ignoring Mirror Image; Critical Strike ignoring critical-hit immunity (both probably EEex) |
-| Unbeguiled | Stand Behind Me redirecting spells; ignoring Mirror Image and Blur; Critical Strike ignoring critical-hit immunity (all probably EEex) |
+| Unbeguiled | Stand Behind Me redirecting spells; ignoring Mirror Image and Blur; Spoiling Strike's hits counting as non-magical; Critical Strike ignoring critical-hit immunity (all probably EEex). Coded with fallbacks: see the TODOs in its design file |
 | Greenhand | Druid spells on a cleric (cleric-usable copies or EEex) |
 | Fleet Foot | Halfling Evasion's half damage on a failed save (probably EEex). Coded for now as the standard Evasion: see the TODO in its design file |
 | Hearthsinger | Casting a spell ending the song; Kin's Shield's immunity to critical hits (both probably EEex). Coded with fallbacks: see the TODOs in its design file |
@@ -185,7 +186,7 @@ Decisions that were deferred or need checking in game:
 4. **Briarguard:** check whether losing Strength of the Oak's +2 Constitution when it ends can drop a badly hurt character to dangerously low HP. If so, swap the Constitution for +1 AC or a flat HP bonus.
 5. **Briarguard:** shields are allowed as bucklers and small shields, even though most are metal. This is a deliberate exception to the natural theme.
 6. **Surefoot and Briarguard:** both gain elemental resistance. Consider trimming the Surefoot's so the Briarguard owns that niche.
-7. **Unbeguiled:** whether Stand Behind Me can be built at all without EEex. If not, the kit needs a replacement HLA.
+7. **Unbeguiled:** ~~whether Stand Behind Me can be built at all without EEex.~~ Decided 16 October 2026: the base version is shared resistance (+25% magic resistance for the Unbeguiled and allies nearby for 1 round); the redirect becomes an EEex component.
 8. **Magpie:** Magpie's Knack lets a thief kit use mage, bard and cleric scrolls, wands and items, unlocked by level. The engine's per-kit item rule (opcode 319) can only take items away from a kit, not add a kit to an item's users, and it can't check level. It probably needs item usability changes plus a level check by script, or EEex. Decide how to build it, or reshape it, before coding the Magpie.
 
 ## Playtest checklist
@@ -230,9 +231,9 @@ No party has an arcane caster: every kit is a fighter, cleric or thief, so the M
 | --- | --- | --- |
 | Hearth and Home | 2 (Hearthsinger, Fleet Foot) | Surefoot Fighter; Magpie (blocked on open question 8, Magpie's Knack) |
 | The Wild Wood | 1 (Briarguard, without its familiar) | Greenhand, Slinger; the Ghostwise Rogue is still to be designed and may need the multiclass kit workaround; the Briarguard's familiar |
-| Mage-Breakers | 3 (True Heart without its reputation fall, Tymora's Champion, Nettle) | Unbeguiled (with non-EEex fallbacks for its Hard items) |
+| Mage-Breakers | 4 (True Heart without its reputation fall, Unbeguiled, Tymora's Champion, Nettle) | Nothing to code; the True Heart's reputation fall comes with the script pass |
 
-Mage-Breakers is the closest to playable, so it is the suggested first playtest party.
+Mage-Breakers is fully coded, so it is the first playtest party.
 
 ## Recent design decisions
 
