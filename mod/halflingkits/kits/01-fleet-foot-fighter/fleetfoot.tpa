@@ -176,7 +176,7 @@ OUTER_SET hk_general_undead = IDS_OF_SYMBOL (~general~ ~UNDEAD~)
 CREATE SPL ~HKFFBLD~
   LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) END
   FOR (tier = 0; tier < 5; ++tier) BEGIN
-    LPF HK_ADD_SPELL_HEADER INT_VAR min_level = (tier == 0 ? 1 : tier * 10) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = (tier == 0 ? 1 : tier * 10) END
   END
   PATCH_IF (hk_general_undead >= 0) BEGIN
     LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_general_undead parameter2 = 103 duration = 1 STR_VAR resource = ~HKFFBLD~ END
@@ -313,7 +313,7 @@ CREATE SPL ~HKFFRL3~
 /////////////////////////////////////////////////////////////////////
 CREATE SPL ~HKFFHMS~
   LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) END
-  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
   LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKFFHMS~ END
   LPF HK_SPELL_FX INT_VAR opcode = 1   parameter1 = "-1"                duration = 12 END
   LPF HK_SPELL_FX INT_VAR opcode = 54  parameter1 = "-2"                duration = 12 END
@@ -406,17 +406,17 @@ LAF HK_WEAPPROF_LINE
   RET hk_ff_weapprof = line
 END
 LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_ff_stweap = line END
-LAF HK_STAT_LINE STR_VAR kit = ~HK_FLEETFOOT~ values = ~STR=9~ RET hk_ff_abclasrq = line END
-LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_FLEETFOOT~ allowed = ~*~ RET hk_ff_align = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_FLEETFOOT~ values = ~STR=9 DEX=16~ RET hk_ff_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_FLEETFOOT~ allowed = ~NEUTRAL_GOOD CHAOTIC_GOOD~ RET hk_ff_align = line END
 
 ADD_KIT ~HK_FLEETFOOT~
   ~HK_FLEETFOOT             1 1 1 1 1 1 1 1~                  // CLASWEAP
   ~%hk_ff_weapprof%~                                          // WEAPPROF (column)
-  ~%hk_ff_abclasrq%~                                          // ABCLASRQ: Str 9
+  ~%hk_ff_abclasrq%~                                          // ABCLASRQ: Str 9, Dex 16
   ~HK_FLEETFOOT             0 0 0 0 0 0~                      // ABCLSMOD
   ~HK_FLEETFOOT             17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
   ~HK_FLEETFOOT             17 0 0 0 0 0~                     // ABDCSCRQ
-  ~%hk_ff_align%~                                             // ALIGNMNT: any
+  ~%hk_ff_align%~                                             // ALIGNMNT: neutral or chaotic good
   ~HK_FLEETFOOT             0 0 0 0 0 0~                      // DUALCLAS: none
   ~%MOD_FOLDER%/kits/01-fleet-foot-fighter/hkffclab.2da~      // CLAB
   ~K_F_H~                                                     // halfling fighters only

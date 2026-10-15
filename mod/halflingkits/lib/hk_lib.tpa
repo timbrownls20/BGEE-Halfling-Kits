@@ -175,15 +175,16 @@ END
 // Finds a standard HLA in a class HLA table (LUFI0.2da for fighters,
 // LUTH0.2da for thieves) by its English name, so kits can keep standard
 // HLAs without hard-coding SPCL resrefs. Returns the row's columns
-// (ability, icon, strref, min level, max level, picks) and the bare
-// spell resref.
+// (ability, icon, strref, min level, max level, picks, prerequisite)
+// and the bare spell resref.
 /////////////////////////////////////////////////////////////////////
 DEFINE_ACTION_FUNCTION HK_FIND_HLA
   STR_VAR name  = ""
           table = "lufi0"
-  RET found ability icon strref min_lev max_lev num_allowed spell
+  RET found ability icon strref min_lev max_lev num_allowed prereq spell
 BEGIN
   OUTER_SET found = 0
+  OUTER_SPRINT prereq      ~*~
   OUTER_SPRINT ability     ~*~
   OUTER_SPRINT icon        ~*~
   OUTER_SPRINT strref      ~-1~
@@ -218,6 +219,7 @@ BEGIN
               READ_2DA_ENTRY_FORMER ~hk_lu~ r 4 min_lev
               READ_2DA_ENTRY_FORMER ~hk_lu~ r 5 max_lev
               READ_2DA_ENTRY_FORMER ~hk_lu~ r 6 num_allowed
+              READ_2DA_ENTRY_FORMER ~hk_lu~ r 7 prereq
             END
           END
         END
@@ -308,6 +310,11 @@ DEFINE_ACTION_FUNCTION HK_STAT_LINE
   RET line
 BEGIN
   OUTER_SPRINT line ~%kit%~
+  OUTER_SET hk_st_expected = 0
+  OUTER_SET hk_st_matched  = 0
+  OUTER_PATCH ~ %values% ~ BEGIN
+    REPLACE_EVALUATE ~[^ ]+=[0-9]+~ BEGIN SET hk_st_expected += 1 END ~%MATCH0%~
+  END
   COPY_EXISTING ~%file%~ ~override~
     COUNT_2DA_COLS cols
     FOR (c = 0; c < cols - 1; ++c) BEGIN
@@ -316,11 +323,16 @@ BEGIN
       INNER_PATCH ~ %values% ~ BEGIN
         REPLACE_EVALUATE CASE_INSENSITIVE ~ %head%=\([0-9]+\) ~ BEGIN
           SET value = MATCH1
+          SET hk_st_matched += 1
         END ~~
       END
       SPRINT line ~%line% %value%~
     END
   BUT_ONLY
+  // A name that matches no column would silently drop a requirement
+  ACTION_IF (hk_st_matched != hk_st_expected) BEGIN
+    FAIL ~Halfling Kits: not every ability in "%values%" matched a column of %file%.~
+  END
 END
 
 
@@ -439,30 +451,55 @@ END
 // HK_ALIGNMENT_LINE (action)
 // Builds the ALIGNMNT.2da line for ADD_KIT from the file's own column
 // names, so the column order is never guessed.
-//   allowed: space-separated column names, e.g. ~CHAOTIC_GOOD~, or ~*~ for all
+//   allowed:  space-separated column names, e.g. ~CHAOTIC_GOOD~, or ~*~
+//             for all
+//   copy_row: instead, copy an existing row, e.g. ~THIEF~
 /////////////////////////////////////////////////////////////////////
 DEFINE_ACTION_FUNCTION HK_ALIGNMENT_LINE
-  STR_VAR kit     = ""
-          allowed = ""
+  STR_VAR kit      = ""
+          allowed  = ""
+          copy_row = ""
   RET line
 BEGIN
   OUTER_SPRINT line ~%kit%~
-  OUTER_SET hk_al_matched = 0
+  OUTER_SET hk_al_matched  = 0
+  OUTER_SET hk_al_expected = 1   // copy_row or "*": at least one match
+  ACTION_IF (~%copy_row%~ STRING_EQUAL ~~ && NOT ~%allowed%~ STRING_EQUAL ~*~) BEGIN
+    OUTER_SET hk_al_expected = 0
+    OUTER_PATCH ~ %allowed% ~ BEGIN
+      REPLACE_EVALUATE ~[^ ]+~ BEGIN SET hk_al_expected += 1 END ~%MATCH0%~
+    END
+  END
   COPY_EXISTING ~alignmnt.2da~ ~override~
     COUNT_2DA_COLS cols
-    FOR (c = 0; c < cols - 1; ++c) BEGIN
-      READ_2DA_ENTRY 0 c (cols - 1) head
-      PATCH_IF (~%allowed%~ STRING_EQUAL ~*~ ||
-                INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %head% ~ ~ %allowed% ~) >= 0) BEGIN
-        SPRINT line ~%line% 1~
-        SET hk_al_matched += 1
-      END ELSE BEGIN
-        SPRINT line ~%line% 0~
+    PATCH_IF (NOT ~%copy_row%~ STRING_EQUAL ~~) BEGIN
+      READ_2DA_ENTRIES_NOW ~hk_al~ cols
+      FOR (r = 0; r < hk_al; ++r) BEGIN
+        READ_2DA_ENTRY_FORMER ~hk_al~ r 0 label
+        PATCH_IF (hk_al_matched == 0 && ~%label%~ STRING_EQUAL_CASE ~%copy_row%~) BEGIN
+          SET hk_al_matched = 1
+          FOR (c = 1; c < cols; ++c) BEGIN
+            READ_2DA_ENTRY_FORMER ~hk_al~ r c value
+            SPRINT line ~%line% %value%~
+          END
+        END
+      END
+    END ELSE BEGIN
+      FOR (c = 0; c < cols - 1; ++c) BEGIN
+        READ_2DA_ENTRY 0 c (cols - 1) head
+        PATCH_IF (~%allowed%~ STRING_EQUAL ~*~ ||
+                  INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %head% ~ ~ %allowed% ~) >= 0) BEGIN
+          SPRINT line ~%line% 1~
+          SET hk_al_matched += 1
+        END ELSE BEGIN
+          SPRINT line ~%line% 0~
+        END
       END
     END
   BUT_ONLY
-  ACTION_IF (hk_al_matched == 0) BEGIN
-    FAIL ~Halfling Kits: no ALIGNMNT.2da column matched "%allowed%".~
+  ACTION_IF (hk_al_matched == 0 ||
+             (~%allowed%~ STRING_COMPARE ~*~ && ~%copy_row%~ STRING_EQUAL ~~ && hk_al_matched < hk_al_expected)) BEGIN
+    FAIL ~Halfling Kits: not every alignment in "%allowed%%copy_row%" matched ALIGNMNT.2da.~
   END
 END
 
@@ -667,4 +704,38 @@ BEGIN
       WRITE_LONG 0x08 name
     END
     LPF ALTER_SPELL_HEADER INT_VAR location = 4 END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_READ_EFFECT_RESOURCE (action)
+// Returns the resource of the first effect with the given opcode in a
+// spell's first ability header (for example, the trap spell that Set
+// Snare, SPCL412, sets with opcode 252).
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_READ_EFFECT_RESOURCE
+  INT_VAR opcode = 0
+  STR_VAR spell  = ""
+  RET found resource
+BEGIN
+  OUTER_SET found = 0
+  OUTER_SPRINT resource ~~
+  ACTION_IF (FILE_EXISTS_IN_GAME ~%spell%.spl~) BEGIN
+    COPY_EXISTING ~%spell%.spl~ ~override~
+      READ_LONG  0x64 hdr_off
+      READ_SHORT 0x68 hdr_cnt
+      READ_LONG  0x6a fx_off
+      PATCH_IF (hdr_cnt > 0) BEGIN
+        READ_SHORT (hdr_off + 0x1e) cnt
+        READ_SHORT (hdr_off + 0x20) idx
+        FOR (i = idx; i < idx + cnt && found == 0; ++i) BEGIN
+          READ_SHORT (fx_off + i * 0x30) op
+          PATCH_IF (op == opcode) BEGIN
+            SET found = 1
+            READ_ASCII (fx_off + i * 0x30 + 0x14) resource (8) NULL
+          END
+        END
+      END
+    BUT_ONLY
+  END
 END

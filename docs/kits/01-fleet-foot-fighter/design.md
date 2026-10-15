@@ -2,7 +2,7 @@
 
 *Barefoot and grinning, the Fleet Foot is gone before the blade falls. Raised on the hedge-lanes and orchard runs of halfling villages, these duellists never learned to stand still: they dart between legs, vault tables and leave only a blur where they stood. Bigger folk call it cheating. The Fleet Foot calls it a fair fight.*
 
-**Base class:** Fighter. **Race:** Halfling only.
+**Base class:** Fighter. **Race:** Halfling only. **Requires:** Dexterity 16 or higher.
 
 Oct 1, 2026 · @Tim
 
@@ -71,7 +71,7 @@ Doubles the number of attacks per round, at a THAC0 penalty that disappears by l
 - Cannot wear armour, helmets or boots, or use shields. Bracers, gauntlets, rings and cloaks are allowed.
 - Weapons limited to daggers (including throwing daggers), short swords, katanas and quarterstaffs. The quarterstaff is its one blunt weapon and does not cause bleeding.
 - No bows, crossbows, darts or slings, so throwing daggers are the only ranged option.
-- Must be a halfling.
+- Must be a neutral good or chaotic good halfling.
 
 ## High Level Abilities
 

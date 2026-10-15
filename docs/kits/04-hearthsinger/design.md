@@ -2,7 +2,7 @@
 
 *Far from home, halflings remember the songs of the hearth: the kettle on the fire, the harvest table, the faces of kin. The Hearthsinger, blessed by Cyrrollalee, the halfling goddess of hearth and hospitality, carries those songs into battle. One verse and tired companions stand straighter, strike harder and forget their fear; another and wounds close and, in time, the confused find their way back. Wherever the Hearthsinger stands, there is home, and home is worth defending.*
 
-**Base class:** Cleric. **Race:** Halfling only.
+**Base class:** Cleric. **Race:** Halfling only. **Requires:** Charisma 14 or higher.
 
 A halfling-only cleric kit for Baldur's Gate 1 and 2: a priest who sings of hearth and kin. Each Hearthsong either invigorates allies with courage and strength or soothes them with rest and healing. It fights in the front line, but its real strength is what it does for the party. Replaces the earlier Holy Skald design.
 
@@ -36,7 +36,7 @@ What the Hearthsinger gains at each level. Full details are under Advantages and
 - Cannot use large shields.
 - Casting a spell while singing ends the current song early, and that Hearthsong use is spent: it cannot be restarted or resumed. Any remaining uses can still be sung later.
 - Spells capped at 5th level (six higher-level spells come later as innate HLAs).
-- Must be a halfling.
+- Must be a lawful good or neutral good halfling.
 
 ## Hearthsong
 

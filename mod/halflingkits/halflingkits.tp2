@@ -37,3 +37,13 @@ REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
 
 LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/tymora.tra~
 INCLUDE ~%MOD_FOLDER%/kits/05-tymoras-champion/tymora.tpa~
+
+/////////////////////////////////////////////////////////////////////
+// Nettle (thief, halfling only)
+/////////////////////////////////////////////////////////////////////
+BEGIN @8 DESIGNATED 9
+LABEL ~halflingkits-nettle~
+REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
+
+LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/nettle.tra~
+INCLUDE ~%MOD_FOLDER%/kits/09-nettle/nettle.tpa~

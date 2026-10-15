@@ -16,7 +16,7 @@ How the eleven halfling kits fit together into all-halfling parties: what each k
 | Greenhand | Nature priest | Healing, summons that Death Spell can't kill, nature area spells (Insect Plague, Creeping Doom), Negative Plane Protection, True Seeing, a rabbit familiar | Studded leather; no Chaotic Commands, Holy Word or Turn Undead |
 | Briarguard | Elemental tank | Elemental resistance up to 80%, Iron Skins, immunity to hold and slow, Entangle, a plant guardian that grows with it, a badger familiar; grandmastery in clubs, staves, slings and short bows | No metal armour; no healing of its own |
 | Magpie | Thief and stand-in mage | Locks, traps, scouting, and arcane scrolls and wands through Magpie's Knack | Scrolls can fumble early; arcane magic is only as good as its stock |
-| Nettle | Anti-mage thief | Spoiling Backstab and Spoiling Traps take apart protected casters; Non-Detection keeps it hidden | No backstab multiplier; small weapons; Lore 0 |
+| Nettle | Anti-mage thief | Spoiling Backstab and Spoiling Traps take apart protected casters; Non-Detection keeps it hidden | Backstab stuck at x2; small weapons; Lore 0 |
 
 **No kit is a mage.** Every halfling party has to answer enemy magic without Haste, Stoneskin, Spell Sequencers or Time Stop, so the real design question is which mix of anti-magic tools (the Unbeguiled, the Slinger's bullets, the Nettle, the Magpie's scrolls, the priests' Dispel Magic and True Seeing) a party carries.
 

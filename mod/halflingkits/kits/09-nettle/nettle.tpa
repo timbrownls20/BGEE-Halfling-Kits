@@ -1,0 +1,369 @@
+/////////////////////////////////////////////////////////////////////
+// Nettle
+// Design: docs/kits/09-nettle/design.md
+//
+// Resource prefix HKNT. Spells and EFFs:
+//   HKNTL1      Level 1 package: Small and Nimble, Stubborn Will, Sure
+//               Hand, Quiet Feet, Not Fooled, Lore 0, backstab fixed at x2, and
+//               the Spoiling Backstab hook (opcode 340)          (CLAB)
+//   HKNTHIT     Sure Hand +1                  (CLAB, levels 6, 11, 16, 21)
+//   HKNTCF      Immune to confusion           (CLAB, level 6)
+//   HKNTND      Unnoticed: Non-Detection      (CLAB, level 9)
+//   HKNTDM      Immune to domination          (CLAB, level 10)
+//   HKNTSN      Spoiling Snare (copy of Set Snare)  (CLAB, every 5 levels)
+//   HKNTBS      Spoiling Backstab: cast on the creature backstabbed
+//   HKNTSF      The spoiling basics: spell failure, -2 saves vs spells
+//   HKNTFL      The rest of the package, by level; once per target per
+//               round (it blocks itself for a round after landing)
+//   HKNTTR/F    Spoiling Snare's trap (and its critical-failure spell)
+//   HKNTUF      Underfoot                                             HLA
+//   HKNTDS      Disenchanting Strike; HKNTDSE.eff on each hit         HLA
+//   HKNTCS      Common Sense                                          HLA
+//   HKNTMB      Make-Believe                                          HLA
+//   HKNTUT      Unravelling Trap; HKNTUTT/F its trap                  HLA
+//
+// Not implemented (TODO, EEex):
+//   - Spoiling Backstab's spell drain hits wizard spells only: the
+//     engine's drain (opcode 244) has no priest version.
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells and tables
+/////////////////////////////////////////////////////////////////////
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~   // Bless: party-only area
+  RET hk_bless_projectile = projectile hk_bless_target = target hk_bless_range = range
+      hk_bless_icon = icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~spcl412~   // Set Snare
+  RET hk_snare_found = found hk_snare_icon = icon hk_snare_book_icon = book_icon
+END
+LAF HK_READ_EFFECT_RESOURCE INT_VAR opcode = 252 STR_VAR spell = ~spcl412~
+  RET hk_trap_found = found hk_trap_spell = resource
+END
+ACTION_IF (hk_trap_found) BEGIN
+  LAF HK_READ_SPELL_AREA STR_VAR spell = EVAL ~%hk_trap_spell%~
+    RET hk_trap_projectile = projectile hk_trap_target = target hk_trap_range = range
+  END
+END
+
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Breach~       pattern = ~^spwi[0-9][0-9][0-9]\.spl$~ RET hk_breach_found = found hk_breach_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Secret Word~  pattern = ~^spwi[0-9][0-9][0-9]\.spl$~ RET hk_secret_found = found hk_secret_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Remove Magic~ pattern = ~^spwi[0-9][0-9][0-9]\.spl$~ RET hk_remove_found = found hk_remove_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Death Spell~  pattern = ~^spwi[0-9][0-9][0-9]\.spl$~ RET hk_death_found = found hk_death_spell = spell END
+ACTION_IF (hk_death_found) BEGIN
+  LAF HK_READ_SPELL_AREA STR_VAR spell = EVAL ~%hk_death_spell%~
+    RET hk_death_projectile = projectile hk_death_target = target hk_death_range = range hk_death_icon = icon
+  END
+END
+
+ACTION_FOR_EACH hla IN ~Assassination~ ~Evasion~ ~Greater Evasion~ ~Avoid Death~ BEGIN
+  LAF HK_FIND_HLA STR_VAR name = EVAL ~%hla%~ table = ~luth0~
+    RET found ability icon strref min_lev max_lev num_allowed prereq
+  END
+  OUTER_SET    $hk_nt_hla_found(~%hla%~)   = found
+  OUTER_SPRINT $hk_nt_hla_ability(~%hla%~) ~%ability%~
+  OUTER_SPRINT $hk_nt_hla_icon(~%hla%~)    ~%icon%~
+  OUTER_SET    $hk_nt_hla_strref(~%hla%~)  = strref
+  OUTER_SET    $hk_nt_hla_min(~%hla%~)     = min_lev
+  OUTER_SET    $hk_nt_hla_max(~%hla%~)     = max_lev
+  OUTER_SET    $hk_nt_hla_num(~%hla%~)     = num_allowed
+  OUTER_SPRINT $hk_nt_hla_prereq(~%hla%~)  ~%prereq%~
+END
+
+OUTER_SET hk_gender_summoned = IDS_OF_SYMBOL (~gender~ ~SUMMONED~)
+
+OUTER_SET hk_spoil = 18   // timed spoiling effects last 3 rounds
+
+
+/////////////////////////////////////////////////////////////////////
+// Spoiling package
+// HKNTSF: the basics everyone gets. 30% spell failure (50% from level
+// 15) for arcane and divine casters, -2 to saves vs spells.
+// HKNTFL: the rest, by level, once per target per round:
+//   7: drain the highest-level wizard spell
+//  11: Breach (no save; opcode 326 ignores magic resistance)
+//  15: -20% magic resistance
+//  19: strip one spell protection (Secret Word)
+//  23: strip one each round for 3 rounds
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKNTSF~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = 1  END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = 15 END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKNTSF~ END
+  FOR (header = 1; header <= 2; ++header) BEGIN
+    SET failure = (header == 1 ? 30 : 50)
+    LPF HK_SPELL_FX INT_VAR opcode = 60 target = 2 parameter1 = failure parameter2 = 0 duration = hk_spoil header resist_dispel = 1 END   // arcane
+    LPF HK_SPELL_FX INT_VAR opcode = 60 target = 2 parameter1 = failure parameter2 = 1 duration = hk_spoil header resist_dispel = 1 END   // divine
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 37  target = 2 parameter1 = "-2" duration = hk_spoil resist_dispel = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 139 target = 2 parameter1 = RESOLVE_STR_REF (@122) timing = HK_TIMING_INSTANT END
+
+ACTION_DEFINE_ARRAY hk_nt_tier BEGIN 1 7 11 15 19 23 END
+CREATE SPL ~HKNTFL~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) END
+  FOR (i = 0; i < 6; ++i) BEGIN
+    SET level = $hk_nt_tier(~%i%~)
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = level END
+  END
+  FOR (header = 2; header <= 6; ++header) BEGIN
+    // level 7+
+    LPF HK_SPELL_FX INT_VAR opcode = 244 target = 2 parameter1 = 1 timing = HK_TIMING_INSTANT header END
+    PATCH_IF (header >= 3 && hk_breach_found) BEGIN   // level 11+
+      LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT header STR_VAR resource = EVAL ~%hk_breach_spell%~ END
+    END
+    PATCH_IF (header >= 4) BEGIN                      // level 15+
+      LPF HK_SPELL_FX INT_VAR opcode = 166 target = 2 parameter1 = "-20" duration = hk_spoil header resist_dispel = 1 END
+    END
+    PATCH_IF (header >= 5 && hk_secret_found) BEGIN   // level 19+
+      LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT header STR_VAR resource = EVAL ~%hk_secret_spell%~ END
+    END
+    PATCH_IF (header == 6 && hk_secret_found) BEGIN   // level 23: two more, a round apart
+      LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_DELAYED duration = 6  header STR_VAR resource = EVAL ~%hk_secret_spell%~ END
+      LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_DELAYED duration = 12 header STR_VAR resource = EVAL ~%hk_secret_spell%~ END
+    END
+  END
+  // Once per target per round (Assassination makes every hit a backstab)
+  LPF HK_SPELL_FX INT_VAR opcode = 206 target = 2 duration = 6 STR_VAR resource = ~HKNTFL~ END
+
+// The backstab itself: cast on the creature backstabbed (opcode 340)
+CREATE SPL ~HKNTBS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKNTSF~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKNTFL~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// Level-based passives
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKNTL1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2                timing = HK_TIMING_PERMANENT END   // Small and Nimble
+  LPF HK_SPELL_FX INT_VAR opcode = 37  parameter1 = 2                timing = HK_TIMING_PERMANENT END   // save vs spells
+  LPF HK_SPELL_FX INT_VAR opcode = 34  parameter1 = 2                timing = HK_TIMING_PERMANENT END   // save vs wands
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 5                timing = HK_TIMING_PERMANENT END   // charm
+  LPF HK_SPELL_FX INT_VAR opcode = 278 parameter1 = 1                timing = HK_TIMING_PERMANENT END   // Sure Hand
+  LPF HK_SPELL_FX INT_VAR opcode = 275 parameter1 = 15               timing = HK_TIMING_PERMANENT END   // Hide in Shadows
+  LPF HK_SPELL_FX INT_VAR opcode = 59  parameter1 = 15               timing = HK_TIMING_PERMANENT END   // Move Silently
+  LPF HK_SPELL_FX INT_VAR opcode = 276 parameter1 = 20               timing = HK_TIMING_PERMANENT END   // Detect Illusion
+  LPF HK_SPELL_FX INT_VAR opcode = 21  parameter1 = 0 parameter2 = 1 timing = HK_TIMING_PERMANENT END   // Lore set to 0
+  LPF HK_SPELL_FX INT_VAR opcode = 263 parameter1 = 2 parameter2 = 1 timing = HK_TIMING_PERMANENT END   // backstab x2, never scales
+  LPF HK_SPELL_FX INT_VAR opcode = 340 timing = HK_TIMING_PERMANENT STR_VAR resource = ~HKNTBS~ END     // Spoiling Backstab
+
+CREATE SPL ~HKNTHIT~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 278 parameter1 = 1 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKNTCF~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 128 timing = HK_TIMING_PERMANENT END   // confusion
+
+CREATE SPL ~HKNTND~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 69 timing = HK_TIMING_PERMANENT END                    // Non-Detection
+
+CREATE SPL ~HKNTDM~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = 241 timing = HK_TIMING_PERMANENT END  // domination
+
+
+/////////////////////////////////////////////////////////////////////
+// Spoiling traps
+// The trap payload reuses the vanilla trap's projectile. Everyone
+// caught gets the basics; only the creature that set it off (the
+// primary target: saving throw flag 0x800 = ignore secondary targets)
+// gets the rest of the package.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_NT_TRAP
+  INT_VAR remove_magic = 0
+  STR_VAR trap  = ~~      // payload resref (7 characters, so "F" can be added)
+          snare = ~~      // the innate that sets it
+BEGIN
+  CREATE SPL ~%trap%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR location = 4 target = hk_trap_target range = hk_trap_range projectile = hk_trap_projectile
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKNTSF~ END
+    LPF ADD_SPELL_EFFECT
+      INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT savingthrow = 0x800 probability1 = 100
+      STR_VAR resource = ~HKNTFL~
+    END
+    PATCH_IF (remove_magic && hk_remove_found) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%hk_remove_spell%~ END
+    END
+
+  // Critical failure spell (opcode 252 casts payload + "F"): the vanilla
+  // one if present, otherwise an empty spell.
+  ACTION_IF (FILE_EXISTS_IN_GAME ~%hk_trap_spell%f.spl~) BEGIN
+    COPY_EXISTING ~%hk_trap_spell%f.spl~ ~override/%trap%F.spl~
+  END ELSE BEGIN
+    CREATE SPL ~%trap%F~
+      LPF HK_INIT_SPELL END
+      LPF HK_ADD_SPELL_HEADER END
+  END
+
+  COPY_EXISTING ~spcl412.spl~ ~override/%snare%.spl~
+    LPF ALTER_SPELL_EFFECT INT_VAR match_opcode = 252 STR_VAR resource = EVAL ~%trap%~ END
+END
+
+ACTION_IF (hk_trap_found) BEGIN
+  LAF HK_NT_TRAP STR_VAR trap = ~HKNTTR~ snare = ~HKNTSN~ END
+  COPY_EXISTING ~HKNTSN.spl~ ~override~
+    SAY 0x08 @130
+    SAY 0x50 @131
+    SAY 0x54 @131
+END ELSE BEGIN
+  OUTER_SPRINT hk_ability_name ~Set Snare (SPCL412)~
+  OUTER_SPRINT hk_ability_kit  ~thief~
+  WARN @4
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs
+/////////////////////////////////////////////////////////////////////
+// Underfoot: hide even while seen (invisibility that breaks on attack)
+CREATE SPL ~HKNTUF~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141) STR_VAR icon = EVAL ~%hk_snare_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_snare_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 20 parameter2 = 0 duration = HK_ONE_TURN END
+
+// Disenchanting Strike: for 1 round, every melee hit casts Secret Word
+// on the target (ignoring magic resistance)
+ACTION_IF (hk_secret_found) BEGIN
+  CREATE EFF ~HKNTDSE~
+    LPF HK_INIT_EFF INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%hk_secret_spell%~ END
+  CREATE SPL ~HKNTDS~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146) STR_VAR icon = EVAL ~%hk_snare_book_icon%~ END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_snare_icon%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKNTDS~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 248 duration = 6 STR_VAR resource = ~HKNTDSE~ END
+END
+
+// Common Sense: allies nearby immune to charm, confusion and domination
+CREATE SPL ~HKNTCS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) END
+  LPF HK_ADD_SPELL_HEADER
+    INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
+    STR_VAR icon = EVAL ~%hk_bless_icon%~
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKNTCS~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 242 target = 2 timing = HK_TIMING_INSTANT END   // cure confusion
+  PATCH_FOR_EACH blocked IN ~5~ ~128~ ~241~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = blocked duration = HK_ONE_TURN END
+  END
+
+// Make-Believe: kills summoned creatures in Death Spell's area. Anything
+// not summoned is protected (SPLPROT row 117: GENDER != n).
+OUTER_SET hk_make_believe = (hk_death_found && hk_gender_summoned >= 0)
+ACTION_IF (hk_make_believe) BEGIN
+  CREATE SPL ~HKNTMB~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_death_target range = hk_death_range projectile = hk_death_projectile
+      STR_VAR icon = EVAL ~%hk_death_icon%~
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 318 target = 2 parameter1 = hk_gender_summoned parameter2 = 117 duration = 1 STR_VAR resource = ~HKNTMB~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 13  target = 2 parameter2 = 4 timing = HK_TIMING_INSTANT END   // death
+END
+
+// Unravelling Trap: a Spoiling Trap that also casts Remove Magic
+ACTION_IF (hk_trap_found) BEGIN
+  LAF HK_NT_TRAP INT_VAR remove_magic = 1 STR_VAR trap = ~HKNTUTT~ snare = ~HKNTUT~ END
+  COPY_EXISTING ~HKNTUT.spl~ ~override~
+    SAY 0x08 @160
+    SAY 0x50 @161
+    SAY 0x54 @161
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHNT.2da)
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@140) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKNTUF~ icon = EVAL ~%hk_snare_icon%~ RET hk_rows = rows hk_n = number END
+ACTION_IF (hk_secret_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKNTDS~ icon = EVAL ~%hk_snare_icon%~ RET hk_rows = rows hk_n = number END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKNTCS~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+ACTION_IF (hk_make_believe) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKNTMB~ icon = EVAL ~%hk_death_icon%~ RET hk_rows = rows hk_n = number END
+END
+ACTION_IF (hk_trap_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKNTUT~ icon = EVAL ~%hk_snare_icon%~ RET hk_rows = rows hk_n = number END
+END
+ACTION_FOR_EACH hla IN ~Assassination~ ~Evasion~ ~Greater Evasion~ ~Avoid Death~ BEGIN
+  ACTION_IF ($hk_nt_hla_found(~%hla%~)) BEGIN
+    OUTER_SPRINT ability $hk_nt_hla_ability(~%hla%~)
+    OUTER_SPRINT icon    $hk_nt_hla_icon(~%hla%~)
+    OUTER_SPRINT prereq  $hk_nt_hla_prereq(~%hla%~)
+    LAF HK_HLA_ROW
+      INT_VAR number = hk_n strref = $hk_nt_hla_strref(~%hla%~) picks = $hk_nt_hla_num(~%hla%~)
+              min_level = $hk_nt_hla_min(~%hla%~) max_level = $hk_nt_hla_max(~%hla%~)
+      STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%ability%~ icon = EVAL ~%icon%~ prereq = EVAL ~%prereq%~
+      RET hk_rows = rows hk_n = number
+    END
+  END
+END
+
+COPY ~%MOD_FOLDER%/kits/09-nettle/luhnt.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+/////////////////////////////////////////////////////////////////////
+LAF HK_WEAPPROF_LINE
+  INT_VAR copy_all = 1
+  STR_VAR kit = ~HK_NETTLE~ base = ~THIEF~
+  RET hk_nt_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_nt_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_NETTLE~ values = ~DEX=15~ RET hk_nt_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_NETTLE~ allowed = ~NEUTRAL_GOOD CHAOTIC_GOOD~ RET hk_nt_align = line END
+
+ADD_KIT ~HK_NETTLE~
+  ~HK_NETTLE                1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_nt_weapprof%~                                          // WEAPPROF (column)
+  ~%hk_nt_abclasrq%~                                          // ABCLASRQ: Dex 15
+  ~HK_NETTLE                0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_NETTLE                0 17 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_NETTLE                0 17 0 0 0 0~                     // ABDCSCRQ
+  ~%hk_nt_align%~                                             // ALIGNMNT: neutral or chaotic good
+  ~HK_NETTLE                0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/09-nettle/hkntclab.2da~                  // CLAB
+  ~K_T_H~                                                     // halfling thieves only
+  ~0x00004000 4~                                              // thief usability, class 4
+  ~HNT~                                                       // LUHNT.2da
+  ~%hk_nt_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment: daggers, short swords, clubs, darts, slings and short
+// bows only; no wands (35) or scrolls (11).
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_nt_kit_id = IDS_OF_SYMBOL (~kit~ ~HK_NETTLE~)
+
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id  = hk_nt_kit_id
+          message = RESOLVE_STR_REF (@180)
+  STR_VAR allowed_profs   = ~96 91 115 106 107 105~
+          forbidden_types = ~35 11~
+END

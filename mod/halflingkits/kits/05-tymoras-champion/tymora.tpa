@@ -346,13 +346,13 @@ LAF HK_WEAPPROF_LINE
   RET hk_tc_weapprof = line
 END
 LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_tc_stweap = line END
-LAF HK_STAT_LINE STR_VAR kit = ~HK_TYMORA~ values = ~STR=9~ RET hk_tc_abclasrq = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_TYMORA~ values = ~STR=9 CHR=13~ RET hk_tc_abclasrq = line END
 LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_TYMORA~ allowed = ~CHAOTIC_GOOD~ RET hk_tc_align = line END
 
 ADD_KIT ~HK_TYMORA~
   ~HK_TYMORA                1 1 1 1 1 1 1 1~                  // CLASWEAP
   ~%hk_tc_weapprof%~                                          // WEAPPROF (column)
-  ~%hk_tc_abclasrq%~                                          // ABCLASRQ: Str 9
+  ~%hk_tc_abclasrq%~                                          // ABCLASRQ: Str 9, Cha 13
   ~HK_TYMORA                0 0 0 0 0 0~                      // ABCLSMOD
   ~HK_TYMORA                17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
   ~HK_TYMORA                17 0 0 0 0 0~                     // ABDCSCRQ

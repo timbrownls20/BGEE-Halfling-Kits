@@ -431,17 +431,17 @@ LAF HK_WEAPPROF_LINE
   RET hk_hs_weapprof = line
 END
 LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_hs_stweap = line END
-LAF HK_STAT_LINE STR_VAR kit = ~HK_HEARTHSINGER~ values = ~WIS=9~ RET hk_hs_abclasrq = line END
-LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_HEARTHSINGER~ allowed = ~*~ RET hk_hs_align = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_HEARTHSINGER~ values = ~WIS=9 CHR=14~ RET hk_hs_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_HEARTHSINGER~ allowed = ~LAWFUL_GOOD NEUTRAL_GOOD~ RET hk_hs_align = line END
 
 ADD_KIT ~HK_HEARTHSINGER~
   ~HK_HEARTHSINGER          1 1 1 1 1 1 1 1~                  // CLASWEAP
   ~%hk_hs_weapprof%~                                          // WEAPPROF (column)
-  ~%hk_hs_abclasrq%~                                          // ABCLASRQ: Wis 9
+  ~%hk_hs_abclasrq%~                                          // ABCLASRQ: Wis 9, Cha 14
   ~HK_HEARTHSINGER          0 0 0 0 0 0~                      // ABCLSMOD
   ~HK_HEARTHSINGER          0 0 0 0 17 0~                     // ABDCDSRQ (halflings cannot dual-class)
   ~HK_HEARTHSINGER          0 0 0 0 17 0~                     // ABDCSCRQ
-  ~%hk_hs_align%~                                             // ALIGNMNT: any
+  ~%hk_hs_align%~                                             // ALIGNMNT: lawful or neutral good
   ~HK_HEARTHSINGER          0 0 0 0 0 0~                      // DUALCLAS: none
   ~%MOD_FOLDER%/kits/04-hearthsinger/hkhsclab.2da~            // CLAB
   ~K_C_H~                                                     // halfling clerics only

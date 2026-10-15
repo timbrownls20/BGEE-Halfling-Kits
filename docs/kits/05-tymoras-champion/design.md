@@ -2,7 +2,7 @@
 
 *Every halfling knows a lucky one: the cousin who fell off the roof onto a haycart, the uncle who won the farm at cards. Tymora's Champion is that cousin, grown up and sworn to the Lady. Arrows miss by a whisker, blades turn on a buckle, and when death finally comes calling, Tymora rolls the dice one more time.*
 
-**Base class:** Fighter. **Race:** Halfling only.
+**Base class:** Fighter. **Race:** Halfling only. **Requires:** Charisma 13 or higher.
 
 A halfling-only fighter kit for Baldur's Gate 1 and 2 that relies on luck. Tymora's chosen hits often, rolls near-maximum damage, shrugs off spells and survives what should have killed it. Target tier: a solid all-rounder rated 8 overall, alongside the Barbarian and Cavalier, and the most flexible of the halfling fighters.
 

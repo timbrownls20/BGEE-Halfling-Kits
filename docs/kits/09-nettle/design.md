@@ -2,9 +2,9 @@
 
 *A small thing that gets under a caster's skin. The Nettle doesn't stab to kill; it stabs to unmake. One moment the archmage is reaching for its best spell, the next there's a halfling at its elbow and the spell simply isn't there any more.*
 
-**Base class:** Thief. **Race:** Halfling only.
+**Base class:** Thief. **Race:** Halfling only. **Requires:** Dexterity 15 or higher.
 
-A halfling-only thief kit for Baldur's Gate 1 and 2: the thief cousin of the Unbeguiled. Where the Unbeguiled walks up to a caster through its spells, the Nettle slips past its wards unseen and opens the fight by tearing the magic off it. Its backstab does no extra damage at all; instead it carries an anti-magic package that grows with level. Target tier: a specialist opener and scout, a tier below the fighter Unbeguiled.
+A halfling-only thief kit for Baldur's Gate 1 and 2: the thief cousin of the Unbeguiled. Where the Unbeguiled walks up to a caster through its spells, the Nettle slips past its wards unseen and opens the fight by tearing the magic off it. Its backstab stays at double damage at every level; instead of growing in damage, it carries an anti-magic package that grows with level. Target tier: a specialist opener and scout, a tier below the fighter Unbeguiled.
 
 ## At a glance
 
@@ -27,7 +27,7 @@ What the Nettle gains at each level. Full details are under Advantages and High 
 
 ## Advantages
 
-- **Spoiling Backstab:** backstabs never multiply damage. Instead, a successful backstab applies the effects below, which add up as it levels. Timed effects last 3 rounds and work on arcane and divine casters alike.
+- **Spoiling Backstab:** backstabs do double damage and the multiplier never rises with level. Instead, a successful backstab applies the effects below, which add up as it levels. Timed effects last 3 rounds and work on arcane and divine casters alike.
   - Level 1: 30% chance to fail spells, and -2 to saves vs spells.
   - Level 7: removes the target's highest-level memorised spell.
   - Level 11: Breaches the target, stripping its combat protections. No save, and magic resistance doesn't stop it.
@@ -44,11 +44,11 @@ What the Nettle gains at each level. Full details are under Advantages and High 
 
 ## Disadvantages
 
-- Backstabs do no extra damage (no multiplier at any level).
+- Backstab multiplier fixed at x2 at every level (a normal thief reaches x5).
 - Small weapons only: daggers, short swords, clubs, darts, slings and short bows. No long swords, katanas, scimitars or quarterstaffs.
 - Won't use wands or scrolls. It simply does not trust them.
 - Lore is 0 at every level and can't be raised: it has no interest in what magic items do, so it can't identify them.
-- Must be a halfling.
+- Must be a neutral good or chaotic good halfling.
 
 ## High Level Abilities
 
@@ -70,7 +70,7 @@ Full HLA list. Nettle abilities are listed first, then the standard thief HLAs i
 
 ## Balance notes
 
-The Nettle trades all of a thief's backstab damage for the strongest single anti-magic hit in the game. One successful backstab can leave a high-level mage Breached, half unable to cast, missing its best spell and open to the party's own spells. The catch is that it gets about one opening per fight: thieves can only hide again when nobody can see them, so outside Throne of Bhaal the Nettle is an opener, not a sustained threat. Spoiling Traps give it a second way in: a trap isn't a weapon hit, so it gets through Protection from Magical Weapons and Stoneskin, and anyone else in the blast is left struggling to cast. Underfoot and Assassination fix the one-opener problem late on. After the opener its damage is weak: proficiency with small weapons and no multiplier. Sure Hand makes sure the opener actually lands, which matters because enemy clerics wear plate.
+The Nettle trades most of a thief's backstab damage for the strongest single anti-magic hit in the game. One successful backstab can leave a high-level mage Breached, half unable to cast, missing its best spell and open to the party's own spells. The catch is that it gets about one opening per fight: thieves can only hide again when nobody can see them, so outside Throne of Bhaal the Nettle is an opener, not a sustained threat. Spoiling Traps give it a second way in: a trap isn't a weapon hit, so it gets through Protection from Magical Weapons and Stoneskin, and anyone else in the blast is left struggling to cast. Underfoot and Assassination fix the one-opener problem late on. After the opener its damage is weak: proficiency with small weapons and a backstab stuck at x2. Sure Hand makes sure the opener actually lands, which matters because enemy clerics wear plate.
 
 It overlaps with the Magpie as the party thief, so in the halfling party it would replace the Magpie rather than join it.
 
@@ -81,7 +81,22 @@ It overlaps with the Magpie as the party thief, so in the halfling party it woul
 For anyone building this kit as a mod (for example with WeiDU):
 
 - **Easy:** saves and immunities, Non-Detection, to-hit bonus, thief skill bonuses, weapon and item limits, Common Sense, Make-Believe (a summons-only version of Death Spell).
-- **Moderate:** removing the backstab multiplier (set it to 1 at every level), Spoiling Backstab (a backstab-only on-hit effect; the engine can tell backstab hits apart), Spoiling Traps (a custom trap that does no damage and instead carries the full backstab effects for the creature that sets it off, and only the spell failure and saves penalty for others in the blast), Unravelling Trap (the same trap plus an area Remove Magic), Disenchanting Strike, Underfoot (based on the Shadowdancer's hiding), Assassination's limiter (full Spoiling Backstab once per target per round, needs a short script).
-- **Hard:** none, unless the Breach should fire even when the hit is blocked (see below).
+- **Moderate:** fixing the backstab multiplier at x2 at every level, Spoiling Backstab (a backstab-only on-hit effect; the engine can tell backstab hits apart), Spoiling Traps (a custom trap that does no damage and instead carries the full backstab effects for the creature that sets it off, and only the spell failure and saves penalty for others in the blast), Unravelling Trap (the same trap plus an area Remove Magic), Disenchanting Strike, Underfoot (based on the Shadowdancer's hiding), Assassination's limiter (full Spoiling Backstab once per target per round, needs a short script).
+- **Hard:** draining a priest's memorised spells (the engine's drain is wizard-only, so probably EEex); also the Breach firing even when the hit is blocked (see below).
 - **Check:** on-hit effects only apply if the weapon hit lands. Protection from Magical Weapons blocks the backstab entirely, so the Breach never fires against it, and Stoneskin probably absorbs the hit and its effects too. Spoiling Traps are the Nettle's built-in answer, because a trap isn't a weapon hit. For the backstab itself, either accept that the Nettle needs the target's protections down first, or make the Breach fire on the stealth attack itself, hit or miss, which probably needs EEex. The Unbeguiled's Spoiling Strike shares the Stoneskin question.
 - **Check:** whether Spell Turning, Spell Deflection or the target's magic resistance block a Spoiling Trap's effects; traps are spell-like effects, so they probably should be flagged to bypass them, or the trap loses much of its point.
+
+### As built (not yet tested in game)
+
+Code: `mod/halflingkits/kits/09-nettle/`. Where the build differs from the design, or relies on something to check in game:
+
+- **Backstabs** are fixed at x2 (a design change from the original "no extra damage"). Spoiling Backstab hangs off the engine's "backstab effect" (opcode 340). Check in game that the x2 holds at every level and the spoiling effects fire on each backstab.
+- **Spell drain (TODO, needs EEex):** the level-7 effect drains the highest-level memorised *wizard* spell only. The engine's spell drain has no priest version.
+- **Breach and Secret Word** are the game's own spells, found by name at install and applied so that magic resistance can't stop them.
+- **Spoiling Traps** replace Set Snare with Spoiling Snare (same uses: one at level 1, plus one every 5 levels). The trap reuses the vanilla trap's projectile. Only the creature that sets it off gets the full package; this relies on the engine treating that creature as the trap's primary target.
+- **Assassination's limiter:** the full package lands once per target per round. Other hits that round refresh the spell failure and saves penalty instead of stacking them, which comes to the same thing at the cap.
+- **Underfoot** uses ordinary invisibility for 1 turn (broken by attacking), not the thief's hide-in-shadows state.
+- **Disenchanting Strike** doesn't stop itself combining with Assassination. Since a full Spoiling Backstab already strips protections, the overlap is small.
+- **Common Sense** reuses Bless's party-only area, not exactly 20 feet. **Make-Believe** reuses Death Spell's area and kills only creatures the game marks as summoned.
+- **Domination immunity** blocks the engine's "control creature" effect. **Non-Detection** is the game's own effect.
+

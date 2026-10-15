@@ -2,7 +2,7 @@
 
 *Some halflings run from trouble. The Surefoot plants its bare heels and lets trouble break against it. Raised on hard roads and long winters, they walk all day without tiring and cannot be moved by fear, magic or a charging ogre. When the line wavers, look for the small figure that hasn't taken a step back.*
 
-**Base class:** Fighter. **Race:** Halfling only.
+**Base class:** Fighter. **Race:** Halfling only. **Requires:** Constitution 15 or higher.
 
 A halfling-only defensive fighter kit for Baldur's Gate 1 and 2. It is built to be hard to kill rather than to deal damage: it trades the Dwarven Defender's heavy armour and slow stance for extra hit points, steadily rising saves and a long ladder of immunities and resistances. Target tier: rated 8 overall, the toughest kit in the doc, a step above the Dwarven Defender.
 
@@ -54,7 +54,7 @@ What the Surefoot gains at each level. Full details are under Advantages and Hig
 - Grandmastery in short swords, flails and maces. Mastery in slings, short bows, clubs and daggers. Cannot use any other weapon.
 - Cannot wear boots.
 - The kit's own abilities never take physical or elemental (fire, cold, electricity and acid) damage resistance above 90%; gear can still add more, so watch for totals above 100%, which heal instead of harm.
-- Must be a halfling of good alignment.
+- Must be a lawful good, neutral good or lawful neutral halfling.
 
 ## Stand Fast
 

@@ -2,7 +2,7 @@
 
 *Every halfling village has one: the cousin who comes home from the woods with a silver spoon, a lost ring and somebody's spare boots, and swears they just found them. Brandobaris, the halfling god of thieves, luck and adventure, smiles on the Magpie. Treasure has a way of turning up wherever it sleeps, and the dice rarely roll against it.*
 
-**Base class:** Thief. **Race:** Halfling only. **Requires:** Charisma 15 or higher.
+**Base class:** Thief. **Race:** Halfling only. **Requires:** Charisma 15 or higher, Intelligence 9 or higher.
 
 A halfling-only thief kit for Baldur's Gate 1 and 2 built on luck rather than murder. It trades the backstab for a knack with wands and scrolls, and keeps the party supplied with treasure it finds while resting and gold it wins at the dice tables. Target tier: among the stronger single-class thieves, with unusual party value.
 
@@ -72,7 +72,7 @@ Each step adds to the ones before it.
 - Weapons limited to daggers, short swords, clubs, quarterstaffs, slings, darts and short bows.
 - Gains only 20 thief skill points per level, instead of the usual 25.
 - Armour limited to leather and studded leather; no shields.
-- Must be a halfling.
+- Must be a neutral good, chaotic good or chaotic neutral halfling.
 
 ## High Level Abilities
 

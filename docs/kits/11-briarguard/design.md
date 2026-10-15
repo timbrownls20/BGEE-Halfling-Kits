@@ -2,7 +2,7 @@
 
 *Some halflings guard the hedgerows rather than tend them. They wear what the wild gives (hide, chitin, dragon scale), carry a stout club, and fight with the badger at their heel and the thorns at their back. Fire and frost wash off them like rain off a holly leaf.*
 
-**Base class:** Fighter. **Race:** Halfling only.
+**Base class:** Fighter. **Race:** Halfling only. **Requires:** Wisdom 13 or higher.
 
 A halfling-only fighter kit for Baldur's Gate 1 and 2: a nature warrior blessed by Sheela Peryroyl. It gives up metal armour and martial weapons for innate nature spells, elemental resistance that grows to 80%, and a badger familiar. Target tier: rated 8 overall, a hard-to-kill front-liner whose defences come from nature rather than plate.
 
@@ -41,7 +41,7 @@ What the Briarguard gains at each level. Full details are under Advantages, Inna
 - **Natural armour only:** no metal armour. It can wear leather, hide, Ankheg Plate and the dragon-scale armours, but not studded leather, chain, splint or plate.
 - **Natural weapons only: clubs, quarterstaffs, slings and short bows. No metal weapons (swords, axes, spears, flails, maces, hammers, daggers), and no** longbows or crossbows.
 - **Shields:** bucklers and small shields only. Most are metal, so this is the one place the natural theme bends, which saves flagging every shield by material.
-- Must be a halfling.
+- Must be a neutral good or true neutral halfling.
 
 ## Innate nature abilities
 

@@ -2,7 +2,7 @@
 
 *Every halfling child learns the sling: for rabbits, for crows, for the occasional neighbour's window. The Slinger never stopped practising. A pouch of bullets and a leather cord are all they need to drop a charging orc at fifty paces, and by the time the giant works out where the stones are coming from, the small figure on the hill has already reloaded.*
 
-**Base class:** Fighter. **Race:** Halfling only.
+**Base class:** Fighter. **Race:** Halfling only. **Requires:** Dexterity 16 or higher.
 
 A halfling-only fighter kit for Baldur's Gate 1 and 2: a sling specialist built on the Archer's template, with Kensai-style scaling that never tails off. It hits like an Archer at range but is fragile if caught. Target tier: rated 8 overall, with damage (9) level with the Archer and Berserker.
 
@@ -57,7 +57,7 @@ Sling to-hit and damage rise by 1 at level 5 and every 4 levels after (+5 from l
 - Can only use bucklers and small shields.
 - Cannot use daggers, axes, two-handed weapons, or any ranged weapon except slings.
 - Limited to proficiency (one pip) in all other permitted weapons, like the Archer.
-- Must be a halfling.
+- Must be a halfling of good alignment.
 
 ## High Level Abilities
 

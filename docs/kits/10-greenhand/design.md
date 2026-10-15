@@ -2,7 +2,7 @@
 
 *Sheela Peryroyl's priests keep no temples. They tend fields, hedgerows and orchards, mend whoever comes limping up the lane, talk to the badgers, and always know which way the wind is blowing. When something threatens the garden, the garden answers.*
 
-**Base class:** Cleric. **Race:** Halfling only.
+**Base class:** Cleric. **Race:** Halfling only. **Requires:** Charisma 13 or higher.
 
 A halfling-only cleric kit for Baldur's Gate 1 and 2: a priest of Sheela Peryroyl, the halfling goddess of nature, harvests and weather, and the halflings' answer to the druid. It trades the cleric's holy and unholy magic for druid spells, so it heals, summons and scouts like a cleric while striking with nature's weapons. Because it uses the cleric XP table, it has no druid XP wall. Target tier: rated 8 overall, a strong healer and summoner with real area damage, but without the cleric's best control spells.
 
@@ -52,7 +52,7 @@ What the Greenhand gains at each level. Full details are under Advantages, Spell
 - Armour limited to studded leather or lighter (shields allowed).
 - Cannot Turn Undead.
 - Cannot cast the cleric's undead, spiritual weapon, mind-control, glyph, holy and unholy attack, poison and harm spells (full list below).
-- Must be a halfling.
+- Must be a neutral good or true neutral halfling.
 
 ## Spells
 

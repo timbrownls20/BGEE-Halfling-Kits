@@ -2,7 +2,7 @@
 
 *Halflings are not supposed to be paladins, and nobody told the True Heart. Raised on hearth-tales of good folk standing against the dark, they took up a short sword and the symbol of Arvoreen, the halfling god of defence and vigilance, and simply refused to be afraid. Their faith is quiet and stubborn: no charm can turn it, no terror can break it, and no demon has yet found the bottom of it.*
 
-**Base class:** Fighter. **Race:** Halfling only.
+**Base class:** Fighter. **Race:** Halfling only. **Requires:** Charisma 15 or higher.
 
 A halfling-only holy champion for Baldur's Gate 1 and 2, since halflings cannot be paladins in BG. It combines heavy armour and fighter weapon skill (capped at specialisation) with innate holy buffs and healing, a ladder of Heart immunities and an aura that steadies its allies. Target tier: a strong front-line healer and protector, rated 8.5 overall, just below the Fighter/Cleric: it has no spells through Shadows of Amn, but its Devas and Planetar give it the strongest late game of the halfling support kits.
 

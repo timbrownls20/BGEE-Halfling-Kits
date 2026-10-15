@@ -46,7 +46,7 @@ Offensive power: how fast it kills things, including spell damage and fight-deci
 | 36 | Shaman | Class | Spirit summons; limited direct damage |
 | 37 | Monk | Class | Extra attacks late; weak early |
 | 38 | Wizard Slayer | Fighter kit | Ordinary melee; spell disruption on hit |
-| 39 | **Nettle** | New kit | No backstab multiplier; proficiency with small weapons |
+| 39 | **Nettle** | New kit | Backstab stuck at x2; proficiency with small weapons |
 | 40 | **Surefoot Fighter** | New kit | Grandmastery in three weapons, no Strength bonus |
 | 41 | Jester | Bard kit | Its song disables; weak personal damage |
 | 42 | Beastmaster | Ranger kit | No metal weapons; animal summons fall off |
@@ -167,7 +167,7 @@ All three rankings cover a full BG1 to Throne of Bhaal run, leaning late. Full c
 - **Hearthsinger:** modest personally, but one of the best supporters in the game: two songs, cleric healing to 5th level (6th and 7th through HLAs), Homeward Hymn and Kin's Shield.
 - **Magpie:** a thief built on luck and loot rather than murder: no backstab and no traps, but Magpie's Knack lets it use scrolls, wands and other classes' items, while Brandobaris's Gift and Dice keep the party supplied.
 - **Unbeguiled:** the halfling Wizard Slayer done properly. Magic resistance to about 68%, immunity to mind control that it shares with allies through Clear Heads, and Spoiling Strike to Breach and spoil any caster. Its HLAs make it the party's shield against magic. Ordinary against enemies that don't cast, and its AC suffers without magic cloaks, rings or amulets.
-- **Nettle:** a thief with no backstab multiplier; its backstabs and traps carry an anti-magic package instead. Its traps get through Protection from Magical Weapons and Stoneskin, which makes it the best kit in the doc at taking apart a protected caster, but its own damage is low.
+- **Nettle:** a thief whose backstab never rises past x2; its backstabs and traps carry an anti-magic package instead. Its traps get through Protection from Magical Weapons and Stoneskin, which makes it the best kit in the doc at taking apart a protected caster, but its own damage is low.
 - **Greenhand:** the halflings' druid: cleric healing and divination, druid summons and nature's area spells (Insect Plague, Creeping Doom) on the cleric XP table, in studded leather.
 - **Briarguard:** the halfling nature warrior. No metal armour, but Barkskin, Iron Skins and elemental resistance up to 80% and immunity to hold and slow make it a hard front-liner, with Entangle, a plant guardian and a badger familiar on the side. Grandmastery in every weapon and Strength of the Oak give it solid damage.
 

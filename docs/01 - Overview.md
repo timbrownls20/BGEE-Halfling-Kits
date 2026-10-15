@@ -14,7 +14,7 @@ Eleven halfling kits for Baldur's Gate 1 and 2, each built around one idea and t
 | Tymora's Champion | Fighter | Lucky all-rounder | Lady Luck's chosen, every family's lucky cousin | 6.5 | 8 | 7.5 | 8 | 10 |
 | Slinger | Fighter | Ranged damage | A halfling sharpshooter whose skill never tails off | 9 | 4.5 | 7 | 8 | 10 |
 | Magpie | Thief | Wand-and-scroll trickster and scout | A halfling thief favoured by Brandobaris, who finds treasure wherever it sleeps | 7 | 6 | 8 | 7.5 | 10 |
-| Nettle | Thief | Anti-caster opener | Its backstab does no extra damage; instead it Breaches, drains and spoils the caster it lands on | 4.5 | 6.5 | 8 | 7.5 | 10 |
+| Nettle | Thief | Anti-caster opener | Its backstab stays at x2; instead of more damage it Breaches, drains and spoils the caster it lands on | 4.5 | 6.5 | 8 | 7.5 | 10 |
 
 ## Power ratings
 

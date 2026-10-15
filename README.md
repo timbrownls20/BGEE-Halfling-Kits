@@ -2,7 +2,7 @@
 
 Eleven halfling-only character kits for Baldur's Gate: Enhanced Edition and Baldur's Gate II: Enhanced Edition (including Siege of Dragonspear and Throne of Bhaal). Each kit is built around one idea and tuned to be strong but not overpowered.
 
-**Status:** design complete for all eleven kits. Three are coded as a WeiDU mod: the Fleet Foot Fighter, the Hearthsinger and Tymora's Champion. None has been installed or playtested yet.
+**Status:** design complete for all eleven kits. Four are coded as a WeiDU mod: the Fleet Foot Fighter, the Hearthsinger, Tymora's Champion and the Nettle. None has been installed or playtested yet.
 
 ## Start here
 
@@ -13,21 +13,21 @@ Eleven halfling-only character kits for Baldur's Gate: Enhanced Edition and Bald
 
 ## The kits
 
-| Kit | Base class | Role | Coded |
-| --- | --- | --- | --- |
-| [Fleet Foot Fighter](docs/kits/01-fleet-foot-fighter/design.md) | Fighter | Melee damage, mobility | Yes |
-| [True Heart](docs/kits/02-true-heart/design.md) | Fighter | Front-line healer and protector | |
-| [Surefoot Fighter](docs/kits/03-surefoot-fighter/design.md) | Fighter | Tank | |
-| [Hearthsinger](docs/kits/04-hearthsinger/design.md) | Cleric | Party support (songs) | Yes |
-| [Tymora's Champion](docs/kits/05-tymoras-champion/design.md) | Fighter | Lucky all-rounder | Yes |
-| [Slinger](docs/kits/06-slinger/design.md) | Fighter | Ranged damage | |
-| [Magpie](docs/kits/07-magpie/design.md) | Thief | Scrolls, wands and loot | |
-| [Unbeguiled](docs/kits/08-unbeguiled/design.md) | Fighter | Mage-hunter | |
-| [Nettle](docs/kits/09-nettle/design.md) | Thief | Anti-caster opener | |
-| [Greenhand](docs/kits/10-greenhand/design.md) | Cleric | Nature priest and summoner | |
-| [Briarguard](docs/kits/11-briarguard/design.md) | Fighter | Nature warrior, elemental tank | |
+| Kit | Base class | Role | Coded | Tested |
+| --- | --- | --- | --- | --- |
+| [Fleet Foot Fighter](docs/kits/01-fleet-foot-fighter/design.md) | Fighter | Melee damage, mobility | Yes | |
+| [True Heart](docs/kits/02-true-heart/design.md) | Fighter | Front-line healer and protector | | |
+| [Surefoot Fighter](docs/kits/03-surefoot-fighter/design.md) | Fighter | Tank | | |
+| [Hearthsinger](docs/kits/04-hearthsinger/design.md) | Cleric | Party support (songs) | Yes | |
+| [Tymora's Champion](docs/kits/05-tymoras-champion/design.md) | Fighter | Lucky all-rounder | Yes | |
+| [Slinger](docs/kits/06-slinger/design.md) | Fighter | Ranged damage | | |
+| [Magpie](docs/kits/07-magpie/design.md) | Thief | Scrolls, wands and loot | | |
+| [Unbeguiled](docs/kits/08-unbeguiled/design.md) | Fighter | Mage-hunter | | |
+| [Nettle](docs/kits/09-nettle/design.md) | Thief | Anti-caster opener | Yes | |
+| [Greenhand](docs/kits/10-greenhand/design.md) | Cleric | Nature priest and summoner | | |
+| [Briarguard](docs/kits/11-briarguard/design.md) | Fighter | Nature warrior, elemental tank | | |
 
-Each coded kit's design file ends with an "As built" section listing where the code differs from the design.
+Each coded kit's design file ends with an "As built" section listing where the code differs from the design. **Tested** means installed and played in the game; no kit has been yet, as there is no game install to test against.
 
 ## Repository layout
 

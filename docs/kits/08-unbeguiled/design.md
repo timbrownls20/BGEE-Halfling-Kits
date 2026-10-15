@@ -2,7 +2,7 @@
 
 *Wizards are used to people being afraid of them. The Unbeguiled halfling just isn't. Charms slide off, illusions look faintly silly, and the grandest spell in the archmage's book seems somehow not to take. Small, quiet and entirely unimpressed, it walks up to the caster that everyone else is running from, and pokes it with something sharp.*
 
-**Base class:** Fighter. **Race:** Halfling only.
+**Base class:** Fighter. **Race:** Halfling only. **Requires:** Wisdom 15 or higher.
 
 A halfling-only fighter kit for Baldur's Gate 1 and 2: a halfling Wizard Slayer, built around shrugging off magic and spoiling other people's magic. Where the Magpie collects and uses magic, the Unbeguiled distrusts it, resists it and breaks it. Unlike the Wizard Slayer, it keeps most magic items, so it is a genuine mage-hunter rather than a curiosity. Target tier: a solid fighter kit with a unique role as the party's mage-hunter and its shield against magic.
 
@@ -52,7 +52,7 @@ What the Unbeguiled gains at each level. Full details are under Advantages and H
 - Can't use large shields.
 - Will not wear magical rings, amulets or cloaks, and won't use wands or scrolls, not even protection scrolls. It simply does not trust them.
 - Lore is 0 at every level and can't be raised: it has no interest in what magic items do, so it can't identify them.
-- Must be a halfling.
+- Must be a halfling of good alignment.
 
 ## High Level Abilities
 

@@ -1,0 +1,64 @@
+// Nettle
+
+@100 = ~Nettle~
+@101 = ~Nettle~
+@102 = ~NETTLE: A halfling that slips past wards and stabs the magic out of a caster. The Nettle's backstab never grows past double damage. Instead it breaches, drains and spoils the caster it lands on, and its traps carry the same sting.
+
+Advantages:
+– Spoiling Backstab: a backstab does double damage at every level, and leaves the target with a 30% chance to fail spells and -2 to saves against spells for 3 rounds. From level 7 it also drains the target's highest-level memorised wizard spell; from level 11 it Breaches the target, with no save, ignoring magic resistance; from level 15 the chance to fail spells rises to 50% and the target loses 20% magic resistance; from level 19 it strips one spell protection; from level 23 it strips one spell protection each round for 3 rounds.
+– Spoiling Traps: the Nettle's traps do no damage. The creature that sets one off suffers the full Spoiling Backstab; anyone else caught suffers the chance to fail spells and the saves penalty.
+– Stubborn Will: +2 to saves against spells and wands; immune to charm, to confusion from level 6, and to domination from level 10.
+– Sure Hand: +1 to hit, plus 1 more every 5 levels, up to +5 at level 21.
+– Quiet Feet: +15% to Hide in Shadows and Move Silently.
+– Not Fooled: +20% to Detect Illusion.
+– Unnoticed: permanent Non-Detection from level 9.
+– Small and Nimble: +2 AC.
+
+Disadvantages:
+– Backstabs stay at double damage: the multiplier never rises with level.
+– May only use daggers, short swords, clubs, darts, slings and short bows.
+– Cannot use wands or scrolls.
+– Lore is 0 and cannot be raised.
+– Requires Dexterity 15 or higher.
+– Must be a neutral good or chaotic good halfling.~
+
+@110 = ~Nettle~
+@111 = ~The Nettle's stubborn will, sure hand and quiet feet.~
+
+@120 = ~Spoiling Backstab~
+@121 = ~Spoiling Backstab
+
+The target suffers a chance to fail spells and a penalty to saves against spells for 3 rounds, with more effects as the Nettle rises in level.~
+@122 = ~Spoiled!~
+
+@130 = ~Spoiling Snare~
+@131 = ~Spoiling Snare
+
+Sets a trap that does no damage. The creature that sets it off suffers the full Spoiling Backstab for the Nettle's level; anyone else caught suffers the chance to fail spells and the saves penalty.~
+
+@140 = ~Underfoot~
+@141 = ~Underfoot
+
+The Nettle instantly hides in shadows, even while seen. In a busy fight, nobody keeps track of a halfling.~
+
+@145 = ~Disenchanting Strike~
+@146 = ~Disenchanting Strike
+
+For 1 round, every hit strips one spell protection from its target, as Secret Word.~
+
+@150 = ~Common Sense~
+@151 = ~Common Sense
+
+For 1 turn, the Nettle and its allies nearby are immune to charm, confusion and domination.~
+
+@155 = ~Make-Believe~
+@156 = ~Make-Believe
+
+Summoned creatures around the Nettle are destroyed. Only summoned creatures are affected.~
+
+@160 = ~Unravelling Trap~
+@161 = ~Unravelling Trap
+
+Sets a special Spoiling Trap. On top of the usual Spoiling Trap effects, everyone caught is hit by Remove Magic at the Nettle's level, stripping their buffs.~
+
+@180 = ~Nettles cannot use this item.~
