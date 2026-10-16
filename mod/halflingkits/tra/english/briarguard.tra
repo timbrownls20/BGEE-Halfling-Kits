@@ -11,6 +11,7 @@ Advantages:
 – Wild Stride: immune to entangle, web and Spike Growth; from level 12, also to hold, paralysis and slow. Haste and Boots of Speed still work.
 – Innate abilities: Entangle and Barkskin from level 1 (Barkskin twice a day from level 9), Strength of the Oak from level 4 (+2 Strength and Constitution for 1 turn; up to three times a day), Iron Skins from level 10 (twice a day from 16), and Wake the Hedge from level 14.
   WAKE THE HEDGE: The hedgerow stands up and fights for 2 turns: a Bramble Man, a Thornwood Guardian from level 18, or a Young Treant from level 22.
+– Find Familiar: once a day, calls a badger that grows with the Briarguard and adds to its hit points while it lives.
 
 Disadvantages:
 – Natural armour only: leather, hide, Ankheg Plate and dragon scale, but no studded leather or metal armour.
@@ -69,7 +70,7 @@ The Briarguard's weapons count as +3 weapons for what they can hit, or +4 with a
 @165 = ~Badger's Fury~
 @166 = ~Badger's Fury
 
-For 1 turn, the Briarguard gains +1 attack per round, +2 damage, and immunity to charm and confusion.~
+For 1 turn, the Briarguard gains +1 attack per round, +2 damage, and immunity to charm and confusion. Its badger nearby rages too, gaining +1 attack per round and +2 damage.~
 
 @170 = ~Thornhide~
 @171 = ~Thornhide
@@ -80,5 +81,16 @@ For 3 turns, anything that hits the Briarguard takes 2d6 piercing damage.~
 @176 = ~Hedge Shelter
 
 For 1 turn, the Briarguard and its allies nearby gain +3 AC and 25% resistance to fire, cold, electricity and acid.~
+
+@190 = ~Hedgerow Badger~
+@191 = ~Sett Badger~
+@192 = ~Grey Brock~
+@193 = ~Old Brock~
+@194 = ~Elder of the Sett~
+@195 = ~Find Familiar~
+@196 = ~Find Familiar
+
+Once a day, the Briarguard calls its badger, which fights beside it for one day. The badger grows with the Briarguard: a Hedgerow Badger, then a Sett Badger from level 7, a Grey Brock from 12, an Old Brock from 18 and the Elder of the Sett from 24. While the badger lives, the Briarguard gains extra hit points: 8, rising to 45 for the Elder.~
+@197 = ~The badger falls, and the Briarguard feels the loss.~
 
 @180 = ~Briarguards cannot use this item.~

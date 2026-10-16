@@ -21,11 +21,15 @@
 //   HKBGTH        Thornhide                                           HLA
 //   HKBGHS        Hedge Shelter                                       HLA
 //
-// Not yet built (a later pass; scriptable, not EEex):
-//   - Find Familiar and the five badger forms, and the badger's part of
-//     Badger's Fury. A true familiar needs a script (it follows the
-//     party, rides in the pack, adds hit points to its master, and its
-//     death costs Constitution).
+//   HKBGFAM       Find Familiar: calls the badger form for the level
+//   HKBGBD1-5.cre The badger's five forms; hkbgbdg.baf (HKBGBDG.bcs) its script
+//   HKBGFDX       The badger died: its master loses the bonus hit points
+//   HKBGBFA       Badger's Fury's rage for the badger
+//
+// Find Familiar is a simple scripted summon (decided 16 October 2026),
+// not the engine's familiar, which only works for the protagonist: the
+// badger lasts one day, doesn't follow between areas or ride in the
+// pack, and its death costs no Constitution.
 /////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////
@@ -296,7 +300,7 @@ CREATE SPL ~HKBGHW~
     LPF HK_SPELL_FX INT_VAR opcode = op parameter1 = 5 timing = HK_TIMING_PERMANENT END
   END
 
-// TODO (familiar pass): the badger familiar rages too
+// The badger's share of the rage is added with Find Familiar below
 CREATE SPL ~HKBGBF~
   LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) END
   LPF HK_ADD_SPELL_HEADER END
@@ -353,6 +357,132 @@ CREATE SPL ~HKBGIW~
   LPF HK_ADD_SPELL_HEADER END
   LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGIW4~ END
   LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGIW3~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// Find Familiar: the badger
+// A daily innate that summons the badger form for the Briarguard's
+// level for one game day, and gives the Briarguard that form's bonus
+// hit points for as long. When the badger dies, its script removes the
+// bonus. The forms are copies of the game's badger (or wolf, if there
+// is no badger), tagged with a new SPECIFIC.IDS value so Badger's Fury
+// can find them.
+//   Form               Level  HP   AC  Bonus HP  Adds
+//   Hedgerow Badger      1    20    5     8      poison immunity; sees invisible
+//   Sett Badger          7    40    3    15      disease and fear immunity
+//   Grey Brock          12    65    1    25      charm, hold, paralysis, sleep immunity;
+//                                                20% MR, 25% elemental; hits as +1
+//   Old Brock           18    95   -2    35      confusion, slow, stun, level drain
+//                                                immunity; 40% MR, 50% elemental;
+//                                                hits as +2; needs +1 weapons to hit
+//   Elder of the Sett   24   130   -5    45      death, petrification, disintegration
+//                                                immunity; 60% MR, 75% elemental;
+//                                                hits as +3; needs +2 weapons; 2 HP a round
+// The badger keeps the source creature's bite. Its Dig In and Rallying
+// Growl abilities are not built.
+/////////////////////////////////////////////////////////////////////
+LAF HK_FIND_CRE_BY_NAME INT_VAR quiet = 1 STR_VAR name = ~Badger~ RET hk_badger_found = found hk_badger_cre = cre END
+ACTION_IF (NOT hk_badger_found) BEGIN
+  LAF HK_FIND_CRE_BY_NAME STR_VAR name = ~Wolf~ RET hk_badger_found = found hk_badger_cre = cre END
+END
+LAF HK_ADD_IDS STR_VAR file = ~specific~ name = ~HK_BG_BADGER~ RET hk_badger_specific = id END
+
+ACTION_DEFINE_ARRAY hk_bd_level   BEGIN 1 7 12 18 24 END
+ACTION_DEFINE_ARRAY hk_bd_hp      BEGIN 20 40 65 95 130 END
+ACTION_DEFINE_ARRAY hk_bd_ac      BEGIN 5 3 1 "-2" "-5" END
+ACTION_DEFINE_ARRAY hk_bd_bonus   BEGIN 8 15 25 35 45 END
+ACTION_DEFINE_ARRAY hk_bd_mr      BEGIN 0 0 20 40 60 END
+ACTION_DEFINE_ARRAY hk_bd_elem    BEGIN 0 0 25 50 75 END
+ACTION_DEFINE_ARRAY hk_bd_ench    BEGIN 0 0 1 2 3 END
+ACTION_DEFINE_ARRAY hk_bd_needs   BEGIN 0 0 0 1 2 END
+// Immunities added at each form (opcodes blocked), cumulative
+ACTION_DEFINE_ARRAY hk_bd_immune  BEGIN ~25~ ~78 24~ ~5 109 175 185 39~ ~128 40 45 216~ ~13 55 134 238~ END
+
+OUTER_SET $hk_bd_name(~0~) = RESOLVE_STR_REF (@190)
+OUTER_SET $hk_bd_name(~1~) = RESOLVE_STR_REF (@191)
+OUTER_SET $hk_bd_name(~2~) = RESOLVE_STR_REF (@192)
+OUTER_SET $hk_bd_name(~3~) = RESOLVE_STR_REF (@193)
+OUTER_SET $hk_bd_name(~4~) = RESOLVE_STR_REF (@194)
+
+ACTION_IF (hk_badger_found) BEGIN
+  COMPILE ~%MOD_FOLDER%/kits/11-briarguard/hkbgbdg.baf~
+
+  OUTER_FOR (i = 0; i < 5; ++i) BEGIN
+    OUTER_SET form = i + 1
+    OUTER_SET hp    = $hk_bd_hp(~%i%~)
+    OUTER_SET ac    = $hk_bd_ac(~%i%~)
+    OUTER_SET mr    = $hk_bd_mr(~%i%~)
+    OUTER_SET elem  = $hk_bd_elem(~%i%~)
+    OUTER_SET ench  = $hk_bd_ench(~%i%~)
+    OUTER_SET needs = $hk_bd_needs(~%i%~)
+    OUTER_SPRINT immune ~~
+    OUTER_FOR (j = 0; j <= i; ++j) BEGIN
+      OUTER_SPRINT more $hk_bd_immune(~%j%~)
+      OUTER_SPRINT immune ~%immune% %more%~
+    END
+    OUTER_SET name_ref = $hk_bd_name(~%i%~)
+    COPY_EXISTING ~%hk_badger_cre%.cre~ ~override/HKBGBD%form%.cre~
+      LPF HK_SUMMON_COPY INT_VAR name = name_ref hp ac END
+      WRITE_ASCII 0x268 ~HKBGBDG~ #8      // default script
+      WRITE_BYTE  0x274 hk_badger_specific
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 193 target = 1 timing = 9 END   // sees invisible
+      PATCH_FOR_EACH blocked IN ~25~ ~78~ ~24~ ~5~ ~109~ ~175~ ~185~ ~39~ ~128~ ~40~ ~45~ ~216~ ~13~ ~55~ ~134~ ~238~ BEGIN
+        PATCH_IF (INDEX (EXACT_MATCH ~ %blocked% ~ ~ %immune% ~) >= 0) BEGIN
+          LPF ADD_CRE_EFFECT INT_VAR opcode = 101 target = 1 timing = 9 parameter2 = blocked END
+        END
+      END
+      PATCH_IF (mr > 0) BEGIN
+        LPF ADD_CRE_EFFECT INT_VAR opcode = 166 target = 1 timing = 9 parameter1 = mr END
+      END
+      PATCH_IF (elem > 0) BEGIN
+        PATCH_FOR_EACH resist IN ~30~ ~28~ ~29~ ~27~ BEGIN
+          LPF ADD_CRE_EFFECT INT_VAR opcode = resist target = 1 timing = 9 parameter1 = elem END
+        END
+      END
+      PATCH_IF (ench > 0) BEGIN
+        LPF ADD_CRE_EFFECT INT_VAR opcode = 345 target = 1 timing = 9 parameter1 = ench special = 3 END
+      END
+      PATCH_IF (needs > 0) BEGIN
+        LPF ADD_CRE_EFFECT INT_VAR opcode = 120 target = 1 timing = 9 parameter1 = needs END
+      END
+      PATCH_IF (form == 5) BEGIN
+        LPF ADD_CRE_EFFECT INT_VAR opcode = 98 target = 1 timing = 9 parameter1 = 3 parameter2 = 3 END   // 2 HP a round
+      END
+  END
+
+  CREATE SPL ~HKBGFDX~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@195) desc = RESOLVE_STR_REF (@196) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGFAM~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@197) timing = HK_TIMING_INSTANT END
+
+  CREATE SPL ~HKBGFAM~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@195) desc = RESOLVE_STR_REF (@196) STR_VAR icon = EVAL ~%hk_ent_icon%~ END
+    FOR (i = 0; i < 5; ++i) BEGIN
+      SET level = $hk_bd_level(~%i%~)
+      LPF HK_ADD_SPELL_HEADER INT_VAR min_level = level STR_VAR icon = EVAL ~%hk_ent_icon%~ END
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGFAM~ END
+    FOR (i = 0; i < 5; ++i) BEGIN
+      SET header = i + 1
+      SET bonus = $hk_bd_bonus(~%i%~)
+      LPF HK_SPELL_FX INT_VAR opcode = 67 duration = HK_ONE_DAY header STR_VAR resource = EVAL ~HKBGBD%header%~ END
+      LPF HK_SPELL_FX INT_VAR opcode = 18 parameter1 = bonus duration = HK_ONE_DAY header END   // bonus HP
+    END
+
+  // Badger's Fury: the badger rages too (anything that isn't the badger
+  // is protected: SPLPROT row 116, SPECIFIC != n)
+  CREATE SPL ~HKBGBFA~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 318 target = 2 parameter1 = hk_badger_specific parameter2 = 116 duration = 1 STR_VAR resource = ~HKBGBFA~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 1  target = 2 parameter1 = 1 duration = HK_ONE_TURN END
+    LPF HK_SPELL_FX INT_VAR opcode = 73 target = 2 parameter1 = 2 duration = HK_ONE_TURN END
+  COPY_EXISTING ~HKBGBF.spl~ ~override~
+    LPF HK_SPELL_FX INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGBFA~ END
+END
 
 
 /////////////////////////////////////////////////////////////////////

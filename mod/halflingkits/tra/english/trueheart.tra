@@ -17,7 +17,8 @@ Disadvantages:
 – Cannot use two-handed swords, bastard swords, halberds, spears, longbows, heavy crossbows or large shields.
 – Casts no spells: all its holy powers are innate.
 – Requires Charisma 15 or higher.
-– Must be a lawful good halfling.~
+– Must be a lawful good halfling.
+– Falls if the party's reputation drops to 8 or lower, losing its kit powers until reputation recovers.~
 
 @110 = ~True Heart~
 @111 = ~The True Heart's faith and courage.~
@@ -78,5 +79,12 @@ Each time this ability is chosen, the True Heart gains +2 to saves against spell
 
 @175 = ~Arvoreen's Messenger~
 @176 = ~Arvoreen's Champion~
+
+@185 = ~Fallen True Heart~
+@186 = ~Fallen
+
+Arvoreen has turned away. While the party's reputation is 8 or lower, the True Heart loses its Heart immunities, aura, Symbol and holy powers, and cannot use its innate abilities.~
+@187 = ~Arvoreen turns away. The True Heart has fallen.~
+@188 = ~Arvoreen's favour returns.~
 
 @180 = ~True Hearts cannot use this item.~

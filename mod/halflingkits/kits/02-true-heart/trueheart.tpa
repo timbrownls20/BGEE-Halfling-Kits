@@ -19,10 +19,9 @@
 //   HKTHMSG/CHM   Arvoreen's Messenger and Champion (copies of
 //                 Summon Deva and Summon Planetar)              HLA
 //
-// Not yet built (a later script pass; not EEex):
-//   - Falling when reputation drops to 8 or lower. Paladin falling is
-//     hard-coded; a fighter kit needs a script to remove and restore
-//     its abilities.
+//   HKTHFAL       Fallen: removes the passives, disables innate abilities
+//   HKTHRES       Restored: lifts the fall and reapplies the passives by level
+//   hkthfall.baf  Global script: fall at reputation 8 or lower, recover above
 /////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////
@@ -404,4 +403,73 @@ LAF HK_RESTRICT_ITEMS
   STR_VAR forbidden_profs = ~93 89 99 98 104~
           name_types      = ~27~
           name_deny       = ~heavy~
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Falling. Paladin falling is hard-coded, so the True Heart's is
+// scripted: a block in the global script (one per party slot) applies
+// HKTHFAL when reputation drops to 8 or lower, and HKTHRES once it is
+// back above 8. A spell state marks a fallen True Heart.
+//   HKTHFAL: removes the kit's passives (AC, Heart immunities, Aura of
+//            Courage, Symbol of Arvoreen) and disables innate abilities
+//            (opcode 145 type 2), so its holy powers and HLAs can't be
+//            used.
+//   HKTHRES: removes HKTHFAL and reapplies the passives the True Heart's
+//            level entitles it to (one header per step).
+// Passive HLAs (Healing Hands, Heart of Faith) are not removed.
+/////////////////////////////////////////////////////////////////////
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_TH_FALLEN~ RET hk_state_fallen = id END
+
+CREATE SPL ~HKTHFAL~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@185) desc = RESOLVE_STR_REF (@186) END
+  LPF HK_ADD_SPELL_HEADER END
+  PATCH_FOR_EACH removed IN ~HKTHL1~ ~HKTHH5~ ~HKTHH10~ ~HKTHH15~ ~HKTHH20~ ~HKTHH25~ ~HKTHH30~ ~HKTHH35~ ~HKTHAU1~ ~HKTHAU2~ ~HKTHSYM~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%removed%~ END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_state_fallen special = 1 timing = HK_TIMING_PERMANENT END
+  LPF HK_SPELL_FX INT_VAR opcode = 145 parameter2 = 2 timing = HK_TIMING_PERMANENT END   // no innate abilities
+  LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@187) timing = HK_TIMING_INSTANT END
+
+// Restore: header by level; each step reapplies one more passive
+//   1 L1   5 H5   8 AU1   10 H10   15 H15   16 AU2 (replaces AU1)
+//  20 H20  25 H25 and SYM  30 H30  35 H35
+ACTION_DEFINE_ARRAY hk_th_res_level BEGIN 1 5 8 10 15 16 20 25 30 35 END
+CREATE SPL ~HKTHRES~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@185) desc = RESOLVE_STR_REF (@186) END
+  FOR (i = 0; i < 10; ++i) BEGIN
+    SET level = $hk_th_res_level(~%i%~)
+    LPF HK_ADD_SPELL_HEADER INT_VAR min_level = level END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTHFAL~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKTHL1~ END
+  FOR (header = 1; header <= 10; ++header) BEGIN
+    SET i = header - 1
+    SET level = $hk_th_res_level(~%i%~)
+    PATCH_FOR_EACH step IN ~5~ ~10~ ~15~ ~20~ ~25~ ~30~ ~35~ BEGIN
+      PATCH_IF (level >= step) BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT header STR_VAR resource = EVAL ~HKTHH%step%~ END
+      END
+    END
+    PATCH_IF (level >= 8 && level < 16) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT header STR_VAR resource = ~HKTHAU1~ END
+    END
+    PATCH_IF (level >= 16) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT header STR_VAR resource = ~HKTHAU2~ END
+    END
+    PATCH_IF (level >= 25) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT header STR_VAR resource = ~HKTHSYM~ END
+    END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@188) timing = HK_TIMING_INSTANT END
+
+// Global scripts: BG:EE and BG2:EE (baldur), Throne of Bhaal (baldur25),
+// Siege of Dragonspear (bdbaldur)
+ACTION_FOR_EACH script IN ~baldur~ ~baldur25~ ~bdbaldur~ BEGIN
+  ACTION_IF (FILE_EXISTS_IN_GAME ~%script%.bcs~) BEGIN
+    OUTER_FOR (slot = 1; slot <= 6; ++slot) BEGIN
+      OUTER_SPRINT hk_player ~Player%slot%~
+      EXTEND_BOTTOM ~%script%.bcs~ ~%MOD_FOLDER%/kits/02-true-heart/hkthfall.baf~ EVALUATE_BUFFER
+    END
+  END
 END

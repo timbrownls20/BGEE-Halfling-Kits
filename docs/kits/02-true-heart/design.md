@@ -101,13 +101,13 @@ For anyone building this kit as a mod (for example with WeiDU):
 
 - **Easy:** Heart immunities, AC bonus, Protection from Evil, innate Armour of Faith, Draw Upon Holy Might, Righteous Magic, Lay on Hands (as the paladin's) and Cleansing Touch (combining effects from existing cure spells), Symbol of Arvoreen, Heart of Faith, Healing Hands (extra uses of existing abilities), Mending Heart, Cleansing Heart and Undying Heart (based on standard mass healing and raising), Arvoreen's Messenger and Arvoreen's Champion (the standard Deva and Planetar summons, renamed).
 - **Moderate:** Aura of Courage (a passive area effect around the True Heart) and Heart's Resolve (granting allies immunities by the True Heart's half level).
-- **Hard:** the reputation-based fall condition (paladin falling is hard-coded and would need scripting for a fighter kit).
+- **Hard:** the reputation-based fall condition (paladin falling is hard-coded and would need scripting for a fighter kit). Built as a global-script check.
 
 ### As built (not yet tested in game)
 
 Code: `mod/halflingkits/kits/02-true-heart/`. Where the build differs from the design, or relies on something to check in game:
 
-- **Falling at reputation 8 or lower is not built yet.** Paladin falling is hard-coded, so a fighter kit needs a script to remove and restore its abilities. It's planned for the script pass (no EEex needed).
+- **Falling at reputation 8 or lower** is scripted (paladin falling is hard-coded): a block in the global scripts checks each party slot. When the party's reputation is 8 or lower, the True Heart loses its AC bonus, Heart immunities, Aura of Courage and Symbol of Arvoreen, and can't use innate abilities (its holy powers and HLAs). When reputation rises above 8, everything its level entitles it to comes back. Passive HLAs (Healing Hands, Heart of Faith) are not removed. Levelling up while fallen still grants that level's new passives early; check in game whether that matters.
 - **Protection from Evil, Armour of Faith, Lay on Hands, Draw Upon Holy Might and Righteous Magic** are innate copies of the game's own spells, found by name at install. Lay on Hands is the paladin's, so it heals 2 HP per level as designed. **Arvoreen's Messenger** and **Arvoreen's Champion** are renamed copies of Summon Deva and Summon Planetar.
 - **Cleansing Touch** gains its tiers at levels 5, 10, 15, 20 and 25. Disease cure also removes feeblemind from level 5, because the game's disease cure covers both.
 - **Aura of Courage** refreshes every round on allies in Bless's party-only area (not exactly 20 feet). The level-16 step replaces the level-8 aura.

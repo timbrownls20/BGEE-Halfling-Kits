@@ -682,6 +682,38 @@ END
 
 
 /////////////////////////////////////////////////////////////////////
+// HK_ADD_IDS (action)
+// Adds a symbol to an IDS file (once) with the next free number, and
+// returns the number. Used for spell states (SPLSTATE.IDS) and creature
+// tags (SPECIFIC.IDS). Both hold values up to 255.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_ADD_IDS
+  INT_VAR max  = 255
+  STR_VAR file = ""
+          name = ""
+  RET id
+BEGIN
+  OUTER_SET id = IDS_OF_SYMBOL (~%file%~ ~%name%~)
+  ACTION_IF (id < 0) BEGIN
+    OUTER_SET id = 0
+    COPY_EXISTING ~%file%.ids~ ~override~
+      READ_2DA_ENTRIES_NOW ~hk_ids~ 2
+      FOR (r = 0; r < hk_ids; ++r) BEGIN
+        READ_2DA_ENTRY_FORMER ~hk_ids~ r 0 value
+        PATCH_IF (IS_AN_INT value && value >= id) BEGIN
+          SET id = value + 1
+        END
+      END
+    BUT_ONLY
+    ACTION_IF (id > max) BEGIN
+      FAIL ~Halfling Kits: %file%.IDS is full; cannot add %name%.~
+    END
+    APPEND ~%file%.ids~ ~%id% %name%~
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
 // HK_ADD_SPELLSTATE (action)
 // Adds a spell state to SPLSTATE.IDS (once) and returns its number.
 // Spell states let one spell check whether another has been applied
@@ -691,25 +723,8 @@ DEFINE_ACTION_FUNCTION HK_ADD_SPELLSTATE
   STR_VAR name = ""
   RET id
 BEGIN
-  OUTER_SET id = IDS_OF_SYMBOL (~splstate~ ~%name%~)
-  ACTION_IF (id < 0) BEGIN
-    OUTER_SET id = 0
-    COPY_EXISTING ~splstate.ids~ ~override~
-      READ_2DA_ENTRIES_NOW ~hk_ss~ 2
-      FOR (r = 0; r < hk_ss; ++r) BEGIN
-        READ_2DA_ENTRY_FORMER ~hk_ss~ r 0 value
-        PATCH_IF (IS_AN_INT value && value >= id) BEGIN
-          SET id = value + 1
-        END
-      END
-    BUT_ONLY
-    ACTION_IF (id > 255) BEGIN
-      FAIL ~Halfling Kits: SPLSTATE.IDS is full; cannot add %name%.~
-    END
-    APPEND ~splstate.ids~ ~%id% %name%~
-  END
+  LAF HK_ADD_IDS STR_VAR file = ~splstate~ name = EVAL ~%name%~ RET id END
 END
-
 
 
 /////////////////////////////////////////////////////////////////////
@@ -866,6 +881,7 @@ END
 // (a cave bear, a treant) without hard-coding resrefs.
 /////////////////////////////////////////////////////////////////////
 DEFINE_ACTION_FUNCTION HK_FIND_CRE_BY_NAME
+  INT_VAR quiet = 0   // 1 = no warning if not found (when there's a fallback)
   STR_VAR name = ""
   RET found cre
 BEGIN
@@ -883,7 +899,7 @@ BEGIN
       END
     END
   BUT_ONLY
-  ACTION_IF (found == 0) BEGIN
+  ACTION_IF (found == 0 && NOT quiet) BEGIN
     OUTER_SPRINT hk_ability_name ~%name%~
     OUTER_SPRINT hk_ability_kit  ~creature~
     WARN @4

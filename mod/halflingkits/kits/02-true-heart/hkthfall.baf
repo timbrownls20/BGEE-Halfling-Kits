@@ -1,0 +1,19 @@
+// True Heart: fall at reputation 8 or lower, and recover above it.
+// Added to the global scripts once per party slot (%hk_player%).
+IF
+  Kit(%hk_player%,HK_TRUEHEART)
+  ReputationLT(%hk_player%,9)
+  !CheckSpellState(%hk_player%,HK_TH_FALLEN)
+THEN
+  RESPONSE #100
+    ApplySpellRES("HKTHFAL",%hk_player%)
+END
+
+IF
+  Kit(%hk_player%,HK_TRUEHEART)
+  ReputationGT(%hk_player%,8)
+  CheckSpellState(%hk_player%,HK_TH_FALLEN)
+THEN
+  RESPONSE #100
+    ApplySpellRES("HKTHRES",%hk_player%)
+END
