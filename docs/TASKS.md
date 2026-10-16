@@ -5,7 +5,7 @@ The working record for the halfling-only kit set for Baldur's Gate: Enhanced Edi
 ## Status
 
 - **Design:** complete for eleven kits, with several review and balance passes. A twelfth, the Ghostwise Rogue (fighter/thief with barbarian qualities and wilderness bonuses; no Open Locks or Pick Pockets), is a placeholder still to be designed (`docs/kits/12-ghostwise-rogue/design.md`).
-- **Implementation:** started. `mod/halflingkits/` holds the WeiDU mod: the shared library (`lib/hk_lib.tpa`), the Fleet Foot Fighter (`kits/01-fleet-foot-fighter/`), the Hearthsinger (`kits/04-hearthsinger/`), Tymora's Champion (`kits/05-tymoras-champion/`), the Nettle (`kits/09-nettle/`), the Briarguard (`kits/11-briarguard/`), the True Heart (`kits/02-true-heart/`) and the Unbeguiled (`kits/08-unbeguiled/`). All seven pass WeiDU's syntax check (`utils/check-mod.sh`) but have not been installed in a game yet. Each kit's design file ends with an "As built" section listing where the code differs from the design.
+- **Implementation:** started. `mod/halflingkits/` holds the WeiDU mod: the shared library (`lib/hk_lib.tpa`), the Fleet Foot Fighter (`kits/01-fleet-foot-fighter/`), the Hearthsinger (`kits/04-hearthsinger/`), Tymora's Champion (`kits/05-tymoras-champion/`), the Nettle (`kits/09-nettle/`), the Surefoot Fighter (`kits/03-surefoot-fighter/`), the Briarguard (`kits/11-briarguard/`), the True Heart (`kits/02-true-heart/`) and the Unbeguiled (`kits/08-unbeguiled/`). All eight pass WeiDU's syntax check (`utils/check-mod.sh`) but have not been installed in a game yet. Each kit's design file ends with an "As built" section listing where the code differs from the design.
 - **Playtesting:** none yet. Every rating is an estimate.
 - **Source of truth:** these Markdown files, from the point they are committed. They were exported from the design document on 15 October 2026. Make further changes here, not in the original document, so git history stays the record.
 
@@ -13,10 +13,9 @@ The working record for the halfling-only kit set for Baldur's Gate: Enhanced Edi
 
 In priority order. Each kit's "As built" notes list its own smaller check-in-game items.
 
-1. **Remaining kits** (Mage-Breakers is now fully coded):
-   - **Surefoot Fighter** (Hearth and Home).
+1. **Remaining kits** (The Bold is fully coded):
+   - **Magpie** completes Hearth and Home, once open question 8 (Magpie's Knack) is decided.
    - **Slinger** and **Greenhand** (The Wild Wood). The Greenhand needs open questions 1 and 2 decided; its rabbit familiar reuses the Briarguard's simple-summon approach.
-   - **Magpie** (Hearth and Home), once open question 8 (Magpie's Knack) is decided.
 2. **Design the Ghostwise Rogue** (placeholder: `docs/kits/12-ghostwise-rogue/design.md`). Check the multiclass kit workaround first. Then add it to the Overview, Party Design and Strength Rankings.
 3. **EEex components** (optional, Windows only; see the EEex plan under Dependencies). Current TODOs:
    - Fleet Foot: Halfling Evasion's half damage on a failed save.
@@ -24,9 +23,10 @@ In priority order. Each kit's "As built" notes list its own smaller check-in-gam
    - Hearthsinger: casting a spell ending the song; Kin's Shield's immunity to critical hits.
    - Nettle: Spoiling Backstab draining priest spells.
    - Unbeguiled: Stand Behind Me's redirect; ignoring Mirror Image and Blur; Spoiling Strike's non-magical hits; Critical Strike ignoring critical-hit immunity.
-   - Plus the Hard items of the kits not yet built (Surefoot, Slinger).
+   - Surefoot: Unmoving Stride's immunity to Time Stop.
+   - Plus the Hard items of the kits not yet built (Slinger).
 4. **First install on a game** (Windows): install every component, read WeiDU's log for warnings, check the "Game rules the design relies on" assumptions and each kit's "As built" check-in-game items, and fill in the README's Tested column.
-5. **Playtest** the three playtest parties through BG1, SoA and ToB against the playtest checklist, starting with Mage-Breakers. Record changes as commits with the reason in the message.
+5. **Playtest** the three playtest parties through BG1, SoA and ToB against the playtest checklist, starting with The Bold. Record changes as commits with the reason in the message.
 6. **Resolve the remaining open questions.**
 7. **Commit** the baseline (Tim makes the commits).
 
@@ -35,6 +35,8 @@ In priority order. Each kit's "As built" notes list its own smaller check-in-gam
 Newest first.
 
 **16 October 2026**
+- Coded the **Surefoot Fighter**: strides, Stand Fast with its three stance upgrades, Hold the Line and all its HLAs. Hold the Line's physical resistance goes to allies only, which keeps the Surefoot at the 90% cap. Unmoving Stride's Time Stop immunity is an EEex TODO.
+- Reworked the **playtest parties** to keep the Nettle and the Unbeguiled apart. The Wild Wood is unchanged; the other two are now **The Bold** (True Heart, Fleet Foot, Tymora's Champion, Nettle), which is fully coded and goes first, and **Hearth and Home** (Surefoot, Unbeguiled, Hearthsinger, Magpie). Mage-Breakers is retired.
 - Built the **Briarguard's badger** as a simple scripted summon (open question 9 decided): five forms by level, bonus hit points to the Briarguard while it lives, and Badger's Fury reaching it. The script pass is done.
 - Built the **True Heart's fall**: a global-script check per party slot removes its passives and innate abilities at reputation 8 or lower, and restores them by level when reputation recovers.
 - Coded the **Unbeguiled**, completing the **Mage-Breakers** playtest party. Stand Behind Me's base version is shared resistance (open question 7 decided).
@@ -211,17 +213,17 @@ The main things to watch, with the first trim to try if each feels too strong.
 
 ### Playtest parties
 
-Every kit is playtested once, in one of three parties of four. The full write-up (positions, how each plays, what it tests, difficulty) is under Playtest parties in Party Design. Each party has a healer or support, a front-liner, a damage dealer and one of the three rogue kits, and each has a theme.
+Every kit is playtested once, in one of three themed parties of four, each with one of the three rogue kits. The Nettle and the Unbeguiled are kept in different parties. The full write-up (positions, how each plays, what it tests, difficulty) is under Playtest parties in Party Design.
 
-| Party | Healer / support | Front line | Damage | Rogue |
-| --- | --- | --- | --- | --- |
-| **Hearth and Home** | Hearthsinger | Surefoot Fighter | Fleet Foot Fighter | Magpie |
-| **The Wild Wood** | Greenhand | Briarguard | Slinger | Ghostwise Rogue |
-| **Mage-Breakers** | True Heart | Unbeguiled | Tymora's Champion | Nettle |
+| Party | Kits | Rogue |
+| --- | --- | --- |
+| **The Bold** | True Heart, Fleet Foot Fighter, Tymora's Champion | Nettle |
+| **Hearth and Home** | Surefoot Fighter, Unbeguiled, Hearthsinger | Magpie |
+| **The Wild Wood** | Briarguard, Slinger, Greenhand | Ghostwise Rogue |
 
-- **Hearth and Home:** the Hearthsinger's songs lift the Fleet Foot's flurry while the Surefoot holds the line; the Magpie scouts, supplies loot and adds wand bursts.
-- **The Wild Wood:** a nature party. The Briarguard and the Greenhand's summons hold the front, the Slinger shoots from behind them, and the Ghostwise Rogue's wilderness bonuses fit the theme.
-- **Mage-Breakers:** the anti-magic party. The Nettle opens on casters, the Unbeguiled shields the party from magic, the True Heart keeps everyone standing, and Tymora's luck makes it forgiving.
+- **The Bold:** the adventurers. Fast and aggressive: the Nettle opens on the caster, the Fleet Foot runs it down, the True Heart and Tymora's luck keep everyone standing. No priest.
+- **Hearth and Home:** the stubborn homebodies. The Surefoot and Unbeguiled are nearly impossible to shift or charm, the Hearthsinger sings and heals, the Magpie scouts and supplies scrolls and wands.
+- **The Wild Wood:** a nature party. The Briarguard and the Greenhand's summons hold the front, the Slinger shoots from behind them, and the Ghostwise Rogue's wilderness bonuses fit the theme. No Open Locks.
 
 No party has an arcane caster: every kit is a fighter, cleric or thief, so the Magpie's scrolls and wands are the only arcane magic in any of them.
 
@@ -229,11 +231,11 @@ No party has an arcane caster: every kit is a fighter, cleric or thief, so the M
 
 | Party | Coded | Still needed |
 | --- | --- | --- |
-| Hearth and Home | 2 (Hearthsinger, Fleet Foot) | Surefoot Fighter; Magpie (blocked on open question 8, Magpie's Knack) |
-| The Wild Wood | 1 (Briarguard) | Greenhand, Slinger; the Ghostwise Rogue is still to be designed and may need the multiclass kit workaround; the Briarguard's familiar |
-| Mage-Breakers | 4 (True Heart, Unbeguiled, Tymora's Champion, Nettle) | Nothing |
+| The Bold | 4 (True Heart, Fleet Foot, Tymora's Champion, Nettle) | Nothing |
+| Hearth and Home | 3 (Surefoot, Unbeguiled, Hearthsinger) | Magpie (open question 8, Magpie's Knack) |
+| The Wild Wood | 1 (Briarguard) | Greenhand (open questions 1 and 2), Slinger; the Ghostwise Rogue is still to be designed and may need the multiclass kit workaround |
 
-Mage-Breakers is fully coded, so it is the first playtest party.
+The Bold is fully coded, so it is the first playtest party.
 
 ## Recent design decisions
 

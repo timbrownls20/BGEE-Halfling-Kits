@@ -1,0 +1,527 @@
+/////////////////////////////////////////////////////////////////////
+// Surefoot Fighter
+// Design: docs/kits/03-surefoot-fighter/design.md
+//
+// Resource prefix HKSF. Spells and EFFs:
+//   HKSFL1        +2 AC, 20% cold resistance, +1 movement     (CLAB, level 1)
+//   HKSFMV        Wayfarer's Pace: +1 movement   (CLAB, every odd level from 3)
+//   HKSFS2-S40    Halfling Strides               (CLAB, every even level)
+//   HKSFSF        Stand Fast (innate); applies one of:
+//     HKSFSF0       base
+//     HKSFSF1       with Braced Stance
+//     HKSFSF2       with Warded Stance
+//     HKSFSF3       with Unbreakable Stance
+//   HKSFHL        Hold the Line (innate)          (CLAB, every 6 levels from 6)
+//   HKSFHLP/HLW   its physical resistance for allies (not the Surefoot)
+//   HKSFBS/WS/US  Braced, Warded and Unbreakable Stance              HLA
+//   HKSFSG        Still Ground; HKSFSGE.eff / HKSFSGP its pulse      HLA
+//   HKSFLS        Last Stand (arms); HKSFLSH (fires)                 HLA
+//   HKSFWL        Wider Line                                         HLA
+//   HKSFSW        Second Wind                                        HLA
+//   HKSFST        Stubborn                                           HLA
+//   HKSFSO        Shrug It Off                                       HLA
+//
+// Not implemented:
+//   TODO (EEex): Unmoving Stride's immunity to Time Stop. Time Stop
+//   freezes everyone but the caster through the engine, with no effect
+//   to block. The level-40 stride still gives its resistance and saves.
+//   Wider Line doesn't widen Hold the Line: the area is Bless's. It
+//   gives the extra use and the extra physical resistance.
+//
+// The 90% cap: the kit's own physical resistance comes from the strides
+// (50% at level 40) and Stand Fast (40%). Hold the Line's physical
+// resistance goes to allies only, so the Surefoot never passes 90%
+// from its own abilities.
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells and tables
+/////////////////////////////////////////////////////////////////////
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~   // Bless: party-only area
+  RET hk_bless_projectile = projectile hk_bless_target = target hk_bless_range = range
+      hk_bless_icon = icon hk_bless_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr103~   // Cure Light Wounds: touch range and icon
+  RET hk_clw_range = range hk_clw_icon = icon hk_clw_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr211~   // Silence 15' Radius: an area that hits everyone
+  RET hk_silence_found = found hk_silence_projectile = projectile hk_silence_icon = icon
+      hk_silence_book_icon = book_icon
+END
+ACTION_IF (NOT hk_silence_found) BEGIN
+  OUTER_SPRINT hk_ability_name ~Silence 15' Radius~
+  OUTER_SPRINT hk_ability_kit  ~spell~
+  WARN @4
+END
+
+ACTION_DEFINE_ARRAY hk_sf_std_hla BEGIN ~Resist Magic~ ~Smite~ END
+OUTER_FOR (i = 0; i < 2; ++i) BEGIN
+  OUTER_SPRINT hla $hk_sf_std_hla(~%i%~)
+  LAF HK_FIND_HLA STR_VAR name = EVAL ~%hla%~
+    RET found ability icon strref min_lev max_lev num_allowed prereq
+  END
+  // Smite drops its Power Attack prerequisite (Power Attack is dropped)
+  ACTION_IF (~%hla%~ STRING_EQUAL ~Smite~) BEGIN
+    OUTER_SPRINT prereq ~*~
+  END
+  OUTER_SET    $hk_sf_hla_found(~%i%~)   = found
+  OUTER_SPRINT $hk_sf_hla_ability(~%i%~) ~%ability%~
+  OUTER_SPRINT $hk_sf_hla_icon(~%i%~)    ~%icon%~
+  OUTER_SET    $hk_sf_hla_strref(~%i%~)  = strref
+  OUTER_SET    $hk_sf_hla_min(~%i%~)     = min_lev
+  OUTER_SET    $hk_sf_hla_max(~%i%~)     = max_lev
+  OUTER_SET    $hk_sf_hla_num(~%i%~)     = num_allowed
+  OUTER_SPRINT $hk_sf_hla_prereq(~%i%~)  ~%prereq%~
+END
+
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SF_SUREFOOT~    RET hk_state_surefoot = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SF_BRACED~      RET hk_state_braced   = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SF_WARDED~      RET hk_state_warded   = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SF_UNBREAKABLE~ RET hk_state_unbreak  = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SF_WIDER~       RET hk_state_wider    = id END
+
+
+/////////////////////////////////////////////////////////////////////
+// Resistance helpers
+//   physical:  slashing, crushing, piercing, missile (opcodes 86-89)
+//   elemental: fire, cold, electricity, acid, magic fire, magic cold
+//              (opcodes 30, 28, 29, 27, 84, 85)
+//   saves:     opcode 325, all saves
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_SF_PHYSICAL
+  INT_VAR amount = 0 target = 1 timing = HK_TIMING_PERMANENT duration = 0 header = 0
+BEGIN
+  FOR (op = 86; op <= 89; ++op) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = op target parameter1 = amount timing duration header END
+  END
+END
+
+DEFINE_PATCH_FUNCTION HK_SF_ELEMENTAL
+  INT_VAR amount = 0 timing = HK_TIMING_PERMANENT duration = 0 header = 0
+BEGIN
+  PATCH_FOR_EACH resist IN ~30~ ~28~ ~29~ ~27~ ~84~ ~85~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = resist parameter1 = amount timing duration header END
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Level 1: +2 AC, 20% cold resistance (cold and magic cold), +1
+// movement, and the spell state Hold the Line checks to leave the
+// Surefoot out of its physical resistance
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKSFL1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2  timing = HK_TIMING_PERMANENT END   // AC
+  LPF HK_SPELL_FX INT_VAR opcode = 28  parameter1 = 20 timing = HK_TIMING_PERMANENT END   // cold
+  LPF HK_SPELL_FX INT_VAR opcode = 85  parameter1 = 20 timing = HK_TIMING_PERMANENT END   // magic cold
+  LPF HK_SPELL_FX INT_VAR opcode = 176 parameter1 = 1  timing = HK_TIMING_PERMANENT END   // movement
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_state_surefoot special = 1 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKSFMV~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 176 parameter1 = 1 timing = HK_TIMING_PERMANENT END
+
+
+/////////////////////////////////////////////////////////////////////
+// Halfling Strides: every even level, +2% physical resistance and the
+// stride's own effect. Opcode 101 blocks each listed opcode:
+//   2  fear (24)                      22 slow (40); fatigue (opcode 93,
+//   4  web (157), entangle (154),        -100: see below)
+//      hold (175, 185), knockback    24 level drain (216)
+//      (235)                         26 maze (213)
+//   6  +2 saves vs breath (36)       28 imprisonment (211)
+//   8  confusion (128), berserk (3)  30 petrification (134), polymorph (135)
+//  10  poison (25), disease (78),    32 disintegration (238)
+//      paralysis (109)               34 death magic (13, 55, 209)
+//  12  sleep (39), charm (5),        36 +10% physical
+//      domination (241)              38 +10% elemental
+//  14  stun (45)                     40 Time Stop: TODO (EEex)
+//  16  backstab (292), blindness (74)
+//  18, 20  +10% elemental
+// +1 to all saves at 8, 16, 24, 32, 38 and 40.
+// Tireless Stride: fatigue is the engine's rest timer, not an effect,
+// so a large fatigue penalty offsets it instead. Check in game.
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ASSOCIATIVE_ARRAY hk_sf_strides BEGIN
+   2 => ~24~
+   4 => ~157 154 175 185 235~
+   8 => ~128 3~
+  10 => ~25 78 109~
+  12 => ~39 5 241~
+  14 => ~45~
+  16 => ~74~
+  22 => ~40~
+  24 => ~216~
+  26 => ~213~
+  28 => ~211~
+  30 => ~134 135~
+  32 => ~238~
+  34 => ~13 55 209~
+END
+
+OUTER_FOR (level = 2; level <= 40; level += 2) BEGIN
+  OUTER_SPRINT blocked_list ~~
+  ACTION_IF (VARIABLE_IS_SET $hk_sf_strides(~%level%~)) BEGIN
+    OUTER_SPRINT blocked_list $hk_sf_strides(~%level%~)
+  END
+  CREATE SPL ~HKSFS%level%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@112) desc = RESOLVE_STR_REF (@113) END
+    LPF HK_ADD_SPELL_HEADER END
+    LPF HK_SF_PHYSICAL INT_VAR amount = (level == 36 ? 12 : 2) END
+    PATCH_IF (NOT ~%blocked_list%~ STRING_EQUAL ~~) BEGIN
+      // Every blocked opcode the strides use; each spell keeps its own
+      PATCH_FOR_EACH blocked IN ~24~ ~157~ ~154~ ~175~ ~185~ ~235~ ~128~ ~3~ ~25~ ~78~ ~109~ ~39~ ~5~ ~241~ ~45~ ~74~ ~40~ ~216~ ~213~ ~211~ ~134~ ~135~ ~238~ ~13~ ~55~ ~209~ BEGIN
+        PATCH_IF (INDEX (EXACT_MATCH ~ %blocked% ~ ~ %blocked_list% ~) >= 0) BEGIN
+          LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = blocked timing = HK_TIMING_PERMANENT END
+        END
+      END
+    END
+    PATCH_IF (level == 6) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 36 parameter1 = 2 timing = HK_TIMING_PERMANENT END
+    END
+    PATCH_IF (level == 16) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 292 parameter2 = 1 timing = HK_TIMING_PERMANENT END
+    END
+    PATCH_IF (level == 18 || level == 20 || level == 38) BEGIN
+      LPF HK_SF_ELEMENTAL INT_VAR amount = 10 END
+    END
+    PATCH_IF (level == 22) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 93 parameter1 = "-100" timing = HK_TIMING_PERMANENT END
+    END
+    PATCH_IF (level == 8 || level == 16 || level == 24 || level == 32 || level == 38 || level == 40) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 1 timing = HK_TIMING_PERMANENT END
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Stand Fast. HKSFSF removes any earlier use, then applies (opcode 326,
+// at the Surefoot's level) the one version that matches its stance
+// HLAs. Each version blocks itself with opcode 318 and SPLPROT rows 110
+// (has the state) and 111 (lacks the state), so exactly one lands.
+// Headers by level:
+//   level:     1   5  10  15  20  25
+//   physical: 15  20  25  30  35  40
+//   Con:      +1  +1  +2  +2  +3  +3
+// Versions: 0 base, 1 turn; 1 Braced, +25% elemental; 2 Warded, 2
+// turns, +25% elemental and magic damage; 3 Unbreakable, 2 turns, +40%
+// elemental and magic damage, 3 HP per round (opcode 98 type 3:
+// 1 HP every 2 seconds).
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ARRAY hk_sf_stand_level BEGIN  1  5 10 15 20 25 END
+ACTION_DEFINE_ARRAY hk_sf_stand_phys  BEGIN 15 20 25 30 35 40 END
+ACTION_DEFINE_ARRAY hk_sf_stand_con   BEGIN  1  1  2  2  3  3 END
+
+OUTER_FOR (version = 0; version <= 3; ++version) BEGIN
+  OUTER_SET duration  = (version >= 2 ? 2 * HK_ONE_TURN : HK_ONE_TURN)
+  OUTER_SET elemental = (version == 3 ? 40 : version >= 1 ? 25 : 0)
+  OUTER_SET magic     = (version == 3 ? 40 : version == 2 ? 25 : 0)
+  CREATE SPL ~HKSFSF%version%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) END
+    FOR (i = 0; i < 6; ++i) BEGIN
+      SET level = $hk_sf_stand_level(~%i%~)
+      LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = level END
+    END
+    PATCH_IF (version == 0) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_braced parameter2 = 110 duration = 1 STR_VAR resource = EVAL ~HKSFSF%version%~ END
+    END
+    PATCH_IF (version == 1) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_braced parameter2 = 111 duration = 1 STR_VAR resource = EVAL ~HKSFSF%version%~ END
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_warded parameter2 = 110 duration = 1 STR_VAR resource = EVAL ~HKSFSF%version%~ END
+    END
+    PATCH_IF (version == 2) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_warded  parameter2 = 111 duration = 1 STR_VAR resource = EVAL ~HKSFSF%version%~ END
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_unbreak parameter2 = 110 duration = 1 STR_VAR resource = EVAL ~HKSFSF%version%~ END
+    END
+    PATCH_IF (version == 3) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_unbreak parameter2 = 111 duration = 1 STR_VAR resource = EVAL ~HKSFSF%version%~ END
+    END
+    FOR (i = 0; i < 6; ++i) BEGIN
+      SET header = i + 1
+      SET phys   = $hk_sf_stand_phys(~%i%~)
+      SET con    = $hk_sf_stand_con(~%i%~)
+      LPF HK_SF_PHYSICAL INT_VAR amount = phys timing = HK_TIMING_DURATION duration header END
+      LPF HK_SPELL_FX INT_VAR opcode = 10 parameter1 = con duration header END
+    END
+    PATCH_IF (elemental > 0) BEGIN
+      LPF HK_SF_ELEMENTAL INT_VAR amount = elemental timing = HK_TIMING_DURATION duration END
+    END
+    PATCH_IF (magic > 0) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 31 parameter1 = magic duration END
+    END
+    PATCH_IF (version == 3) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 98 parameter1 = 2 parameter2 = 3 duration END
+    END
+END
+
+CREATE SPL ~HKSFSF~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  PATCH_FOR_EACH removed IN ~HKSFSF~ ~HKSFSF0~ ~HKSFSF1~ ~HKSFSF2~ ~HKSFSF3~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%removed%~ END
+  END
+  FOR (version = 0; version <= 3; ++version) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKSFSF%version%~ END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// Hold the Line: 1 turn; the Surefoot is rooted (movement set to 0%)
+// and it and allies in Bless's area gain, by tier (header):
+//   6  +2 AC; fear immunity
+//  12  +3 AC; +2 saves; fear and knockback immunity
+//  18  +4 AC; +2 saves; fear and knockback; 10% physical (allies)
+//  24  +4 AC; +3 saves; fear, knockback and stun; 15% physical (allies)
+// The physical resistance is HKSFHLP (and HKSFHLW with Wider Line),
+// which skip the Surefoot (SPLPROT row 110 on its own spell state).
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKSFHLP~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@125) desc = RESOLVE_STR_REF (@126) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = 1  END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = 24 END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_surefoot parameter2 = 110 duration = 1 STR_VAR resource = ~HKSFHLP~ END
+  LPF HK_SF_PHYSICAL INT_VAR amount = 10 timing = HK_TIMING_DURATION duration = HK_ONE_TURN header = 1 END
+  LPF HK_SF_PHYSICAL INT_VAR amount = 15 timing = HK_TIMING_DURATION duration = HK_ONE_TURN header = 2 END
+
+CREATE SPL ~HKSFHLW~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_surefoot parameter2 = 110 duration = 1 STR_VAR resource = ~HKSFHLW~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_wider    parameter2 = 111 duration = 1 STR_VAR resource = ~HKSFHLW~ END
+  LPF HK_SF_PHYSICAL INT_VAR amount = 10 timing = HK_TIMING_DURATION duration = HK_ONE_TURN END
+
+CREATE SPL ~HKSFHL~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@125) desc = RESOLVE_STR_REF (@126) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  PATCH_FOR_EACH level IN ~1~ ~12~ ~18~ ~24~ BEGIN
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile min_level = level
+      STR_VAR icon = EVAL ~%hk_bless_icon%~
+    END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSFHL~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 176 target = 1 parameter1 = 0 parameter2 = 2 duration = HK_ONE_TURN END   // rooted
+  LPF HK_SPELL_FX INT_VAR opcode = 161 target = 2 timing = HK_TIMING_INSTANT END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 24 duration = HK_ONE_TURN END
+  FOR (header = 1; header <= 4; ++header) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 0 target = 2 parameter1 = (header == 1 ? 2 : header == 2 ? 3 : 4) duration = HK_ONE_TURN header END
+    PATCH_IF (header >= 2) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 325 target = 2 parameter1 = (header == 4 ? 3 : 2) duration = HK_ONE_TURN header END
+      LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 235 duration = HK_ONE_TURN header END
+    END
+    PATCH_IF (header >= 3) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT header STR_VAR resource = ~HKSFHLP~ END
+    END
+    PATCH_IF (header == 4) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 45 duration = HK_ONE_TURN header END
+    END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSFHLW~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: the stance chain (spell states Stand Fast checks). Warded
+// Stance also adds a use of Stand Fast (opcode 171).
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_SF_STANCE INT_VAR state = 0 BEGIN
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = state special = 1 timing = HK_TIMING_PERMANENT END
+END
+
+CREATE SPL ~HKSFBS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_SF_STANCE INT_VAR state = hk_state_braced END
+
+CREATE SPL ~HKSFWS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@132) desc = RESOLVE_STR_REF (@133) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_SF_STANCE INT_VAR state = hk_state_warded END
+  LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSFSF~ END
+
+CREATE SPL ~HKSFUS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@134) desc = RESOLVE_STR_REF (@135) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_SF_STANCE INT_VAR state = hk_state_unbreak END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Still Ground - for 3 rounds a pulse every round (opcode 272)
+// disables wizard, priest and innate casting (opcode 145 types 0-2)
+// for everyone in Silence 15' Radius's area around the Surefoot,
+// itself included. Effects already active and items are untouched.
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_silence_found) BEGIN
+  CREATE SPL ~HKSFSGP~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141) END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_silence_projectile
+    END
+    FOR (type = 0; type <= 2; ++type) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 145 target = 2 parameter2 = type duration = 7 END
+    END
+
+  CREATE EFF ~HKSFSGE~
+    LPF HK_INIT_EFF INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSFSGP~ END
+
+  CREATE SPL ~HKSFSG~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141) STR_VAR icon = EVAL ~%hk_silence_book_icon%~ END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_silence_icon%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSFSGP~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 272 parameter1 = 6 parameter2 = 3 duration = 18 STR_VAR resource = ~HKSFSGE~ END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Last Stand - a contingency (opcode 232, condition 3 = HP below
+// 25%, special bit 0 = remove after firing) casts HKSFLSH: for 3
+// rounds, 6 HP per round (opcode 98 type 3: 1 HP every second; the
+// design's 5 isn't possible) and immunity to death magic. HKSFLSH
+// re-arms the contingency one game day later.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKSFLS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146) STR_VAR icon = EVAL ~%hk_clw_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_clw_icon%~ END
+  LPF HK_SPELL_FX
+    INT_VAR opcode = 232 parameter1 = 0 parameter2 = 3 special = 1 timing = HK_TIMING_PERMANENT
+    STR_VAR resource = ~HKSFLSH~
+  END
+
+CREATE SPL ~HKSFLSH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146) STR_VAR icon = EVAL ~%hk_clw_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_clw_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 98 parameter1 = 1 parameter2 = 3 duration = 18 END
+  PATCH_FOR_EACH blocked IN ~13~ ~55~ ~209~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 101 parameter2 = blocked duration = 18 END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@147) timing = HK_TIMING_INSTANT END
+  LPF HK_SPELL_FX
+    INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_DELAYED duration = HK_ONE_DAY
+    STR_VAR resource = ~HKSFLS~
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: Wider Line (state for HKSFHLW, +1 Hold the Line), Second Wind
+// (heal 50%), Stubborn (+1 all saves), Shrug It Off (touch: cures
+// poison, disease, blindness, silence, stun, and removes slow, hold
+// and paralysis with opcode 337)
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKSFWL~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_state_wider special = 1 timing = HK_TIMING_PERMANENT END
+  LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSFHL~ END
+
+CREATE SPL ~HKSFSW~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) STR_VAR icon = EVAL ~%hk_clw_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_clw_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 17 parameter1 = 50 parameter2 = 2 timing = HK_TIMING_INSTANT END
+
+CREATE SPL ~HKSFST~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 1 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKSFSO~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) STR_VAR icon = EVAL ~%hk_clw_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 range = hk_clw_range STR_VAR icon = EVAL ~%hk_clw_icon%~ END
+  PATCH_FOR_EACH cure IN ~11~ ~79~ ~75~ ~48~ ~46~ BEGIN   // poison, disease, blindness, silence, stun
+    LPF HK_SPELL_FX INT_VAR opcode = cure target = 2 timing = HK_TIMING_INSTANT END
+  END
+  PATCH_FOR_EACH removed IN ~40~ ~109~ ~175~ ~185~ BEGIN   // slow, hold, paralysis
+    LPF HK_SPELL_FX INT_VAR opcode = 337 target = 2 parameter1 = "-1" parameter2 = removed timing = HK_TIMING_INSTANT END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHSF.2da)
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@130) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSFBS~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@132) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSFWS~ icon = EVAL ~%hk_bless_icon%~ prereq = ~AP_HKSFBS~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@134) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSFUS~ icon = EVAL ~%hk_bless_icon%~ prereq = ~AP_HKSFWS~ RET hk_rows = rows hk_n = number END
+ACTION_IF (hk_silence_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@140) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKSFSG~ icon = EVAL ~%hk_silence_icon%~ RET hk_rows = rows hk_n = number END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSFLS~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSFWL~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKSFSW~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 5
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSFST~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@165) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKSFSO~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+OUTER_FOR (i = 0; i < 2; ++i) BEGIN
+  ACTION_IF ($hk_sf_hla_found(~%i%~)) BEGIN
+    OUTER_SPRINT ability $hk_sf_hla_ability(~%i%~)
+    OUTER_SPRINT icon    $hk_sf_hla_icon(~%i%~)
+    OUTER_SPRINT prereq  $hk_sf_hla_prereq(~%i%~)
+    LAF HK_HLA_ROW
+      INT_VAR number = hk_n strref = $hk_sf_hla_strref(~%i%~) picks = $hk_sf_hla_num(~%i%~)
+              min_level = $hk_sf_hla_min(~%i%~) max_level = $hk_sf_hla_max(~%i%~)
+      STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%ability%~ icon = EVAL ~%icon%~ prereq = EVAL ~%prereq%~
+      RET hk_rows = rows hk_n = number
+    END
+  END
+END
+
+COPY ~%MOD_FOLDER%/kits/03-surefoot-fighter/luhsf.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+/////////////////////////////////////////////////////////////////////
+LAF HK_WEAPPROF_LINE
+  INT_VAR pips = 5 pips2 = 3
+  STR_VAR kit      = ~HK_SUREFOOT~
+          skilled  = ~SHORTSWORD FLAILMORNINGSTAR MACE~
+          skilled2 = ~SLING SHORTBOW CLUB DAGGER~
+  RET hk_sf_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_sf_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_SUREFOOT~ values = ~STR=9 CON=15~ RET hk_sf_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_SUREFOOT~ allowed = ~LAWFUL_GOOD NEUTRAL_GOOD LAWFUL_NEUTRAL~ RET hk_sf_align = line END
+
+ADD_KIT ~HK_SUREFOOT~
+  ~HK_SUREFOOT              1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_sf_weapprof%~                                          // WEAPPROF (column)
+  ~%hk_sf_abclasrq%~                                          // ABCLASRQ: Str 9, Con 15
+  ~HK_SUREFOOT              0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_SUREFOOT              17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_SUREFOOT              17 0 0 0 0 0~                     // ABDCSCRQ
+  ~%hk_sf_align%~                                             // ALIGNMNT: LG, NG, LN
+  ~HK_SUREFOOT              0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/03-surefoot-fighter/hksfclab.2da~        // CLAB
+  ~K_F_H~                                                     // halfling fighters only
+  ~0x00004000 2~                                              // fighter usability, class 2
+  ~HSF~                                                       // LUHSF.2da
+  ~%hk_sf_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment: short swords (91), flails (100), maces (101), slings
+// (107), short bows (105), clubs (115) and daggers (96); armour up to
+// splint mail (base AC 4); bucklers and small shields; no boots (4).
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_sf_kit_id = IDS_OF_SYMBOL (~kit~ ~HK_SUREFOOT~)
+
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id          = hk_sf_kit_id
+          message         = RESOLVE_STR_REF (@180)
+          min_base_ac     = 4
+          max_shield_size = 2
+  STR_VAR allowed_profs   = ~91 100 101 107 105 115 96~
+          forbidden_types = ~4~
+END

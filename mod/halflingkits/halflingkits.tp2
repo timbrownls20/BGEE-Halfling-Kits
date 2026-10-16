@@ -29,6 +29,16 @@ LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/trueheart.tra~
 INCLUDE ~%MOD_FOLDER%/kits/02-true-heart/trueheart.tpa~
 
 /////////////////////////////////////////////////////////////////////
+// Surefoot Fighter (fighter, halfling only)
+/////////////////////////////////////////////////////////////////////
+BEGIN @12 DESIGNATED 3
+LABEL ~halflingkits-surefoot-fighter~
+REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
+
+LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/surefoot.tra~
+INCLUDE ~%MOD_FOLDER%/kits/03-surefoot-fighter/surefoot.tpa~
+
+/////////////////////////////////////////////////////////////////////
 // Hearthsinger (cleric, halfling only)
 /////////////////////////////////////////////////////////////////////
 BEGIN @7 DESIGNATED 4

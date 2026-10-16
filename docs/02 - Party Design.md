@@ -233,58 +233,66 @@ A robust tank and a thief. Healing can always be covered by potions and resting,
 
 ## Playtest parties
 
-Three parties of four, each built to playtest its kits together through BG1, SoA and ToB. Between them they use all twelve kits exactly once, and each has one of the three rogue kits. Like any four-person party they level faster than a six (experience is split four ways), so immunities and HLAs arrive sooner. Build progress and the order to test in are tracked in Tasks; the things to watch for each kit are in the playtest checklist on the Overview tab.
+Three parties of four, each built to playtest its kits together through BG1, SoA and ToB. Between them they use all twelve kits exactly once, each has one of the three rogue kits, and each has a theme. The two anti-caster specialists, the Nettle and the Unbeguiled, are kept in different parties. Like any four-person party they level faster than a six (experience is split four ways), so immunities and HLAs arrive sooner. Build progress and the order to test in are tracked in Tasks; the things to watch for each kit are in the playtest checklist on the Overview tab.
 
-| Party | Healer / support | Front line | Damage | Rogue |
+| Party | Front line | Damage | Healer | Rogue |
 | --- | --- | --- | --- | --- |
-| **Hearth and Home** | Hearthsinger | Surefoot Fighter | Fleet Foot Fighter | Magpie |
-| **The Wild Wood** | Greenhand | Briarguard | Slinger | Ghostwise Rogue |
-| **Mage-Breakers** | True Heart | Unbeguiled | Tymora's Champion | Nettle |
+| **The Bold** | True Heart | Fleet Foot Fighter, Tymora's Champion | True Heart (innate) | Nettle |
+| **Hearth and Home** | Surefoot Fighter, Unbeguiled | Unbeguiled | Hearthsinger | Magpie |
+| **The Wild Wood** | Briarguard | Slinger | Greenhand | Ghostwise Rogue |
 
-### Mage-Breakers (test first)
+The Bold has no priest, so the True Heart is both its tank and its healer; the Unbeguiled is Hearth and Home's second front-liner and its damage.
+
+### The Bold (test first)
+
+The adventurers: the halflings who left the Shire on purpose. Courage, speed, luck and a sharp sting.
 
 | Position | Kit | Why it earns a slot |
 | --- | --- | --- |
-| Front line | True Heart | Tank and healer: plate, Heart immunities, Lay on Hands, Cleansing Touch and Aura of Courage |
-| Front line | Unbeguiled | Closes on casters through their spells; Clear Heads keeps the party's minds its own; Spoiling Strike Breaches what it hits |
-| Front line | Tymora's Champion | Luck-based AC, saves and damage; Tymora's Blessing and Second Chance carry the party through the hardest fight of the day |
-| Back line | Nettle | Opens each fight on the enemy caster with Spoiling Backstab or a Spoiling Trap, then scouts, handles locks and traps |
+| Front line, healer | True Heart | Tank and healer: plate, Heart immunities, Lay on Hands, Cleansing Touch and Aura of Courage |
+| Damage | Fleet Foot Fighter | Races past the line to cut down casters and archers; Rapid Strike and Razor's Edge |
+| Damage | Tymora's Champion | Luck-based AC, saves and damage; Tymora's Blessing and Second Chance carry the party through the hardest fight of the day |
+| Rogue | Nettle | Opens each fight on the enemy caster with Spoiling Backstab or a Spoiling Trap, then scouts, handles locks and traps |
 
-**How it plays:** the Nettle finds the caster and spoils it before the fight starts, the Unbeguiled runs it down, and the True Heart and Tymora's Champion hold the line around them. Cleansing Touch and Clear Heads undo the charm, hold and confusion that usually break a party.
+**How it plays:** fast and aggressive. The Nettle spoils the caster before the fight starts, the Fleet Foot runs it down, and the True Heart and Tymora's Champion hold the line behind them. Cleansing Touch undoes the charm, hold and confusion that usually break a party.
 
-**What it tests:** the anti-magic toolkit (the Nettle's x2 Spoiling Backstab and traps, Unbeguiled's Spoiling Strike and Stand Behind Me), the True Heart's charm and sleep immunity from level 10, Tymora's Second Chance, and Assassination's once-per-target limiter.
+**What it tests:** the True Heart's charm and sleep immunity from level 10 and its reputation fall, Tymora's Second Chance, the Nettle's x2 Spoiling Backstab and traps, Critical Strike on both the Fleet Foot and Tymora's Champion, Rapid Strike with the time HLAs, and Assassination's once-per-target limiter.
 
-**Difficulty: easiest against mages, hardest on attrition.** No priest means healing is the True Heart's innate powers and potions, and there is no Raise Dead until Undying Heart in ToB, so expect more trips to temples and more resting.
+**Difficulty: the most damage, hardest on attrition.** No priest means healing is the True Heart's innate powers and potions, and there is no Raise Dead until Undying Heart in ToB, so expect more trips to temples and more resting. Its answers to protected mages are the Nettle and speed.
 
 ### Hearth and Home
+
+The ones who stayed home and dare you to come through the door: stubborn, unimpressed and very hard to shift.
 
 | Position | Kit | Why it earns a slot |
 | --- | --- | --- |
 | Front line | Surefoot Fighter | The main tank: near-complete immunities, Hold the Line, and Still Ground to shut down nearby casters |
-| Front line | Fleet Foot Fighter | The damage: races past the line to cut down casters and archers; Rapid Strike and Razor's Edge |
-| Support | Hearthsinger | Hearthsong lifts the whole party; plate, cleric healing, Dispel Magic and True Seeing |
-| Back line | Magpie | Locks, traps and scouting, and the party's only arcane magic through Magpie's Knack |
+| Front line, damage | Unbeguiled | Closes on casters through their spells; Clear Heads keeps the party's minds its own; Spoiling Strike Breaches what it hits |
+| Healer | Hearthsinger | Hearthsong lifts the whole party; plate, cleric healing, Dispel Magic and True Seeing |
+| Rogue | Magpie | Locks, traps and scouting, and the only arcane magic in any party through Magpie's Knack |
 
-**How it plays:** the Surefoot plants itself and the Hearthsinger sings: the Invigorating Song drives the Fleet Foot's flurry, the Soothing Song keeps the line standing. The Magpie scouts ahead and fills magical gaps with scrolls and wands, and keeps the party in potions and gold.
+**How it plays:** the Surefoot plants itself and the Hearthsinger sings; the Unbeguiled walks through the enemy's spells to the caster. The Magpie scouts ahead and fills magical gaps with scrolls and wands, and keeps the party in potions and gold.
 
-**What it tests:** the Hearthsinger's casting lock and Stop Singing (it can't cast while singing), Homeward Hymn's extra attack on a Fleet Foot already at the attack cap, Rapid Strike with the time HLAs, the Surefoot and Hearthsinger feeling weak early in BG1, and the Magpie's scroll fumbles and rest finds.
+**What it tests:** the Surefoot's immunities and Still Ground, the Surefoot and Hearthsinger feeling weak early in BG1, the Hearthsinger's casting lock and Stop Singing, the Unbeguiled's Spoiling Strike and Stand Behind Me, and the Magpie's scroll fumbles and rest finds.
 
-**Difficulty: the most balanced of the three.** Strong melee and good healing; weakest against protected mages in SoA, where it leans on the Hearthsinger's Dispel Magic and the Magpie's scrolls. Keep the Hearthsinger out of the Surefoot's Still Ground when it needs to cast.
+**Difficulty: the hardest to break, slowest to kill.** Nearly immune to mind magic and very tough, but low on damage. Keep the Hearthsinger out of the Surefoot's Still Ground when it needs to cast.
 
 ### The Wild Wood
 
+A nature party: the halflings of the hedgerows and the deep woods.
+
 | Position | Kit | Why it earns a slot |
 | --- | --- | --- |
-| Front line | Briarguard | Elemental tank: resistance up to 80%, Iron Skins, Entangle and a plant guardian that grows with it |
-| Support | Greenhand | Healing, summons that Death Spell can't kill, Insect Plague and Creeping Doom, True Seeing |
-| Back line | Slinger | Up to 5 sling attacks a round; Breaching and Dispelling bullets in ToB |
+| Front line | Briarguard | Elemental tank: resistance up to 80%, Iron Skins, Entangle, Wake the Hedge and a badger familiar that grows with it |
+| Damage | Slinger | Up to 5 sling attacks a round; Breaching and Dispelling bullets in ToB |
+| Healer | Greenhand | Healing, summons that Death Spell can't kill, Insect Plague and Creeping Doom, True Seeing |
 | Rogue | Ghostwise Rogue | A wild fighter/thief with barbarian qualities and wilderness bonuses (still to be designed) |
 
-**How it plays:** a wall of thorns and summons. The Briarguard, its plant guardian and the Greenhand's creatures hold the enemy in Entangle while the Slinger shoots from behind them and the Ghostwise Rogue hunts the edges.
+**How it plays:** a wall of thorns and summons. The Briarguard, its badger and the Greenhand's creatures hold the enemy in Entangle while the Slinger shoots from behind them and the Ghostwise Rogue hunts the edges.
 
 **What it tests:** the summon limit (the Greenhand's summons and Wake the Hedge share the limit of 5), both familiars (the Greenhand's rabbit and the Briarguard's badger), the Greenhand's druid spells, Iron Skins with 80% elemental resistance against ToB dragons, the Slinger's Eagle Eye, and the Ghostwise Rogue's wilderness bonuses outdoors versus in towns and dungeons.
 
-**Difficulty: strongest outdoors, weakest in cities and dungeons.** Nobody in it can open locks (the Ghostwise Rogue has no Open Locks), so locked doors and chests mean bashing, Knock scrolls or leaving them. Its answers to enemy mages are the Greenhand's True Seeing and Dispel Magic, then the Slinger's bullets in ToB. It needs the most building before it can be tested: the Ghostwise Rogue is still to be designed and neither familiar is built yet.
+**Difficulty: strongest outdoors, weakest in cities and dungeons.** Nobody in it can open locks (the Ghostwise Rogue has no Open Locks), so locked doors and chests mean bashing, Knock scrolls or leaving them. Its answers to enemy mages are the Greenhand's True Seeing and Dispel Magic, then the Slinger's bullets in ToB. It needs the most building: the Greenhand, the Slinger and the Ghostwise Rogue.
 
 ## Swaps
 

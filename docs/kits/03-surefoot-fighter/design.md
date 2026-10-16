@@ -143,3 +143,18 @@ For anyone building this kit as a mod (for example with WeiDU):
 - **Easy:** stride immunities, saves and resistances, Stand Fast and its Braced, Warded and Unbreakable Stance upgrades, Constitution bonuses, Wayfarer's Pace, Stubborn, Deathless Stride (Death Ward), Second Wind (healing), Shrug It Off (a touch that cures effects on an ally).
 - **Moderate:** Hold the Line and Wider Line (an area buff that also roots the user), Still Ground (an area that disables spellcasting, like Silence without a save), Last Stand (a Contingency-style trigger at below 25% HP).
 - **Hard:** Unmoving Stride's Time Stop immunity (Time Stop is a global freeze, so this needs testing and probably EEex).
+
+### As built (not yet tested in game)
+
+Code: `mod/halflingkits/kits/03-surefoot-fighter/`. Where the build differs from the design, or relies on something to check in game:
+
+- **Unmoving Stride's Time Stop immunity** is not built (TODO, EEex): Time Stop freezes everyone but its caster through the engine, with no effect to block. The level-40 stride still gives its 2% physical resistance and +1 to saves.
+- **The 90% cap:** Hold the Line's physical resistance goes to the Surefoot's allies only, not to the Surefoot. Its own physical resistance is then the strides (50% at level 40) plus Stand Fast (40%), which is exactly 90%. Hold the Line still gives the Surefoot its AC, saves and immunities.
+- **Tireless Stride's fatigue immunity** is a -100 fatigue modifier, because fatigue is the engine's rest timer, not an effect that can be blocked. Check in game that a tired Surefoot shows no fatigue penalty.
+- **Hold the Line** uses Bless's party-only area (not exactly 15 feet). The Surefoot's movement is set to 0 for the turn. **Wider Line** doesn't widen the area; it gives the extra use and +10% physical resistance to allies.
+- **Stand Fast's stance upgrades** are spell states set by the HLAs; Stand Fast applies the one version that matches them. Check in game that exactly one version lands.
+- **Unbreakable Stance** regenerates 3 HP per round, as designed. **Last Stand** regenerates 6 HP per round, not 5: the game's regeneration steps can't give 5. It recovers one game day after it fires, not on rest.
+- **Still Ground** uses the area of Silence 15' Radius around the Surefoot (15 feet, not 20). Every round for 3 rounds it stops wizard, priest and innate casting for 1 round for everyone in the area. Check in game that the area centres on the Surefoot and moves with it.
+- **Death magic** (Deathless Stride and Last Stand) blocks instant death, slay effects and Power Word: Kill.
+- **Resist Magic** and **Smite** are the game's own HLAs; Smite loses its Power Attack prerequisite.
+- **Weapon skill:** grandmastery in short swords, flails and maces; mastery (3 pips) in slings, short bows, clubs and daggers.

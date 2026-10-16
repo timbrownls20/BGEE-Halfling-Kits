@@ -17,7 +17,7 @@ Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Bald
 | --- | --- | --- | --- | --- |
 | [Fleet Foot Fighter](docs/kits/01-fleet-foot-fighter/design.md) | Fighter | Melee damage, mobility | Yes | |
 | [True Heart](docs/kits/02-true-heart/design.md) | Fighter | Front-line healer and protector | Yes | |
-| [Surefoot Fighter](docs/kits/03-surefoot-fighter/design.md) | Fighter | Tank | | |
+| [Surefoot Fighter](docs/kits/03-surefoot-fighter/design.md) | Fighter | Tank | Yes | |
 | [Hearthsinger](docs/kits/04-hearthsinger/design.md) | Cleric | Party support (songs) | Yes | |
 | [Tymora's Champion](docs/kits/05-tymoras-champion/design.md) | Fighter | Lucky all-rounder | Yes | |
 | [Slinger](docs/kits/06-slinger/design.md) | Fighter | Ranged damage | | |

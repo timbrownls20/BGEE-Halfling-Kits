@@ -1,0 +1,84 @@
+// Surefoot Fighter
+
+@100 = ~Surefoot Fighter~
+@101 = ~Surefoot Fighter~
+@102 = ~SUREFOOT FIGHTER: Some halflings run from trouble. The Surefoot plants its bare heels and lets trouble break against it. Raised on hard roads and long winters, they walk all day without tiring and cannot be moved by fear, magic or a charging ogre. When the line wavers, look for the small figure that hasn't taken a step back.
+
+Advantages:
+– +2 AC.
+– Cold resistance 20%.
+– Wayfarer's Pace: +1 movement at level 1, plus +1 every 2 levels afterwards.
+– Halfling Stride: every 2 levels from level 2, +2% resistance to slashing, crushing, piercing and missile damage, plus a new immunity or resistance: fear (2); web, entangle, hold and knockback (4); +2 to saves vs breath (6); confusion and berserk (8); poison, disease and paralysis (10); sleep, charm and domination (12); stun (14); backstab and blindness (16); +10% fire, cold, electricity and acid resistance (18 and 20); fatigue and slow (22); level drain (24); maze (26); imprisonment (28); petrification and polymorph (30); disintegration (32); death magic (34); +10% more physical resistance (36); +10% more elemental resistance (38). Strides at levels 8, 16, 24, 32, 38 and 40 also give +1 to all saves.
+– Stand Fast: 1 use, plus 1 more at levels 5, 10, 15 and every 5 levels after.
+  STAND FAST: For 1 turn, 15% resistance to physical damage and +1 Constitution, rising to 40% and +3 Constitution by level 25.
+– Hold the Line from level 6: 1 use, plus 1 more every 6 levels.
+  HOLD THE LINE: For 1 turn the Surefoot cannot move, and it and its allies nearby gain +2 AC and immunity to fear; from level 12, +3 AC, +2 to saves and immunity to knockback; from level 18, +4 AC and 10% physical resistance for its allies; from level 24, +3 to saves, 15% physical resistance and immunity to stun.
+– May reach grandmastery in short swords, flails and maces, and mastery in slings, short bows, clubs and daggers.
+
+Disadvantages:
+– Cannot wear armour heavier than splint mail, or boots.
+– May only use bucklers and small shields.
+– May only use short swords, flails, maces, slings, short bows, clubs and daggers.
+– Requires Constitution 15 or higher.
+– Must be a lawful good, neutral good or lawful neutral halfling.~
+
+@110 = ~Surefoot~
+@111 = ~The Surefoot's sure feet: +2 AC, 20% cold resistance and Wayfarer's Pace.~
+@112 = ~Halfling Stride~
+@113 = ~Another step on a long road: more resistance to harm, and one more thing that cannot move the Surefoot.~
+
+@120 = ~Stand Fast~
+@121 = ~Stand Fast
+
+For 1 turn, the Surefoot gains resistance to slashing, crushing, piercing and missile damage and extra Constitution: 15% and +1 at level 1, 20% at 5, 25% and +2 at 10, 30% at 15, 35% and +3 at 20, and 40% at 25.~
+
+@125 = ~Hold the Line~
+@126 = ~Hold the Line
+
+For 1 turn the Surefoot is rooted in place, and it and its allies nearby gain +2 AC and immunity to fear. From level 12: +3 AC, +2 to saves and immunity to knockback. From level 18: +4 AC, and its allies gain 10% resistance to physical damage. From level 24: +3 to saves, 15% physical resistance for its allies, and immunity to stun.~
+
+@130 = ~Braced Stance~
+@131 = ~Braced Stance
+
+Every use of Stand Fast also gives +25% resistance to fire, cold, electricity and acid.~
+@132 = ~Warded Stance~
+@133 = ~Warded Stance
+
+Requires Braced Stance. Stand Fast lasts 2 turns, gains 1 use per day, and adds 25% resistance to magic damage.~
+@134 = ~Unbreakable Stance~
+@135 = ~Unbreakable Stance
+
+Requires Warded Stance. While Stand Fast lasts, the Surefoot regenerates 3 hit points every round, and Stand Fast's elemental and magic damage resistance rises to 40%.~
+
+@140 = ~Still Ground~
+@141 = ~Still Ground
+
+For 3 rounds, nobody near the Surefoot (enemies, allies or the Surefoot itself) can cast spells or use innate abilities. Effects already active stay active and magical items still work. The ground moves with the Surefoot.~
+
+@145 = ~Last Stand~
+@146 = ~Last Stand
+
+Once a day, when the Surefoot drops below a quarter of its hit points, it regenerates 6 hit points every round and is immune to death magic for 3 rounds. It recovers one day after it fires.~
+@147 = ~Last Stand!~
+
+@150 = ~Wider Line~
+@151 = ~Wider Line
+
+Hold the Line gains 1 use per day, and the physical resistance it gives allies rises by 10%.~
+
+@155 = ~Second Wind~
+@156 = ~Second Wind
+
+The Surefoot instantly heals half of its maximum hit points.~
+
+@160 = ~Stubborn~
+@161 = ~Stubborn
+
+Each time this ability is chosen, the Surefoot gains +1 to all saves.~
+
+@165 = ~Shrug It Off~
+@166 = ~Shrug It Off
+
+The Surefoot plants a steadying hand on an ally (or itself) and frees it from poison, disease, blindness, silence, slow, stun, hold and paralysis.~
+
+@180 = ~Surefoot Fighters cannot use this item.~

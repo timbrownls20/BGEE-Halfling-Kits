@@ -144,7 +144,7 @@ Party line-ups (a recommended six, the original six, a classic four, a quintesse
 
 ## Playtest checklist
 
-Each kit is playtested once, in one of three parties of four with one rogue each (Hearth and Home, The Wild Wood, Mage-Breakers); the line-ups are under Playtest parties in Party Design, and build progress in Tasks.
+Each kit is playtested once, in one of three themed parties of four with one rogue each (The Bold, Hearth and Home, The Wild Wood); the line-ups are under Playtest parties in Party Design, and build progress in Tasks.
 
 The main things to watch in play, with the first trim to try for each if it feels too strong.
 
