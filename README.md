@@ -20,7 +20,7 @@ Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Bald
 | [Surefoot Fighter](docs/kits/03-surefoot-fighter/design.md) | Fighter | Tank | Yes | |
 | [Hearthsinger](docs/kits/04-hearthsinger/design.md) | Cleric | Party support (songs) | Yes | |
 | [Tymora's Champion](docs/kits/05-tymoras-champion/design.md) | Fighter | Lucky all-rounder | Yes | |
-| [Slinger](docs/kits/06-slinger/design.md) | Fighter | Ranged damage | | |
+| [Slinger](docs/kits/06-slinger/design.md) | Fighter | Ranged damage | Yes | |
 | [Magpie](docs/kits/07-magpie/design.md) | Thief | Scrolls, wands and loot | | |
 | [Unbeguiled](docs/kits/08-unbeguiled/design.md) | Fighter | Mage-hunter | Yes | |
 | [Nettle](docs/kits/09-nettle/design.md) | Thief | Anti-caster opener | Yes | |

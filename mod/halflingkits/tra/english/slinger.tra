@@ -1,0 +1,138 @@
+// Slinger
+
+@100 = ~Slinger~
+@101 = ~Slinger~
+@102 = ~SLINGER: Every halfling child learns the sling: for rabbits, for crows, for the occasional neighbour's window. The Slinger never stopped practising. A pouch of bullets and a leather cord are all they need to drop a charging orc at fifty paces, and by the time the giant works out where the stones are coming from, the small figure on the hill has already reloaded.
+
+Advantages:
+– Small and Nimble: +2 AC and +2 movement.
+– May reach grandmastery in slings.
+– +1 to hit and damage with slings at level 1, plus 1 more every 4 levels afterwards, with no cap.
+– Rapid Sling: +1/2 attack per round with slings at levels 9, 18, 27 and 36.
+– Called Shot: 1 use at level 4, plus 1 more every 4 levels afterwards.
+  CALLED SHOT: For 1 round, every sling hit gives its target -1 to hit; from level 8 also -1 to saves vs spells; from 12, -1 Strength; from 16, +2 damage; from 20, knockback; from 24, -2 AC; from 28, slow for 1 round; from 32, -2 to all saves; from 36, +4 more damage; from 40, stun for 1 round.
+
+Disadvantages:
+– Cannot wear armour heavier than studded leather.
+– May only use bucklers and small shields.
+– Cannot use daggers, axes, two-handed weapons, or any ranged weapon except slings.
+– Limited to proficiency (one slot) in all weapons other than slings.
+– Requires Dexterity 16 or higher.
+– Must be a halfling of good alignment.~
+
+@110 = ~Slinger~
+@111 = ~The Slinger's practised eye: +1 to hit and damage with slings.~
+@112 = ~Small and Nimble~
+@113 = ~+2 AC and +2 movement.~
+
+@115 = ~Rapid Sling~
+@116 = ~While the Slinger holds a sling, it gains +1/2 attack per round, rising to +2 by level 36.~
+
+@120 = ~Called Shot~
+@121 = ~Called Shot
+
+For 1 round, every sling hit applies extra effects to its target for 1 turn: -1 to hit; from level 8 also -1 to saves vs spells; from 12, -1 Strength; from 16, +2 damage; from 20, knockback; from 24, -2 AC; from 28, slow for 1 round; from 32, -2 to all saves; from 36, +4 more damage; from 40, stun for 1 round.~
+
+@130 = ~Dispelling Shot~
+@131 = ~Dispelling Shot
+
+When the party rests in a city, town or building (not a dungeon), once a day, the Slinger crafts 5 Dispelling bullets (+3) from a Moonstone Gem it carries. Each hit casts Dispel Magic on its target at the Slinger's level.~
+@132 = ~Enhanced Dispelling~
+@133 = ~Enhanced Dispelling
+
+Requires Dispelling Shot. If the Slinger carries a Star Sapphire, it crafts 8 Enhanced Dispelling bullets instead. Their dispel always succeeds.~
+@134 = ~Breaching Shot~
+@135 = ~Breaching Shot
+
+When the party rests in a city, town or building (not a dungeon), once a day, the Slinger crafts 5 Breaching bullets from a Bloodstone Gem it carries. They are not magical, so Protection from Magical Weapons can't stop them. Each hit casts Breach on its target.~
+@136 = ~Enhanced Breaching~
+@137 = ~Enhanced Breaching
+
+Requires Breaching Shot. If the Slinger carries a Diamond, it crafts 8 Enhanced Breaching bullets instead, which also strip one spell protection per hit, as Secret Word.~
+@138 = ~True Shot~
+@139 = ~True Shot
+
+When the party rests in a city, town or building (not a dungeon), once a day, the Slinger crafts 10 +4 sling bullets from a Sunstone Gem it carries.~
+@140 = ~Enhanced True Shot~
+@141 = ~Enhanced True Shot
+
+Requires True Shot. If the Slinger carries an Emerald, it crafts 10 +5 sling bullets instead.~
+
+@145 = ~Sure Aim~
+@146 = ~Sure Aim
+
++1 use of Called Shot per day.~
+@150 = ~Eagle Eye~
+@151 = ~Eagle Eye
+
+For 1 turn, +2 to hit and damage with slings, and each sling hit has a 25% chance to stun its target for 1 round (save vs spell negates).~
+@155 = ~Out of Reach~
+@156 = ~Out of Reach
+
+For 1 turn, every round, enemies close to the Slinger must save vs breath or be knocked back.~
+@160 = ~Gem Cutter's Eye~
+@161 = ~Gem Cutter's Eye
+
+Each time this ability is chosen, every batch of bullets the Slinger crafts has 2 more bullets.~
+
+@170 = ~Dispelling Bullets~
+@171 = ~Dispelling Bullets
+
+A Slinger's bullet with a core of ground moonstone. Only a Slinger can use these bullets.
+
+STATISTICS:
+
+Equipped abilities:
+– +3 to hit and damage
+– Each hit casts Dispel Magic on its target at the Slinger's level~
+@172 = ~Enhanced Dispelling Bullets~
+@173 = ~Enhanced Dispelling Bullets
+
+A Slinger's bullet with a core of ground star sapphire. Only a Slinger can use these bullets.
+
+STATISTICS:
+
+Equipped abilities:
+– +3 to hit and damage
+– Each hit dispels all magic on its target~
+@174 = ~Breaching Bullets~
+@175 = ~Breaching Bullets
+
+A Slinger's bullet with a core of ground bloodstone. It is not magical, so Protection from Magical Weapons can't stop it. Only a Slinger can use these bullets.
+
+STATISTICS:
+
+Equipped abilities:
+– Each hit casts Breach on its target~
+@176 = ~Enhanced Breaching Bullets~
+@177 = ~Enhanced Breaching Bullets
+
+A Slinger's bullet with a core of ground diamond. It is not magical, so Protection from Magical Weapons can't stop it. Only a Slinger can use these bullets.
+
+STATISTICS:
+
+Equipped abilities:
+– Each hit casts Breach on its target and strips one spell protection, as Secret Word~
+@178 = ~True Shot Bullets +4~
+@179 = ~True Shot Bullets +4
+
+A Slinger's bullet with a core of ground sunstone. Only a Slinger can use these bullets.
+
+STATISTICS:
+
+Equipped abilities:
+– +4 to hit and damage~
+@182 = ~True Shot Bullets +5~
+@183 = ~True Shot Bullets +5
+
+A Slinger's bullet with a core of ground emerald. Only a Slinger can use these bullets.
+
+STATISTICS:
+
+Equipped abilities:
+– +5 to hit and damage~
+
+@185 = ~The Slinger crafts a batch of bullets.~
+
+@180 = ~Slingers cannot use this item.~
+@181 = ~Only a Slinger can use these bullets.~

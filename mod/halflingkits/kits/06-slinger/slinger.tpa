@@ -1,0 +1,584 @@
+/////////////////////////////////////////////////////////////////////
+// Slinger
+// Design: docs/kits/06-slinger/design.md
+//
+// Resource prefix HKSL. Spells, EFFs, items and scripts:
+//   HKSLL1        Small and Nimble, +1 sling to-hit and damage  (CLAB, level 1)
+//   HKSLSB        +1 sling to-hit and damage   (CLAB, every 4 levels from 5)
+//   HKSLRS        Rapid Sling: a pulse every round (CLAB, level 9);
+//                 HKSLRSE.eff / HKSLRSP the pulse
+//   HKSLCS        Called Shot (innate);  HKSLCSA.eff / HKSLCSH the hit
+//   HKSLEE        Eagle Eye;  HKSLEEA.eff / HKSLEES its stun         HLA
+//   HKSLOR        Out of Reach;  HKSLORE.eff / HKSLORP its pulse     HLA
+//   HKSLSA        Sure Aim                                           HLA
+//   HKSLDS/DE     Dispelling Shot / Enhanced Dispelling (states)     HLA
+//   HKSLBS/BE     Breaching Shot / Enhanced Breaching (states)       HLA
+//   HKSLTS/TE     True Shot / Enhanced True Shot (states)            HLA
+//   HKSLGC        Gem Cutter's Eye; HKSLGC1-4 count the picks        HLA
+//   HKSLBD1/BD2   Dispelling and Enhanced Dispelling bullets
+//   HKSLBB1/BB2   Breaching and Enhanced Breaching bullets
+//   HKSLBT1/BT2   True Shot bullets +4 / +5
+//   HKSLCD1 ...   Craft a batch (D, B, T; 1 standard, 2 enhanced);
+//   HKSLD1G1 ...  +2 bullets per Gem Cutter's Eye pick
+//   hkslgem.baf   Global script: crafts on a rest in town
+//
+// Sling-only effects: to-hit and damage use the missile opcodes (167,
+// 286); slings are the kit's only missile weapon. Rapid Sling and the
+// on-hit HLAs check a spell state that every sling sets while equipped.
+//
+// Not implemented:
+//   TODO (EEex): Eagle Eye's sling hits ignoring Mirror Image and Blur.
+//   TODO (EEex): Critical Strike ignoring critical-hit immunity. The
+//   standard Critical Strike is kept, without its Power Attack
+//   prerequisite.
+//   TODO (EEex): Called Shot affecting only the next hit. It lasts 1
+//   round and affects every sling hit in it.
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells, items and tables
+/////////////////////////////////////////////////////////////////////
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~   // Bless: icon for passives
+  RET hk_bless_icon = icon hk_bless_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~spwi212~   // Mirror Image: icon for Eagle Eye
+  RET hk_mirror_icon = icon hk_mirror_book_icon = book_icon
+END
+
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Dispel Magic~ pattern = ~^spwi[0-9][0-9][0-9]\.spl$~ RET hk_dispel_found = found hk_dispel_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Breach~       pattern = ~^spwi[0-9][0-9][0-9]\.spl$~ RET hk_breach_found = found hk_breach_spell = spell END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Secret Word~  pattern = ~^spwi[0-9][0-9][0-9]\.spl$~ RET hk_secret_found = found hk_secret_spell = spell END
+
+// Standard fighter HLAs: War Cry's enemy-only area (for Out of Reach)
+// and the Critical Strike row the kit keeps
+LAF HK_FIND_HLA STR_VAR name = ~War Cry~
+  RET hk_warcry_found = found hk_warcry_spell = spell
+END
+OUTER_SET hk_enemy_found = 0
+ACTION_IF (hk_warcry_found) BEGIN
+  LAF HK_READ_SPELL_AREA STR_VAR spell = EVAL ~%hk_warcry_spell%~
+    RET hk_enemy_found = found hk_enemy_projectile = projectile
+        hk_enemy_target = target hk_enemy_range = range
+  END
+END
+LAF HK_FIND_HLA STR_VAR name = ~Critical Strike~
+  RET hk_crit_found = found hk_crit_ability = ability hk_crit_icon = icon
+      hk_crit_strref = strref hk_crit_min = min_lev hk_crit_max = max_lev hk_crit_num = num_allowed
+END
+
+// Gems, by name. A missing gem leaves a resref no item has, so that
+// batch is simply never made.
+ACTION_DEFINE_ASSOCIATIVE_ARRAY hk_sl_gems BEGIN
+  ~moon~    => ~Moonstone~
+  ~star~    => ~Star Sapphire~
+  ~blood~   => ~Bloodstone~
+  ~diamond~ => ~Diamond~
+  ~sun~     => ~Sunstone~
+  ~emerald~ => ~Emerald~
+END
+ACTION_PHP_EACH hk_sl_gems AS key => gem BEGIN
+  LAF HK_FIND_ITEM_BY_NAME STR_VAR regexp = EVAL ~%gem%\( Gem\)?~ label = EVAL ~%gem%~ RET found itm END
+  ACTION_IF (found) BEGIN
+    OUTER_SPRINT $hk_sl_gem(~%key%~) ~%itm%~
+  END ELSE BEGIN
+    OUTER_SPRINT $hk_sl_gem(~%key%~) ~HKNOGEM~
+  END
+END
+OUTER_SPRINT hk_gem_moon    $hk_sl_gem(~moon~)
+OUTER_SPRINT hk_gem_star    $hk_sl_gem(~star~)
+OUTER_SPRINT hk_gem_blood   $hk_sl_gem(~blood~)
+OUTER_SPRINT hk_gem_diamond $hk_sl_gem(~diamond~)
+OUTER_SPRINT hk_gem_sun     $hk_sl_gem(~sun~)
+OUTER_SPRINT hk_gem_emerald $hk_sl_gem(~emerald~)
+
+// A plain sling bullet to copy: BULL01 if the game has it, or else the
+// first unenchanted bullet (item type 14)
+OUTER_SPRINT hk_sl_bullet ~~
+ACTION_IF (FILE_EXISTS_IN_GAME ~bull01.itm~) BEGIN
+  OUTER_SPRINT hk_sl_bullet ~bull01~
+END ELSE BEGIN
+  COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
+    PATCH_IF (~%hk_sl_bullet%~ STRING_EQUAL ~~ && SOURCE_SIZE > 0x71) BEGIN
+      READ_SHORT 0x1c item_type
+      READ_LONG  0x60 enchant
+      PATCH_IF (item_type == 14 && enchant == 0) BEGIN
+        SPRINT hk_sl_bullet ~%SOURCE_RES%~
+      END
+    END
+  BUT_ONLY
+END
+ACTION_IF (~%hk_sl_bullet%~ STRING_EQUAL ~~) BEGIN
+  OUTER_SPRINT hk_ability_name ~Bullets~
+  OUTER_SPRINT hk_ability_kit  ~item~
+  WARN @4
+END
+
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SL_SLING~   RET hk_state_sling   = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SL_DISPEL~  RET hk_state_dispel  = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SL_DISPEL2~ RET hk_state_dispel2 = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SL_BREACH~  RET hk_state_breach  = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SL_BREACH2~ RET hk_state_breach2 = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SL_TRUE~    RET hk_state_true    = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_SL_TRUE2~   RET hk_state_true2   = id END
+OUTER_FOR (pick = 1; pick <= 4; ++pick) BEGIN
+  LAF HK_ADD_SPELLSTATE STR_VAR name = EVAL ~HK_SL_GEMCUT%pick%~ RET id END
+  OUTER_SET $hk_state_gemcut(~%pick%~) = id
+END
+
+OUTER_SET hk_save_spell  = 1   // saving throw type bits
+OUTER_SET hk_save_breath = 2
+
+
+/////////////////////////////////////////////////////////////////////
+// Every sling (item type 18) sets HK_SL_SLING while equipped, so the
+// kit's sling-only effects can check for it
+/////////////////////////////////////////////////////////////////////
+COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
+  PATCH_IF (SOURCE_SIZE > 0x71) BEGIN
+    READ_SHORT 0x1c item_type
+    PATCH_IF (item_type == 18) BEGIN
+      LPF ADD_ITEM_EQEFFECT
+        INT_VAR opcode = 328 target = 1 timing = 2 parameter2 = hk_state_sling special = 1
+      END
+    END
+  END
+BUT_ONLY
+
+
+/////////////////////////////////////////////////////////////////////
+// Level 1: Small and Nimble (+2 AC, +2 movement) and the first +1 to
+// hit and damage with slings (missile THAC0 167, missile damage 286).
+// HKSLSB adds +1 to both at level 5 and every 4 levels after.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKSLL1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2 timing = HK_TIMING_PERMANENT END   // AC
+  LPF HK_SPELL_FX INT_VAR opcode = 176 parameter1 = 2 timing = HK_TIMING_PERMANENT END   // movement
+  LPF HK_SPELL_FX INT_VAR opcode = 167 parameter1 = 1 timing = HK_TIMING_PERMANENT END   // missile to-hit
+  LPF HK_SPELL_FX INT_VAR opcode = 286 parameter1 = 1 timing = HK_TIMING_PERMANENT END   // missile damage
+
+CREATE SPL ~HKSLSB~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 167 parameter1 = 1 timing = HK_TIMING_PERMANENT END
+  LPF HK_SPELL_FX INT_VAR opcode = 286 parameter1 = 1 timing = HK_TIMING_PERMANENT END
+
+
+/////////////////////////////////////////////////////////////////////
+// Rapid Sling: a permanent repeating effect (opcode 272) casts HKSLRSP
+// on the Slinger every round. It lands only while a sling is equipped
+// (SPLPROT row 111: blocked without HK_SL_SLING) and gives the extra
+// attacks for just over a round. Headers by level:
+//   9: +1/2 (APR value 6)  18: +1  27: +1 1/2 (7)  36: +2
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKSLRSP~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@115) desc = RESOLVE_STR_REF (@116) END
+  PATCH_FOR_EACH level IN ~1~ ~18~ ~27~ ~36~ BEGIN
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = level END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_sling parameter2 = 111 duration = 1 STR_VAR resource = ~HKSLRSP~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSLRSP~ END
+  FOR (header = 1; header <= 4; ++header) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 1 parameter1 = (header == 1 ? 6 : header == 2 ? 1 : header == 3 ? 7 : 2) duration = 7 header END
+  END
+
+CREATE EFF ~HKSLRSE~
+  LPF HK_INIT_EFF INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSLRSP~ END
+
+CREATE SPL ~HKSLRS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@115) desc = RESOLVE_STR_REF (@116) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 272 parameter1 = 6 parameter2 = 3 timing = HK_TIMING_PERMANENT STR_VAR resource = ~HKSLRSE~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// Called Shot: for 1 round every ranged hit (opcode 249) casts HKSLCSH
+// on the target at the Slinger's level. Effects last 1 turn unless
+// noted; each hit refreshes rather than stacks. Headers by level:
+//   4  -1 to hit             24 -2 AC
+//   8  -1 saves vs spell     28 slow, 1 round
+//  12  -1 Strength           32 -2 to all saves
+//  16  +2 missile damage     36 +4 more damage
+//  20  knockback             40 stun, 1 round
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_dmg_missile = 0x800000
+
+CREATE SPL ~HKSLCSH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) END
+  FOR (tier = 1; tier <= 10; ++tier) BEGIN
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = (tier == 1 ? 1 : tier * 4) END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSLCSH~ END
+  FOR (header = 1; header <= 10; ++header) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 54 parameter1 = "-1" duration = HK_ONE_TURN header END
+    PATCH_IF (header >= 2) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 37 parameter1 = "-1" duration = HK_ONE_TURN header END
+    END
+    PATCH_IF (header >= 3) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 44 parameter1 = "-1" duration = HK_ONE_TURN header END
+    END
+    PATCH_IF (header >= 4) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 12 parameter1 = (header >= 9 ? 6 : 2) parameter2 = hk_dmg_missile timing = HK_TIMING_INSTANT header END
+    END
+    PATCH_IF (header >= 5) BEGIN
+      // Knockback (Wing Buffet): away from the source. Check the push in game.
+      LPF HK_SPELL_FX INT_VAR opcode = 235 parameter1 = 20 parameter2 = 2 duration = 1 header END
+    END
+    PATCH_IF (header >= 6) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 0 parameter1 = "-2" duration = HK_ONE_TURN header END
+    END
+    PATCH_IF (header >= 7) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 40 duration = 6 header END
+    END
+    PATCH_IF (header >= 8) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = "-2" duration = HK_ONE_TURN header END
+    END
+    PATCH_IF (header >= 10) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 45 duration = 6 header END
+    END
+  END
+
+CREATE EFF ~HKSLCSA~
+  LPF HK_INIT_EFF INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSLCSH~ END
+
+CREATE SPL ~HKSLCS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) STR_VAR icon = EVAL ~%hk_mirror_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_mirror_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSLCS~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 249 duration = 6 STR_VAR resource = ~HKSLCSA~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Eagle Eye - 1 turn of +2 missile to-hit and damage, and each
+// ranged hit has a 25% chance to stun for 1 round (save vs spell).
+// TODO (EEex): ignoring Mirror Image and Blur.
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKSLEES~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+  LPF ADD_SPELL_EFFECT
+    INT_VAR opcode = 45 target = 1 duration = 6 savingthrow = hk_save_spell
+            power = 0 probability1 = 24 probability2 = 0
+  END
+
+CREATE EFF ~HKSLEEA~
+  LPF HK_INIT_EFF INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSLEES~ END
+
+CREATE SPL ~HKSLEE~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) STR_VAR icon = EVAL ~%hk_mirror_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_mirror_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSLEE~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 167 parameter1 = 2 duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 286 parameter1 = 2 duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 249 duration = HK_ONE_TURN STR_VAR resource = ~HKSLEEA~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Out of Reach - for 1 turn, every round, enemies in War Cry's
+// enemy-only area around the Slinger save vs breath or are knocked back
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_enemy_found) BEGIN
+  CREATE SPL ~HKSLORP~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_enemy_target range = hk_enemy_range projectile = hk_enemy_projectile
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 235 target = 2 parameter1 = 20 parameter2 = 2 duration = 1 savingthrow = hk_save_breath END
+
+  CREATE EFF ~HKSLORE~
+    LPF HK_INIT_EFF INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSLORP~ END
+
+  CREATE SPL ~HKSLOR~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSLORP~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 272 parameter1 = 6 parameter2 = 3 duration = HK_ONE_TURN STR_VAR resource = ~HKSLORE~ END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Sure Aim (+1 Called Shot a day)
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKSLSA~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146) STR_VAR icon = EVAL ~%hk_mirror_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_mirror_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKSLCS~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: the crafting abilities only set spell states the rest script
+// checks
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ASSOCIATIVE_ARRAY hk_sl_craft_hlas BEGIN
+  ~HKSLDS~ => 0
+  ~HKSLDE~ => 0
+  ~HKSLBS~ => 0
+  ~HKSLBE~ => 0
+  ~HKSLTS~ => 0
+  ~HKSLTE~ => 0
+END
+OUTER_SET $hk_sl_craft_state(~HKSLDS~) = hk_state_dispel
+OUTER_SET $hk_sl_craft_state(~HKSLDE~) = hk_state_dispel2
+OUTER_SET $hk_sl_craft_state(~HKSLBS~) = hk_state_breach
+OUTER_SET $hk_sl_craft_state(~HKSLBE~) = hk_state_breach2
+OUTER_SET $hk_sl_craft_state(~HKSLTS~) = hk_state_true
+OUTER_SET $hk_sl_craft_state(~HKSLTE~) = hk_state_true2
+OUTER_SET $hk_sl_craft_name(~HKSLDS~) = RESOLVE_STR_REF (@130)
+OUTER_SET $hk_sl_craft_desc(~HKSLDS~) = RESOLVE_STR_REF (@131)
+OUTER_SET $hk_sl_craft_name(~HKSLDE~) = RESOLVE_STR_REF (@132)
+OUTER_SET $hk_sl_craft_desc(~HKSLDE~) = RESOLVE_STR_REF (@133)
+OUTER_SET $hk_sl_craft_name(~HKSLBS~) = RESOLVE_STR_REF (@134)
+OUTER_SET $hk_sl_craft_desc(~HKSLBS~) = RESOLVE_STR_REF (@135)
+OUTER_SET $hk_sl_craft_name(~HKSLBE~) = RESOLVE_STR_REF (@136)
+OUTER_SET $hk_sl_craft_desc(~HKSLBE~) = RESOLVE_STR_REF (@137)
+OUTER_SET $hk_sl_craft_name(~HKSLTS~) = RESOLVE_STR_REF (@138)
+OUTER_SET $hk_sl_craft_desc(~HKSLTS~) = RESOLVE_STR_REF (@139)
+OUTER_SET $hk_sl_craft_name(~HKSLTE~) = RESOLVE_STR_REF (@140)
+OUTER_SET $hk_sl_craft_desc(~HKSLTE~) = RESOLVE_STR_REF (@141)
+ACTION_PHP_EACH hk_sl_craft_hlas AS resref => unused BEGIN
+  OUTER_SET state = $hk_sl_craft_state(~%resref%~)
+  CREATE SPL ~%resref%~
+    LPF HK_INIT_SPELL INT_VAR name = $hk_sl_craft_name(~%resref%~) desc = $hk_sl_craft_desc(~%resref%~) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = state special = 1 timing = HK_TIMING_PERMANENT END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Gem Cutter's Eye. Each pick sets the next of four spell states:
+// the sub-spells are applied from the 4th down, and each needs the one
+// before it (row 111) and is blocked once set (row 110), so exactly
+// one new state lands per pick.
+/////////////////////////////////////////////////////////////////////
+OUTER_FOR (pick = 1; pick <= 4; ++pick) BEGIN
+  OUTER_SET previous = pick - 1
+  OUTER_SET state = $hk_state_gemcut(~%pick%~)
+  OUTER_SET previous_state = 0
+  ACTION_IF (pick > 1) BEGIN
+    OUTER_SET previous_state = $hk_state_gemcut(~%previous%~)
+  END
+  CREATE SPL ~HKSLGC%pick%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+    LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = state parameter2 = 110 duration = 1 STR_VAR resource = EVAL ~HKSLGC%pick%~ END
+    PATCH_IF (pick > 1) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = previous_state parameter2 = 111 duration = 1 STR_VAR resource = EVAL ~HKSLGC%pick%~ END
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = state special = 1 timing = HK_TIMING_PERMANENT END
+END
+
+CREATE SPL ~HKSLGC~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  FOR (pick = 4; pick >= 1; --pick) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKSLGC%pick%~ END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// Crafting a batch: the rest script applies HKSLC<kind><tier> to the
+// Slinger. Opcode 122 creates the bullets. Headers by level add 1 at
+// 30 and 1 more at 40; each Gem Cutter's Eye state adds 2 through a
+// sub-spell that needs that state (row 111).
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ASSOCIATIVE_ARRAY hk_sl_batches BEGIN
+  ~D1~ => 5
+  ~D2~ => 8
+  ~B1~ => 5
+  ~B2~ => 8
+  ~T1~ => 10
+  ~T2~ => 10
+END
+ACTION_PHP_EACH hk_sl_batches AS batch => count BEGIN
+  OUTER_SPRINT bullet ~HKSLB%batch%~
+  OUTER_FOR (pick = 1; pick <= 4; ++pick) BEGIN
+    OUTER_SET state = $hk_state_gemcut(~%pick%~)
+    CREATE SPL ~HKSL%batch%G%pick%~
+      LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) END
+      LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = state parameter2 = 111 duration = 1 STR_VAR resource = EVAL ~HKSL%batch%G%pick%~ END
+      LPF HK_SPELL_FX INT_VAR opcode = 122 parameter1 = 2 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%bullet%~ END
+  END
+  CREATE SPL ~HKSLC%batch%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@185) END
+    PATCH_FOR_EACH level IN ~1~ ~30~ ~40~ BEGIN
+      LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = level END
+    END
+    FOR (header = 1; header <= 3; ++header) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 122 parameter1 = count + header - 1 timing = HK_TIMING_INSTANT header STR_VAR resource = EVAL ~%bullet%~ END
+    END
+    FOR (pick = 1; pick <= 4; ++pick) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKSL%batch%G%pick%~ END
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@185) timing = HK_TIMING_INSTANT END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHSL.2da)
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@130) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSLDS~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@132) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSLDE~ icon = EVAL ~%hk_bless_icon%~ prereq = ~AP_HKSLDS~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@134) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSLBS~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@136) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSLBE~ icon = EVAL ~%hk_bless_icon%~ prereq = ~AP_HKSLBS~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 5
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSLSA~ icon = EVAL ~%hk_mirror_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKSLEE~ icon = EVAL ~%hk_mirror_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@138) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSLTS~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@140) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSLTE~ icon = EVAL ~%hk_bless_icon%~ prereq = ~AP_HKSLTS~ RET hk_rows = rows hk_n = number END
+ACTION_IF (hk_crit_found) BEGIN
+  LAF HK_HLA_ROW
+    INT_VAR number = hk_n strref = hk_crit_strref picks = hk_crit_num min_level = hk_crit_min max_level = hk_crit_max
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%hk_crit_ability%~ icon = EVAL ~%hk_crit_icon%~
+    RET hk_rows = rows hk_n = number
+  END
+END
+ACTION_IF (hk_enemy_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 2
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKSLOR~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 4
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKSLGC~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+
+COPY ~%MOD_FOLDER%/kits/06-slinger/luhsl.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+// Weapon skill: grandmastery in slings; at most proficiency (1 pip) in
+// every other weapon it may use; none in the ones it can't. Fighting
+// styles as the fighter.
+/////////////////////////////////////////////////////////////////////
+LAF HK_WEAPPROF_LINE
+  INT_VAR copy_all = 1 pips = 5 cap = 1
+  STR_VAR kit     = ~HK_SLINGER~
+          skilled = ~SLING~
+          none    = ~DAGGER AXE QUARTERSTAFF TWOHANDEDSWORD HALBERD SPEAR LONGBOW SHORTBOW CROSSBOW DART~
+  RET hk_sl_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_sl_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_SLINGER~ values = ~STR=9 DEX=16~ RET hk_sl_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_SLINGER~ allowed = ~LAWFUL_GOOD NEUTRAL_GOOD CHAOTIC_GOOD~ RET hk_sl_align = line END
+
+ADD_KIT ~HK_SLINGER~
+  ~HK_SLINGER               1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_sl_weapprof%~                                          // WEAPPROF (column)
+  ~%hk_sl_abclasrq%~                                          // ABCLASRQ: Str 9, Dex 16
+  ~HK_SLINGER               0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_SLINGER               17 0 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_SLINGER               17 0 0 0 0 0~                     // ABDCSCRQ
+  ~%hk_sl_align%~                                             // ALIGNMNT: any good
+  ~HK_SLINGER               0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/06-slinger/hkslclab.2da~                 // CLAB
+  ~K_F_H~                                                     // halfling fighters only
+  ~0x00004000 2~                                              // fighter usability, class 2
+  ~HSL~                                                       // LUHSL.2da
+  ~%hk_sl_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+OUTER_SET hk_sl_kit_id = IDS_OF_SYMBOL (~kit~ ~HK_SLINGER~)
+
+
+/////////////////////////////////////////////////////////////////////
+// Crafted bullets: copies of a plain bullet. Only a Slinger can use
+// them (opcode 319, power 1 = only matching creatures). Each hit:
+//   BD1  +3; casts Dispel Magic on the target (opcode 146, at the
+//        Slinger's level)
+//   BD2  +3; dispels everything (opcode 58, mode 0 = always succeeds)
+//   BB1  +0, not magical; Breach (opcode 326 ignores magic resistance)
+//   BB2  as BB1, plus Secret Word
+//   BT1  +4; BT2 +5
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ASSOCIATIVE_ARRAY hk_sl_bullets BEGIN
+  ~HKSLBD1~ => 3
+  ~HKSLBD2~ => 3
+  ~HKSLBB1~ => 0
+  ~HKSLBB2~ => 0
+  ~HKSLBT1~ => 4
+  ~HKSLBT2~ => 5
+END
+OUTER_SET $hk_sl_bullet_tra(~HKSLBD1~) = 170
+OUTER_SET $hk_sl_bullet_tra(~HKSLBD2~) = 172
+OUTER_SET $hk_sl_bullet_tra(~HKSLBB1~) = 174
+OUTER_SET $hk_sl_bullet_tra(~HKSLBB2~) = 176
+OUTER_SET $hk_sl_bullet_tra(~HKSLBT1~) = 178
+OUTER_SET $hk_sl_bullet_tra(~HKSLBT2~) = 182
+
+ACTION_IF (NOT ~%hk_sl_bullet%~ STRING_EQUAL ~~) BEGIN
+  ACTION_PHP_EACH hk_sl_bullets AS resref => plus BEGIN
+    OUTER_SET tra = $hk_sl_bullet_tra(~%resref%~)
+    COPY_EXISTING ~%hk_sl_bullet%.itm~ ~override/%resref%.itm~
+      PATCH_IF (tra == 170) BEGIN SAY 0x08 @170 SAY 0x0c @170 SAY 0x50 @171 SAY 0x54 @171 END
+      PATCH_IF (tra == 172) BEGIN SAY 0x08 @172 SAY 0x0c @172 SAY 0x50 @173 SAY 0x54 @173 END
+      PATCH_IF (tra == 174) BEGIN SAY 0x08 @174 SAY 0x0c @174 SAY 0x50 @175 SAY 0x54 @175 END
+      PATCH_IF (tra == 176) BEGIN SAY 0x08 @176 SAY 0x0c @176 SAY 0x50 @177 SAY 0x54 @177 END
+      PATCH_IF (tra == 178) BEGIN SAY 0x08 @178 SAY 0x0c @178 SAY 0x50 @179 SAY 0x54 @179 END
+      PATCH_IF (tra == 182) BEGIN SAY 0x08 @182 SAY 0x0c @182 SAY 0x50 @183 SAY 0x54 @183 END
+      WRITE_LONG 0x60 plus                                   // enchantment
+      READ_LONG  0x18 flags
+      WRITE_LONG 0x18 (plus > 0 ? (flags BOR 0x40) : (flags BAND (BNOT 0x40)))
+      WRITE_LONG 0x34 0                                      // no shop value
+      LPF ALTER_ITEM_HEADER INT_VAR thac0_bonus = plus damage_bonus = plus END
+      LPF ADD_ITEM_EQEFFECT
+        INT_VAR opcode = 319 target = 1 timing = 2 parameter1 = hk_sl_kit_id parameter2 = 9
+                power = 1 special = RESOLVE_STR_REF (@181)
+      END
+      PATCH_IF (tra == 170 && hk_dispel_found) BEGIN
+        LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 146 target = 2 parameter2 = 1 timing = 1 STR_VAR resource = EVAL ~%hk_dispel_spell%~ END
+      END
+      PATCH_IF (tra == 172) BEGIN
+        LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 58 target = 2 parameter2 = 0 timing = 1 END
+      END
+      PATCH_IF ((tra == 174 || tra == 176) && hk_breach_found) BEGIN
+        LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 326 target = 2 timing = 1 STR_VAR resource = EVAL ~%hk_breach_spell%~ END
+      END
+      PATCH_IF (tra == 176 && hk_secret_found) BEGIN
+        LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 326 target = 2 timing = 1 STR_VAR resource = EVAL ~%hk_secret_spell%~ END
+      END
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment: slings (107) and one-handed melee weapons other than
+// daggers and axes: long (90), short (91) and bastard swords (89),
+// katanas (94), scimitars (95), war hammers (97), flails (100), maces
+// (101) and clubs (115). Armour up to studded leather (base AC 7);
+// bucklers and small shields.
+/////////////////////////////////////////////////////////////////////
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id          = hk_sl_kit_id
+          message         = RESOLVE_STR_REF (@180)
+          min_base_ac     = 7
+          max_shield_size = 2
+  STR_VAR allowed_profs   = ~107 90 91 89 94 95 97 100 101 115~
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// The rest script: one copy per party slot in each global script
+// (BG:EE and BG2:EE baldur, ToB baldur25, Siege of Dragonspear bdbaldur)
+/////////////////////////////////////////////////////////////////////
+ACTION_FOR_EACH script IN ~baldur~ ~baldur25~ ~bdbaldur~ BEGIN
+  ACTION_IF (FILE_EXISTS_IN_GAME ~%script%.bcs~) BEGIN
+    OUTER_FOR (slot = 1; slot <= 6; ++slot) BEGIN
+      OUTER_SPRINT hk_player ~Player%slot%~
+      OUTER_SET    hk_slot   = slot
+      EXTEND_BOTTOM ~%script%.bcs~ ~%MOD_FOLDER%/kits/06-slinger/hkslgem.baf~ EVALUATE_BUFFER
+    END
+  END
+END

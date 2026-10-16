@@ -100,3 +100,19 @@ For anyone building this kit as a mod (for example with WeiDU):
 - **Easy:** Small and Nimble, sling grandmastery and scaling bonuses, Sure Aim, Gem Cutter's Eye (more bullets per batch).
 - **Moderate:** Rapid Sling (attack bonuses limited to slings), the extended Called Shot ladder (based on the Archer's Called Shot), Eagle Eye's bonuses and stun chance (on-hit effects for a set duration), Out of Reach (a repeating aura that knocks back enemies within 10 feet for 1 turn), and Dispelling, Breaching and True Shot with their Enhanced versions (custom bullets, the Dispelling and Breaching ones with on-hit effects, Breaching bullets set to enchantment 0 so Protection from Magical Weapons doesn't block them, made by a rest script that checks for an urban area and the 24-hour limit, and takes the matching gem).
 - **Hard:** Eagle Eye's sling hits ignoring Mirror Image (an image absorbs the hit before any on-hit effect applies, so this probably needs EEex); Critical Strike ignoring critical-hit immunity (helmets block criticals in the engine, so this probably needs EEex).
+
+### As built (not yet tested in game)
+
+Code: `mod/halflingkits/kits/06-slinger/`. Where the build differs from the design, or relies on something to check in game:
+
+- **Sling to-hit and damage** use the game's missile to-hit and missile damage bonuses. Slings are the kit's only missile weapon, so in practice they apply to slings only.
+- **Rapid Sling** is a pulse every round that gives the extra attacks only while a sling is equipped: every sling in the game sets a spell state while equipped, and the pulse checks it. Check in game that the extra attacks appear with a sling and vanish with a melee weapon.
+- **Called Shot** lasts 1 round and affects every sling hit in it, not just the next hit (TODO, EEex: the engine can't end an on-hit effect after one hit). Each hit refreshes the effects rather than stacking them. The knockback (from level 20) uses the Wing Buffet effect; check the push distance in game.
+- **Eagle Eye**'s +2, stun chance and duration are as designed. Ignoring Mirror Image and Blur is not built (TODO, EEex).
+- **Critical Strike** is the game's own, without its Power Attack prerequisite. Ignoring critical-hit immunity is not built (TODO, EEex).
+- **Out of Reach** uses War Cry's enemy-only area (not exactly 10 feet). It is left out if War Cry isn't found.
+- **Crafted bullets:** a block in the global scripts, one per party slot, crafts when the party rests in a city or in a building that isn't a dungeon. Once a day per kind, it takes one gem from the **Slinger's own inventory** and adds the batch to it. If the Slinger has the Enhanced HLA and carries the costly gem, it makes the enhanced batch; otherwise it makes the standard one. So the player chooses by what the Slinger carries: hand the Diamond to someone else to keep it. Gems are found by name at install; a missing gem means that batch can't be made. Check in game that a rest at an inn counts, that only one gem leaves a stack, and that a batch is made only once per rest.
+- **Enhanced Dispelling** bullets always dispel, rather than dispelling as if 5 levels higher.
+- **Bullets** are copies of the game's plain bullet, usable only by a Slinger. Breaching bullets are +0 and not magical.
+- **Gem Cutter's Eye** counts its picks with four spell states, so each pick adds 2 bullets to every batch.
+- **Weapon skill:** grandmastery in slings; at most proficiency in every other weapon it can use; none in daggers, axes, quarterstaffs, two-handed swords, halberds, spears, bows, crossbows and darts.

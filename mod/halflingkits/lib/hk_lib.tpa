@@ -937,3 +937,46 @@ BEGIN
   WRITE_ASCII 0x280 ~~ #32                            // death variable
   WRITE_ASCII 0x2cc ~~ #8                             // dialogue
 END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_FIND_ITEM_BY_NAME (action)
+// Finds a vanilla item of one item type whose English identified name
+// (or, failing that, unidentified name) matches a regexp, so kits can
+// use items such as gems without hard-coding resrefs.
+//   type:   item type (34 = gems)
+//   quiet:  1 = no warning if not found
+//   regexp: matched against the whole name, case-insensitive
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_FIND_ITEM_BY_NAME
+  INT_VAR type   = 34
+          quiet  = 0
+  STR_VAR regexp = ""
+          label  = ""   // the name shown in the warning
+  RET found itm
+BEGIN
+  OUTER_SET found = 0
+  OUTER_SPRINT itm ~~
+  COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
+    PATCH_IF (found == 0 && SOURCE_SIZE > 0x71) BEGIN
+      READ_SHORT 0x1c item_type
+      PATCH_IF (item_type == type) BEGIN
+        FOR (off = 0x0c; off >= 0x08 && found == 0; off -= 4) BEGIN
+          READ_LONG off nm
+          PATCH_IF (nm > 0) BEGIN
+            GET_STRREF nm txt
+            PATCH_IF (NOT (~%txt%~ STRING_MATCHES_REGEXP ~^%regexp%$~)) BEGIN
+              SET found = 1
+              SPRINT itm ~%SOURCE_RES%~
+            END
+          END
+        END
+      END
+    END
+  BUT_ONLY
+  ACTION_IF (found == 0 && NOT quiet) BEGIN
+    OUTER_SPRINT hk_ability_name ~%label%~
+    OUTER_SPRINT hk_ability_kit  ~item~
+    WARN @4
+  END
+END

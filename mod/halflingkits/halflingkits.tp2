@@ -59,6 +59,16 @@ LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/tymora.tra~
 INCLUDE ~%MOD_FOLDER%/kits/05-tymoras-champion/tymora.tpa~
 
 /////////////////////////////////////////////////////////////////////
+// Slinger (fighter, halfling only)
+/////////////////////////////////////////////////////////////////////
+BEGIN @13 DESIGNATED 6
+LABEL ~halflingkits-slinger~
+REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
+
+LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/slinger.tra~
+INCLUDE ~%MOD_FOLDER%/kits/06-slinger/slinger.tpa~
+
+/////////////////////////////////////////////////////////////////////
 // Unbeguiled (fighter, halfling only)
 /////////////////////////////////////////////////////////////////////
 BEGIN @11 DESIGNATED 8

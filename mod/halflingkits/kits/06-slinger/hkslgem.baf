@@ -1,0 +1,122 @@
+// Slinger: craft bullets when the party rests in a city, town or building
+// (not a dungeon), once a day per kind, from a gem the Slinger carries.
+// Added to the global scripts once per party slot (%hk_player%, %hk_slot%).
+// The enhanced batch is made when the Slinger has the Enhanced HLA and
+// carries the costly gem; otherwise the standard batch from the common gem.
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_SLINGER)
+  CheckSpellState(%hk_player%,HK_SL_DISPEL2)
+  HasItem("%hk_gem_star%",%hk_player%)
+  !GlobalTimerNotExpired("HKSLD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKSLD%hk_slot%","GLOBAL",7200)
+    ActionOverride(%hk_player%,DestroyItem("%hk_gem_star%"))
+    ActionOverride(%hk_player%,ApplySpellRES("HKSLCD2",Myself))
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_SLINGER)
+  CheckSpellState(%hk_player%,HK_SL_DISPEL)
+  OR(2)
+    !CheckSpellState(%hk_player%,HK_SL_DISPEL2)
+    !HasItem("%hk_gem_star%",%hk_player%)
+  HasItem("%hk_gem_moon%",%hk_player%)
+  !GlobalTimerNotExpired("HKSLD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKSLD%hk_slot%","GLOBAL",7200)
+    ActionOverride(%hk_player%,DestroyItem("%hk_gem_moon%"))
+    ActionOverride(%hk_player%,ApplySpellRES("HKSLCD1",Myself))
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_SLINGER)
+  CheckSpellState(%hk_player%,HK_SL_BREACH2)
+  HasItem("%hk_gem_diamond%",%hk_player%)
+  !GlobalTimerNotExpired("HKSLB%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKSLB%hk_slot%","GLOBAL",7200)
+    ActionOverride(%hk_player%,DestroyItem("%hk_gem_diamond%"))
+    ActionOverride(%hk_player%,ApplySpellRES("HKSLCB2",Myself))
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_SLINGER)
+  CheckSpellState(%hk_player%,HK_SL_BREACH)
+  OR(2)
+    !CheckSpellState(%hk_player%,HK_SL_BREACH2)
+    !HasItem("%hk_gem_diamond%",%hk_player%)
+  HasItem("%hk_gem_blood%",%hk_player%)
+  !GlobalTimerNotExpired("HKSLB%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKSLB%hk_slot%","GLOBAL",7200)
+    ActionOverride(%hk_player%,DestroyItem("%hk_gem_blood%"))
+    ActionOverride(%hk_player%,ApplySpellRES("HKSLCB1",Myself))
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_SLINGER)
+  CheckSpellState(%hk_player%,HK_SL_TRUE2)
+  HasItem("%hk_gem_emerald%",%hk_player%)
+  !GlobalTimerNotExpired("HKSLT%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKSLT%hk_slot%","GLOBAL",7200)
+    ActionOverride(%hk_player%,DestroyItem("%hk_gem_emerald%"))
+    ActionOverride(%hk_player%,ApplySpellRES("HKSLCT2",Myself))
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_SLINGER)
+  CheckSpellState(%hk_player%,HK_SL_TRUE)
+  OR(2)
+    !CheckSpellState(%hk_player%,HK_SL_TRUE2)
+    !HasItem("%hk_gem_emerald%",%hk_player%)
+  HasItem("%hk_gem_sun%",%hk_player%)
+  !GlobalTimerNotExpired("HKSLT%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKSLT%hk_slot%","GLOBAL",7200)
+    ActionOverride(%hk_player%,DestroyItem("%hk_gem_sun%"))
+    ActionOverride(%hk_player%,ApplySpellRES("HKSLCT1",Myself))
+    Continue()
+END

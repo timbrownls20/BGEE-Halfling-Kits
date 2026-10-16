@@ -5,7 +5,7 @@ The working record for the halfling-only kit set for Baldur's Gate: Enhanced Edi
 ## Status
 
 - **Design:** complete for eleven kits, with several review and balance passes. A twelfth, the Ghostwise Rogue (fighter/thief with barbarian qualities and wilderness bonuses; no Open Locks or Pick Pockets), is a placeholder still to be designed (`docs/kits/12-ghostwise-rogue/design.md`).
-- **Implementation:** started. `mod/halflingkits/` holds the WeiDU mod: the shared library (`lib/hk_lib.tpa`), the Fleet Foot Fighter (`kits/01-fleet-foot-fighter/`), the Hearthsinger (`kits/04-hearthsinger/`), Tymora's Champion (`kits/05-tymoras-champion/`), the Nettle (`kits/09-nettle/`), the Surefoot Fighter (`kits/03-surefoot-fighter/`), the Briarguard (`kits/11-briarguard/`), the True Heart (`kits/02-true-heart/`) and the Unbeguiled (`kits/08-unbeguiled/`). All eight pass WeiDU's syntax check (`utils/check-mod.sh`) but have not been installed in a game yet. Each kit's design file ends with an "As built" section listing where the code differs from the design.
+- **Implementation:** started. `mod/halflingkits/` holds the WeiDU mod: the shared library (`lib/hk_lib.tpa`), the Fleet Foot Fighter (`kits/01-fleet-foot-fighter/`), the Hearthsinger (`kits/04-hearthsinger/`), Tymora's Champion (`kits/05-tymoras-champion/`), the Nettle (`kits/09-nettle/`), the Surefoot Fighter (`kits/03-surefoot-fighter/`), the Slinger (`kits/06-slinger/`), the Briarguard (`kits/11-briarguard/`), the True Heart (`kits/02-true-heart/`) and the Unbeguiled (`kits/08-unbeguiled/`). All nine pass WeiDU's syntax check (`utils/check-mod.sh`) but have not been installed in a game yet. Each kit's design file ends with an "As built" section listing where the code differs from the design.
 - **Playtesting:** none yet. Every rating is an estimate.
 - **Source of truth:** these Markdown files, from the point they are committed. They were exported from the design document on 15 October 2026. Make further changes here, not in the original document, so git history stays the record.
 
@@ -15,7 +15,7 @@ In priority order. Each kit's "As built" notes list its own smaller check-in-gam
 
 1. **Remaining kits** (The Bold is fully coded):
    - **Magpie** completes Hearth and Home, once open question 8 (Magpie's Knack) is decided.
-   - **Slinger** and **Greenhand** (The Wild Wood). The Greenhand needs open questions 1 and 2 decided; its rabbit familiar reuses the Briarguard's simple-summon approach.
+   - **Greenhand** (The Wild Wood). It needs open questions 1 and 2 decided; its rabbit familiar reuses the Briarguard's simple-summon approach.
 2. **Design the Ghostwise Rogue** (placeholder: `docs/kits/12-ghostwise-rogue/design.md`). Check the multiclass kit workaround first. Then add it to the Overview, Party Design and Strength Rankings.
 3. **EEex components** (optional, Windows only; see the EEex plan under Dependencies). Current TODOs:
    - Fleet Foot: Halfling Evasion's half damage on a failed save.
@@ -24,7 +24,7 @@ In priority order. Each kit's "As built" notes list its own smaller check-in-gam
    - Nettle: Spoiling Backstab draining priest spells.
    - Unbeguiled: Stand Behind Me's redirect; ignoring Mirror Image and Blur; Spoiling Strike's non-magical hits; Critical Strike ignoring critical-hit immunity.
    - Surefoot: Unmoving Stride's immunity to Time Stop.
-   - Plus the Hard items of the kits not yet built (Slinger).
+   - Slinger: Eagle Eye ignoring Mirror Image and Blur; Called Shot affecting only the next hit; Critical Strike ignoring critical-hit immunity.
 4. **First install on a game** (Windows): install every component, read WeiDU's log for warnings, check the "Game rules the design relies on" assumptions and each kit's "As built" check-in-game items, and fill in the README's Tested column.
 5. **Playtest** the three playtest parties through BG1, SoA and ToB against the playtest checklist, starting with The Bold. Record changes as commits with the reason in the message.
 6. **Resolve the remaining open questions.**
@@ -35,6 +35,7 @@ In priority order. Each kit's "As built" notes list its own smaller check-in-gam
 Newest first.
 
 **16 October 2026**
+- Coded the **Slinger**: sling-only scaling and Rapid Sling, the Called Shot ladder, its HLAs, and crafted bullets made by a rest script from gems the Slinger carries. Added `HK_FIND_ITEM_BY_NAME` to the library.
 - Coded the **Surefoot Fighter**: strides, Stand Fast with its three stance upgrades, Hold the Line and all its HLAs. Hold the Line's physical resistance goes to allies only, which keeps the Surefoot at the 90% cap. Unmoving Stride's Time Stop immunity is an EEex TODO.
 - Reworked the **playtest parties** to keep the Nettle and the Unbeguiled apart. The Wild Wood is unchanged; the other two are now **The Bold** (True Heart, Fleet Foot, Tymora's Champion, Nettle), which is fully coded and goes first, and **Hearth and Home** (Surefoot, Unbeguiled, Hearthsinger, Magpie). Mage-Breakers is retired.
 - Built the **Briarguard's badger** as a simple scripted summon (open question 9 decided): five forms by level, bonus hit points to the Briarguard while it lives, and Badger's Fury reaching it. The script pass is done.
@@ -233,7 +234,7 @@ No party has an arcane caster: every kit is a fighter, cleric or thief, so the M
 | --- | --- | --- |
 | The Bold | 4 (True Heart, Fleet Foot, Tymora's Champion, Nettle) | Nothing |
 | Hearth and Home | 3 (Surefoot, Unbeguiled, Hearthsinger) | Magpie (open question 8, Magpie's Knack) |
-| The Wild Wood | 1 (Briarguard) | Greenhand (open questions 1 and 2), Slinger; the Ghostwise Rogue is still to be designed and may need the multiclass kit workaround |
+| The Wild Wood | 2 (Briarguard, Slinger) | Greenhand (open questions 1 and 2); the Ghostwise Rogue is still to be designed and may need the multiclass kit workaround |
 
 The Bold is fully coded, so it is the first playtest party.
 
