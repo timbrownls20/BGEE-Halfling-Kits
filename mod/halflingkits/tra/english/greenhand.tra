@@ -1,0 +1,103 @@
+// Greenhand
+
+@100 = ~Greenhand~
+@101 = ~Greenhand~
+@102 = ~GREENHAND: Sheela Peryroyl's priests keep no temples. They tend fields, hedgerows and orchards, mend whoever comes limping up the lane, talk to the badgers, and always know which way the wind is blowing. When something threatens the garden, the garden answers.
+
+Advantages:
+– Small and Nimble: +2 AC.
+– May reach grandmastery in slings and put 2 slots into Sword and Shield Style.
+– Casts druid spells as well as cleric spells: Entangle, Call Lightning, Summon Insects, Animal Summoning, Iron Skins, Insect Plague, Fire Seeds, Creeping Doom, the elementals and more.
+– Green Thumb: its summoned creatures gain +2 to hit, damage and saves and last 50% longer; its animals and insects are immune to Death Spell.
+– Sheela's Bounty: its healing spells heal 25% more.
+– Wind's Whisper: +2 to saves vs illusions; Clairvoyance once a day from level 5.
+– Harvest Loaf: once a day (twice from level 12), allies nearby heal 5 hit points plus 1 per level and shake off fatigue; from level 15 they also gain +1 to saves for 1 turn.
+– Find Familiar: once a day, calls a rabbit that grows with the Greenhand and adds to its hit points while it lives.
+– Two spells of its own: Summon Horde and Sheela's Berries.
+
+Disadvantages:
+– May only use clubs, quarterstaffs and slings, with only proficiency in clubs and quarterstaffs.
+– Cannot wear armour heavier than studded leather.
+– Cannot Turn Undead.
+– Cannot cast the cleric's undead, spiritual weapon, mind-control, glyph, holy and unholy attack, poison and harm spells.
+– Requires Charisma 13 or higher.
+– Must be a neutral good or true neutral halfling.~
+
+@110 = ~Greenhand~
+@111 = ~Sheela's gifts: +2 AC and +2 to saves vs illusions.~
+
+@120 = ~Harvest Loaf~
+@121 = ~Harvest Loaf
+
+The Greenhand shares out fresh bread from the harvest. Every ally nearby heals 5 hit points plus 1 per level and shakes off fatigue. From level 15 the loaf also gives +1 to saves for 1 turn.~
+
+@125 = ~Clairvoyance~
+
+@130 = ~Summon Horde~
+@131 = ~Summon Horde
+(Conjuration/Summoning)
+
+Level: 1
+Range: The caster
+Duration: 3 rounds + 1 round per level
+Casting Time: 1
+Area of Effect: Special
+Saving Throw: None
+
+The Greenhand calls the hedgerow's rabbits to its side: 6 to 8 rabbits pour out around it. They don't fight, but they swarm about underfoot, and enemies often attack the rabbits instead of the party.~
+@132 = ~Rabbit~
+
+@135 = ~Sheela's Berries~
+@136 = ~Sheela's Berries
+(Alteration)
+
+Level: 1
+Range: The caster
+Duration: Special
+Casting Time: 1
+Area of Effect: Special
+Saving Throw: None
+
+The Greenhand picks a handful of enchanted berries that anyone can eat: 3 berries, plus 1 per 3 levels (up to 8). Each heals 1d4+1 hit points, plus 1 per 4 levels. From level 5 the berries also cure poison; from level 9, disease; from level 14, blindness, deafness and paralysis.~
+@137 = ~Sheela's Berry~
+@138 = ~Sheela's Berry
+
+A plump, glossy berry from Sheela Peryroyl's hedgerows. Eating it heals 1d4+1 hit points or more, and berries picked by an experienced Greenhand cure poison, disease, blindness, deafness and paralysis as well.~
+
+@150 = ~Hedgerow Rabbit~
+@151 = ~Hare~
+@152 = ~Warren Elder~
+@153 = ~Moon Hare~
+@154 = ~Sheela's Hare~
+@155 = ~Find Familiar~
+@156 = ~Find Familiar
+
+Once a day, the Greenhand calls its rabbit, which stays for one day. It grows with the Greenhand: a Hedgerow Rabbit, then a Hare from level 7, a Warren Elder from 12, a Moon Hare from 18 and Sheela's Hare from 24. It is a scout, not a fighter: each form is tougher and can cast more divinations. While it lives, the Greenhand gains extra hit points (8, rising to 45), and from the Warren Elder +20 Lore.~
+@157 = ~The rabbit is gone, and the Greenhand feels the loss.~
+
+@160 = ~Garden of Friends~
+@161 = ~Garden of Friends
+
+Summons a bear and two wolves for 1 turn, with Green Thumb's bonuses.~
+@165 = ~Call the Bog~
+@166 = ~Call the Bog
+
+Summons two shambling mounds for 1 turn, with Green Thumb's bonuses. Electricity heals them and they resist fire.~
+@170 = ~Sheela's Harvest~
+@171 = ~Sheela's Harvest
+
+For 1 turn, the Greenhand and its allies nearby regenerate hit points every round and are cured of, and protected from, poison and disease.~
+@175 = ~Fair Winds~
+@176 = ~Fair Winds
+
+For 1 turn, the Greenhand and its allies nearby gain +2 movement and are immune to slow, entangle and web.~
+@185 = ~Bountiful Harvest~
+@186 = ~Bountiful Harvest
+
+Each time this ability is chosen, Sheela's Bounty heals 25% more: the Greenhand's healing spells heal 50% more than normal after one pick, and 75% more after two.~
+@190 = ~Hedge Warden~
+@191 = ~Hedge Warden
+
+Summons a treant for 2 turns: an old tree of Sheela's hedgerows that walks at the Greenhand's call. It hits hard and takes extra damage from fire. Gets Green Thumb's bonuses.~
+
+@180 = ~Greenhands cannot use this item.~

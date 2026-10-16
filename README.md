@@ -21,10 +21,10 @@ Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Bald
 | [Hearthsinger](docs/kits/04-hearthsinger/design.md) | Cleric | Party support (songs) | Yes | |
 | [Tymora's Champion](docs/kits/05-tymoras-champion/design.md) | Fighter | Lucky all-rounder | Yes | |
 | [Slinger](docs/kits/06-slinger/design.md) | Fighter | Ranged damage | Yes | |
-| [Magpie](docs/kits/07-magpie/design.md) | Thief | Scrolls, wands and loot | | |
+| [Magpie](docs/kits/07-magpie/design.md) | Thief | Scrolls, wands and loot | Yes | |
 | [Unbeguiled](docs/kits/08-unbeguiled/design.md) | Fighter | Mage-hunter | Yes | |
 | [Nettle](docs/kits/09-nettle/design.md) | Thief | Anti-caster opener | Yes | |
-| [Greenhand](docs/kits/10-greenhand/design.md) | Cleric | Nature priest and summoner | | |
+| [Greenhand](docs/kits/10-greenhand/design.md) | Cleric | Nature priest and summoner | Yes | |
 | [Briarguard](docs/kits/11-briarguard/design.md) | Fighter | Nature warrior, elemental tank | Yes | |
 | [Ghostwise Rogue](docs/kits/12-ghostwise-rogue/design.md) | Fighter/Thief | Wild rogue with barbarian qualities (to be designed) | | |
 
@@ -58,5 +58,5 @@ A full install needs a real game. Copy `mod/halflingkits/` into the game folder 
 ## Dependencies
 
 - [WeiDU](https://github.com/WeiDUorg/weidu) to install the mod.
-- [IWDification](https://www.gibberlings3.net/mods/spells/iwdification/) for some of the Greenhand's spells (not yet coded).
+- [IWDification](https://www.gibberlings3.net/mods/spells/iwdification/) for some of the Greenhand's spells (optional: without it, the Greenhand simply lacks those spells).
 - [EEex](https://github.com/Bubb13/EEex) only for the abilities marked Hard in [Tasks](docs/TASKS.md#implementation-difficulty).

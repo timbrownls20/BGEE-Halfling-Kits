@@ -127,3 +127,21 @@ For anyone building this kit as a mod (for example with WeiDU):
 ## Sources
 
 - [IWDification (Gibberlings Three)](https://www.gibberlings3.net/mods/spells/iwdification/): the mod that adds the (IWD) spells to BG2:EE.
+
+### As built (not yet tested in game)
+
+Code: `mod/halflingkits/kits/10-greenhand/`. Where the build differs from the design, or relies on something to check in game:
+
+- **Spell list (open question 1, decided 16 October 2026 by the build):** added and cut spells are found by name at install, so the IWDification spells are used when that mod is installed and skipped when not. Each added spell keeps its own spell level. The install reads each spell's flags: druid-only spells (barred to clerics) get a Greenhand copy that a cleric can cast, and spells a cleric can already cast (such as Barkskin and Entangle) need nothing. The copies are given when their spell level opens (cleric levels 1, 3, 5, 7, 9, 11 and 14).
+- **Cut spells** are removed at every level, because a cleric relearns its whole list on levelling up. Check in game that they stay gone after a level-up and that the druid copies can be memorised.
+- **HLA level (open question 2, decided 16 October 2026 by the build):** the standard cleric HLAs keep the levels in the game's cleric HLA table, and the Greenhand's own HLAs open whenever HLAs do, so they come at the same point as a cleric's.
+- **Green Thumb** is built into the Greenhand's own copies of its summoning spells: Animal Summoning I to III, Call Woodland Beings, Conjure Animals, Giant Insect and the three Conjure Elementals. The summons last 50% longer and call boosted copies of their creatures: +2 to hit, damage and saves, and immune to Death Spell unless they are elementals. A summon that picks its creature at random from a table only gets the longer duration. Summons from spells the Greenhand doesn't copy (Aerial Servant, Stalker) are unchanged. The cleric-usable originals of the copied spells are cut so they don't appear twice.
+- **Sheela's Bounty** is built into the Greenhand's own copies of Cure Light, Moderate (IWD), Serious and Critical Wounds and Mass Cure, which heal 25% more on average. Heal is unchanged. **Bountiful Harvest** swaps in the +50% and then the +75% copies.
+- **Summon Horde's rabbits** use the summon effect, so they probably count towards the limit of 5 summons. Check in game.
+- **Sheela's Berries** don't spoil after a day; the game has no simple way to make items expire. The berries a Greenhand picks heal and cure by its level when picked.
+- **Harvest Loaf** uses Bless's area (not exactly 20 feet). It removes fatigue by setting it to 0; check that this works in game.
+- **Turn Undead** is removed by lowering the turning level out of reach. Check that the button does nothing, or is gone.
+- **Find Familiar** is the Briarguard's simple-summon approach (open question 9): once a day the rabbit form for the Greenhand's level, for one day, with the bonus hit points (and +20 Lore from the Warren Elder) while it lives. It doesn't follow between areas or ride in the pack, and its death costs no Constitution. It counts towards the summon limit. Each form casts its divinations as innate abilities. Spells not found at install are left out with a warning: Detect Illusion may not exist in every game. The rabbit gets Green Thumb's +2 bonuses; Sheela's Hare's immunity to illusions and the Moon Hare's Free Action are not built beyond its listed immunities.
+- **Garden of Friends** summons a bear and two wolves, without the great owl. All three HLA summons last 50% longer for Green Thumb.
+- **Sheela's Harvest** regenerates 6 HP a round, not 5: the game's regeneration steps can't give 5.
+- **Weapon skill:** grandmastery in slings; 2 pips in Sword and Shield Style; proficiency in clubs and quarterstaffs; the cleric's other fighting styles.

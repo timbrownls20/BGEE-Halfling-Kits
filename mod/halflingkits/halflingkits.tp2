@@ -69,6 +69,16 @@ LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/slinger.tra~
 INCLUDE ~%MOD_FOLDER%/kits/06-slinger/slinger.tpa~
 
 /////////////////////////////////////////////////////////////////////
+// Magpie (thief, halfling only)
+/////////////////////////////////////////////////////////////////////
+BEGIN @15 DESIGNATED 7
+LABEL ~halflingkits-magpie~
+REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
+
+LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/magpie.tra~
+INCLUDE ~%MOD_FOLDER%/kits/07-magpie/magpie.tpa~
+
+/////////////////////////////////////////////////////////////////////
 // Unbeguiled (fighter, halfling only)
 /////////////////////////////////////////////////////////////////////
 BEGIN @11 DESIGNATED 8
@@ -87,6 +97,16 @@ REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
 
 LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/nettle.tra~
 INCLUDE ~%MOD_FOLDER%/kits/09-nettle/nettle.tpa~
+
+/////////////////////////////////////////////////////////////////////
+// Greenhand (cleric, halfling only)
+/////////////////////////////////////////////////////////////////////
+BEGIN @14 DESIGNATED 10
+LABEL ~halflingkits-greenhand~
+REQUIRE_PREDICATE GAME_IS ~bgee bg2ee eet~ @1
+
+LOAD_TRA ~%MOD_FOLDER%/tra/%LANGUAGE%/greenhand.tra~
+INCLUDE ~%MOD_FOLDER%/kits/10-greenhand/greenhand.tpa~
 
 /////////////////////////////////////////////////////////////////////
 // Briarguard (fighter, halfling only)

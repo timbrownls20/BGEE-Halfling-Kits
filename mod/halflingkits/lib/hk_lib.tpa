@@ -254,8 +254,8 @@ END
 //   cap:      copied rows (other than fighting styles) are capped at
 //             this many pips; 0 = no cap
 //   none:     proficiency row names forced to 0
-//   skilled2/pips2: a second set of rows at a different level (for
-//             example mastery, 3, alongside grandmastery)
+//   skilled2/pips2, skilled3/pips3: further sets of rows at other
+//             levels (for example mastery, 3, alongside grandmastery)
 // Everything else is 0.
 /////////////////////////////////////////////////////////////////////
 DEFINE_ACTION_FUNCTION HK_WEAPPROF_LINE
@@ -263,18 +263,20 @@ DEFINE_ACTION_FUNCTION HK_WEAPPROF_LINE
           pips     = 5
           cap      = 0
           pips2    = 3
+          pips3    = 1
   STR_VAR kit      = ""
           base     = "FIGHTER"
           skilled  = ""
           none     = ""
           skilled2 = ""
+          skilled3 = ""
           styles   = "2HANDED SWORDANDSHIELD SINGLEWEAPON 2WEAPON"
   RET line
 BEGIN
   OUTER_SPRINT line ~%kit%~
   OUTER_SET hk_wp_matched  = 0
   OUTER_SET hk_wp_expected = 0
-  OUTER_PATCH ~ %skilled% %skilled2% ~ BEGIN
+  OUTER_PATCH ~ %skilled% %skilled2% %skilled3% ~ BEGIN
     REPLACE_EVALUATE ~[^ ]+~ BEGIN SET hk_wp_expected += 1 END ~%MATCH0%~
   END
 
@@ -303,6 +305,9 @@ BEGIN
         SET hk_wp_matched += 1
       END ELSE PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %skilled2% ~) >= 0) BEGIN
         SET value = pips2
+        SET hk_wp_matched += 1
+      END ELSE PATCH_IF (INDEX (CASE_INSENSITIVE EXACT_MATCH ~ %label% ~ ~ %skilled3% ~) >= 0) BEGIN
+        SET value = pips3
         SET hk_wp_matched += 1
       END ELSE PATCH_IF (copy_all || is_style) BEGIN
         READ_2DA_ENTRY_FORMER ~hk_wp~ r base_col value

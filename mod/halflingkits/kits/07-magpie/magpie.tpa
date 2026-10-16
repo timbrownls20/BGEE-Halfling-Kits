@@ -1,0 +1,619 @@
+/////////////////////////////////////////////////////////////////////
+// Magpie
+// Design: docs/kits/07-magpie/design.md
+//
+// Resource prefix HKMP. Spells, scripts and tables:
+//   HKMPL1        Luck +1, +2 AC, Magpie's Eye, no backstab, no trap
+//                 setting                                   (CLAB, level 1)
+//   HKMPLK        +1 Luck, +2 AC                       (CLAB, levels 10, 20)
+//   HKMPLR        +2 Lore                    (CLAB, every level from 2)
+//   HKMPST        Silver Tongue (innate)  (CLAB, 1, 6, 11 and every 5 after)
+//   HKMPSA        Slip Away                                          HLA
+//   HKMPFV        Brandobaris's Favour (state)                       HLA
+//   HKMPTH/TH1/TH2  Treasure Hunter (states for the extra rolls)     HLA
+//   HKMPMD        Misdirection                                       HLA
+//   HKMPGR        Brandobaris's Grin                                 HLA
+//   HKMPTT/TTE    Trickster's Turn (self / enemies)                  HLA
+//   HKMPSM        Smooth Talker                                      HLA
+//   HKMPPSG/PS    Pocket Sand (gives 3 uses / the sand)              HLA
+//   HKMPGIFT      Brandobaris's Gift: HKMPROLL rolls once, HKMPRTH1/2
+//                 again for Treasure Hunter; HKMPGT1-4 the treasure
+//                 tiers, HKMPGF1-4 with Favour
+//   hkmprest.baf  Global script: the Gift on any rest, the Dice on a
+//                 rest in a town or building
+//
+// Magpie's Knack (open question 8, decided 16 October 2026): the base
+// component opens arcane scrolls and wands to the Magpie from level 1.
+// Mage, bard and cleric items come with Use Any Item. An item rule can
+// check a kit but not a level, and a scroll can't be made to fail, so
+// the level ladder and the fumble chance wait for EEex.
+//
+// Not implemented:
+//   TODO (EEex): Magpie's Knack's level ladder (scroll levels, simple
+//   then all wands, mage, bard and cleric items by level) and fumble
+//   chance.
+//   TODO (EEex): Tinker's Touch and Master Tinker (no opcode restores
+//   wand charges).
+//   TODO (EEex): Forger's Hand (a script can't list a party's scrolls).
+//   Brandobaris's Dice ignores Luck: the odds are a fixed 60/40.
+//   Silver Tongue's save penalty is a fixed -2 (it can't read
+//   Charisma), and it can't tell plot characters apart.
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells and tables
+/////////////////////////////////////////////////////////////////////
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~   // Bless: icons
+  RET hk_bless_icon = icon hk_bless_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr103~   // Cure Light Wounds: touch range
+  RET hk_clw_range = range
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~spwi104~   // Charm Person: single-target range and icons
+  RET hk_charm_range = range hk_charm_icon = icon hk_charm_book_icon = book_icon
+END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Improved Invisibility~ pattern = ~^spwi[0-9][0-9][0-9]\.spl$~
+  RET hk_iinvis_found = found hk_iinvis_spell = spell
+END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Non-Detection~ pattern = ~^spwi[0-9][0-9][0-9]\.spl$~
+  RET hk_nondet_found = found hk_nondet_spell = spell
+END
+LAF HK_FIND_HLA STR_VAR name = ~War Cry~
+  RET hk_warcry_found = found hk_warcry_spell = spell
+END
+OUTER_SET hk_enemy_found = 0
+ACTION_IF (hk_warcry_found) BEGIN
+  LAF HK_READ_SPELL_AREA STR_VAR spell = EVAL ~%hk_warcry_spell%~
+    RET hk_enemy_found = found hk_enemy_projectile = projectile
+        hk_enemy_target = target hk_enemy_range = range
+  END
+END
+
+ACTION_DEFINE_ARRAY hk_mp_std_hla BEGIN ~Use Any Item~ ~Avoid Death~ ~Evasion~ ~Greater Evasion~ END
+OUTER_FOR (i = 0; i < 4; ++i) BEGIN
+  OUTER_SPRINT hla $hk_mp_std_hla(~%i%~)
+  LAF HK_FIND_HLA STR_VAR name = EVAL ~%hla%~ table = ~luth0~
+    RET found ability icon strref min_lev max_lev num_allowed prereq
+  END
+  OUTER_SET    $hk_mp_hla_found(~%i%~)   = found
+  OUTER_SPRINT $hk_mp_hla_ability(~%i%~) ~%ability%~
+  OUTER_SPRINT $hk_mp_hla_icon(~%i%~)    ~%icon%~
+  OUTER_SET    $hk_mp_hla_strref(~%i%~)  = strref
+  OUTER_SET    $hk_mp_hla_min(~%i%~)     = min_lev
+  OUTER_SET    $hk_mp_hla_max(~%i%~)     = max_lev
+  OUTER_SET    $hk_mp_hla_num(~%i%~)     = num_allowed
+  OUTER_SPRINT $hk_mp_hla_prereq(~%i%~)  ~%prereq%~
+END
+
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_MP_FAVOUR~   RET hk_state_favour = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_MP_HUNTER1~  RET hk_state_hunt1  = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_MP_HUNTER2~  RET hk_state_hunt2  = id END
+
+OUTER_SET hk_save_spell  = 1
+OUTER_SET hk_save_breath = 2
+
+
+/////////////////////////////////////////////////////////////////////
+// A SPLPROT row for "level greater than n" (stat 34 LEVEL, value from
+// the effect, relation 3 = greater than), for Silver Tongue's level
+// limit. Check in game.
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_splprot_level_gt = 0
+COPY_EXISTING ~splprot.2da~ ~override~
+  COUNT_2DA_ROWS 4 rows
+  SET hk_splprot_level_gt = rows
+BUT_ONLY
+APPEND ~splprot.2da~ ~%hk_splprot_level_gt% 34 -1 3~
+
+
+/////////////////////////////////////////////////////////////////////
+// Level 1: +1 Luck and +2 AC (Ducking and Weaving); Magpie's Eye (+15
+// Pick Pockets, +10 Open Locks and Move Silently, +20 Detect Illusion,
+// +10 Lore); no backstab (opcode 263 set to x1); no trap setting (Set
+// Traps skill lowered out of reach; check in game).
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKMPL1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 22  parameter1 = 1  timing = HK_TIMING_PERMANENT END   // Luck
+  LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2  timing = HK_TIMING_PERMANENT END   // AC
+  LPF HK_SPELL_FX INT_VAR opcode = 91  parameter1 = 15 timing = HK_TIMING_PERMANENT END   // Pick Pockets
+  LPF HK_SPELL_FX INT_VAR opcode = 90  parameter1 = 10 timing = HK_TIMING_PERMANENT END   // Open Locks
+  LPF HK_SPELL_FX INT_VAR opcode = 59  parameter1 = 10 timing = HK_TIMING_PERMANENT END   // Move Silently
+  LPF HK_SPELL_FX INT_VAR opcode = 276 parameter1 = 20 timing = HK_TIMING_PERMANENT END   // Detect Illusion
+  LPF HK_SPELL_FX INT_VAR opcode = 21  parameter1 = 10 timing = HK_TIMING_PERMANENT END   // Lore
+  LPF HK_SPELL_FX INT_VAR opcode = 263 parameter1 = 1 parameter2 = 1 timing = HK_TIMING_PERMANENT END   // backstab x1
+  LPF HK_SPELL_FX INT_VAR opcode = 277 parameter1 = "-255" timing = HK_TIMING_PERMANENT END   // Set Traps
+
+CREATE SPL ~HKMPLK~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 22 parameter1 = 1 timing = HK_TIMING_PERMANENT END
+  LPF HK_SPELL_FX INT_VAR opcode = 0  parameter1 = 2 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKMPLR~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 21 parameter1 = 2 timing = HK_TIMING_PERMANENT END
+
+
+/////////////////////////////////////////////////////////////////////
+// Silver Tongue: one creature in Charm Person's range saves vs spell at
+// -2 or turns neutral (opcode 72, EA = NEUTRAL). One header per level;
+// each blocks targets of a higher level (the SPLPROT row above).
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_ea_neutral = IDS_OF_SYMBOL (~ea~ ~NEUTRAL~)
+
+CREATE SPL ~HKMPST~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) STR_VAR icon = EVAL ~%hk_charm_book_icon%~ END
+  FOR (level = 1; level <= 50; ++level) BEGIN
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 range = hk_charm_range min_level = level STR_VAR icon = EVAL ~%hk_charm_icon%~ END
+  END
+  FOR (level = 1; level <= 50; ++level) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 318 target = 2 parameter1 = level parameter2 = hk_splprot_level_gt duration = 1 header = level STR_VAR resource = ~HKMPST~ END
+    LPF ADD_SPELL_EFFECT
+      INT_VAR opcode = 72 target = 2 parameter1 = hk_ea_neutral parameter2 = 2 timing = 1 header = level
+              savingthrow = hk_save_spell savebonus = "-2" power = 0 probability1 = 100 probability2 = 0
+    END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: Slip Away (Improved Invisibility and Non-Detection, applied
+// with opcode 326), Misdirection (enemies in War Cry's area: sleep
+// that ends when hit, 2 rounds, save vs spell at -2), Brandobaris's
+// Grin, Trickster's Turn, Smooth Talker and Pocket Sand
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_iinvis_found) BEGIN
+  CREATE SPL ~HKMPSA~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@125) desc = RESOLVE_STR_REF (@126) STR_VAR icon = EVAL ~%hk_charm_book_icon%~ END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_charm_icon%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%hk_iinvis_spell%~ END
+    PATCH_IF (hk_nondet_found) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%hk_nondet_spell%~ END
+    END
+END
+
+ACTION_IF (hk_enemy_found) BEGIN
+  CREATE SPL ~HKMPMD~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@140) desc = RESOLVE_STR_REF (@141) STR_VAR icon = EVAL ~%hk_charm_book_icon%~ END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_enemy_target range = hk_enemy_range projectile = hk_enemy_projectile
+      STR_VAR icon = EVAL ~%hk_charm_icon%~
+    END
+    LPF ADD_SPELL_EFFECT
+      INT_VAR opcode = 39 target = 2 parameter2 = 0 duration = 12
+              savingthrow = hk_save_spell savebonus = "-2" power = 0 probability1 = 100 probability2 = 0
+    END
+
+  CREATE SPL ~HKMPTTE~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) END
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_enemy_target range = hk_enemy_range projectile = hk_enemy_projectile
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 22 target = 2 parameter1 = "-2" duration = HK_ONE_TURN END
+END
+
+CREATE SPL ~HKMPTT~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@150) desc = RESOLVE_STR_REF (@151) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 325 parameter1 = 2 duration = HK_ONE_TURN END
+  PATCH_IF (hk_enemy_found) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 146 parameter2 = 1 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKMPTTE~ END
+  END
+
+CREATE SPL ~HKMPGR~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@145) desc = RESOLVE_STR_REF (@146) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  PATCH_FOR_EACH resist IN ~86~ ~87~ ~88~ ~89~ ~31~ ~166~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = resist parameter1 = 5 timing = HK_TIMING_PERMANENT END
+  END
+
+CREATE SPL ~HKMPSM~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) STR_VAR icon = EVAL ~%hk_charm_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_charm_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKMPST~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKMPST~ END
+
+// Pocket Sand: blind 2 rounds, save vs breath at -2, or -4 from level 30
+CREATE SPL ~HKMPPS~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) STR_VAR icon = EVAL ~%hk_charm_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 range = hk_clw_range min_level = 1  STR_VAR icon = EVAL ~%hk_charm_icon%~ END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 range = hk_clw_range min_level = 30 STR_VAR icon = EVAL ~%hk_charm_icon%~ END
+  FOR (header = 1; header <= 2; ++header) BEGIN
+    LPF ADD_SPELL_EFFECT
+      INT_VAR opcode = 74 target = 2 duration = 12 header
+              savingthrow = hk_save_breath savebonus = (header == 1 ? 0 - 2 : 0 - 4) power = 0 probability1 = 100 probability2 = 0
+    END
+  END
+
+CREATE SPL ~HKMPPSG~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) STR_VAR icon = EVAL ~%hk_charm_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_charm_icon%~ END
+  FOR (n = 0; n < 3; ++n) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKMPPS~ END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: Brandobaris's Favour and Treasure Hunter only set spell states
+// the Gift checks. Treasure Hunter's picks set the next of two states
+// (the second needs the first and is applied first).
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKMPFV~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_state_favour special = 1 timing = HK_TIMING_PERMANENT END
+
+CREATE SPL ~HKMPTH1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@135) desc = RESOLVE_STR_REF (@136) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_hunt1 parameter2 = 110 duration = 1 STR_VAR resource = ~HKMPTH1~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_state_hunt1 special = 1 timing = HK_TIMING_PERMANENT END
+CREATE SPL ~HKMPTH2~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@135) desc = RESOLVE_STR_REF (@136) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_hunt1 parameter2 = 111 duration = 1 STR_VAR resource = ~HKMPTH2~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_hunt2 parameter2 = 110 duration = 1 STR_VAR resource = ~HKMPTH2~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_state_hunt2 special = 1 timing = HK_TIMING_PERMANENT END
+CREATE SPL ~HKMPTH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@135) desc = RESOLVE_STR_REF (@136) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKMPTH2~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKMPTH1~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// Brandobaris's Gift
+// Treasure tiers built at install from the game's items: potions (9),
+// scrolls (11), gems (34) and ammunition (5, 14, 31), by shop price,
+// plus wands (35, created with 2 charges) from tier 3. Only movable,
+// uncursed, non-critical items with a name count; weapons and armour
+// never do. Up to 50 items per tier, spread evenly over the list.
+//   tier  levels   price
+//    1     1-8     1-150
+//    2     9-16    50-500
+//    3    17-24    200-2000, and wands up to 5000
+//    4    25+      500-6000, and wands
+// HKMPGT<t>: one effect per item (opcode 122), each with its own slice
+// of the 0-99 roll; the slices cover 0-49, so half the rolls find
+// nothing. HKMPGF<t> (Favour) covers 0-99 with the next tier up.
+/////////////////////////////////////////////////////////////////////
+OUTER_FOR (t = 1; t <= 4; ++t) BEGIN
+  OUTER_SPRINT $hk_mp_tier(~%t%~) ~~
+  OUTER_SET    $hk_mp_tier_n(~%t%~) = 0
+END
+COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
+  PATCH_IF (SOURCE_SIZE > 0x71 && (~%SOURCE_RES%~ STRING_MATCHES_REGEXP ~^HK.*~)) BEGIN   // not this mod's items
+    READ_SHORT 0x1c type
+    READ_LONG  0x18 flags
+    READ_LONG  0x34 price
+    READ_LONG  0x0c nm
+    SET ok_type = (type == 9 || type == 11 || type == 34 || type == 5 || type == 14 || type == 31)
+    SET wand    = (type == 35)
+    SET ok = ((ok_type || wand) && price > 0 && nm > 0 && (flags BAND 0x4) && NOT (flags BAND 0x11))
+    PATCH_IF (ok) BEGIN
+      FOR (t = 1; t <= 4; ++t) BEGIN
+        SET lo = (t == 1 ? 1 : t == 2 ? 50 : t == 3 ? 200 : 500)
+        SET hi = (t == 1 ? 150 : t == 2 ? 500 : t == 3 ? 2000 : 6000)
+        SET in = (ok_type && price >= lo && price <= hi) || (wand && t == 3 && price <= 5000) || (wand && t == 4)
+        PATCH_IF (in) BEGIN
+          SPRINT list $hk_mp_tier(~%t%~)
+          SPRINT $hk_mp_tier(~%t%~) ~%list% %SOURCE_RES%:%type%~
+          SET $hk_mp_tier_n(~%t%~) += 1
+        END
+      END
+    END
+  END
+BUT_ONLY
+
+// HK_MP_TIER_SPELL: in hk_tier (1-4), hk_top (roll ceiling, 49 or 99)
+DEFINE_PATCH_MACRO HK_MP_TIER_EFFECTS BEGIN
+  SPRINT list $hk_mp_tier(~%hk_tier%~)
+  SET total = $hk_mp_tier_n(~%hk_tier%~)
+  SET step  = (total > 50 ? total / 50 : 1)
+  SET picks = (total > 50 ? 50 : total)
+  PATCH_IF (picks > 0) BEGIN
+    SET slice = (hk_top + 1) / picks
+    SET slice = (slice < 1 ? 1 : slice)
+    SET k = 0
+    SET chosen = 0
+    INNER_PATCH ~%list%~ BEGIN
+      REPLACE_EVALUATE ~\([^ :]+\):\([0-9]+\)~ BEGIN
+        PATCH_IF (k MODULO step == 0 && chosen < picks) BEGIN
+          SPRINT item ~%MATCH1%~
+          SET item_type = MATCH2
+          SET $hk_mp_pick_type(~%chosen%~) = item_type
+          SPRINT $hk_mp_pick_res(~%chosen%~) ~%item%~
+          SET chosen += 1
+        END
+        SET k += 1
+      END ~%MATCH0%~
+    END
+    FOR (c = 0; c < chosen; ++c) BEGIN
+      SPRINT item $hk_mp_pick_res(~%c%~)
+      SET item_type = $hk_mp_pick_type(~%c%~)
+      SET low  = c * slice
+      SET high = (c == chosen - 1 ? hk_top : low + slice - 1)
+      SET qty  = (item_type == 35 ? 2 : (item_type == 5 || item_type == 14 || item_type == 31) ? 10 : 1)
+      LPF ADD_SPELL_EFFECT
+        INT_VAR opcode = 122 target = 1 timing = 1 parameter1 = qty power = 0
+                probability1 = high probability2 = low
+        STR_VAR resource = EVAL ~%item%~
+      END
+    END
+  END
+END
+
+OUTER_FOR (t = 1; t <= 4; ++t) BEGIN
+  OUTER_SET up = (t < 4 ? t + 1 : 4)
+  CREATE SPL ~HKMPGT%t%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+    LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_favour parameter2 = 110 duration = 1 STR_VAR resource = EVAL ~HKMPGT%t%~ END
+    SET hk_tier = t
+    SET hk_top  = 49
+    LPM HK_MP_TIER_EFFECTS
+  CREATE SPL ~HKMPGF%t%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+    LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_favour parameter2 = 111 duration = 1 STR_VAR resource = EVAL ~HKMPGF%t%~ END
+    SET hk_tier = up
+    SET hk_top  = 99
+    LPM HK_MP_TIER_EFFECTS
+END
+
+// One roll: the tier for the Magpie's level (headers 1, 9, 17, 25)
+CREATE SPL ~HKMPROLL~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) END
+  PATCH_FOR_EACH level IN ~1~ ~9~ ~17~ ~25~ BEGIN
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 min_level = level END
+  END
+  FOR (header = 1; header <= 4; ++header) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT header STR_VAR resource = EVAL ~HKMPGT%header%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT header STR_VAR resource = EVAL ~HKMPGF%header%~ END
+  END
+
+// Treasure Hunter's extra rolls
+OUTER_FOR (pick = 1; pick <= 2; ++pick) BEGIN
+  OUTER_SET state = (pick == 1 ? hk_state_hunt1 : hk_state_hunt2)
+  CREATE SPL ~HKMPRTH%pick%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@135) desc = RESOLVE_STR_REF (@136) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+    LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = state parameter2 = 111 duration = 1 STR_VAR resource = EVAL ~HKMPRTH%pick%~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKMPROLL~ END
+END
+
+CREATE SPL ~HKMPGIFT~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) END
+  LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKMPROLL~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKMPRTH1~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKMPRTH2~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHMP.2da)
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+
+ACTION_IF (hk_iinvis_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@125) picks = 2
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKMPSA~ icon = EVAL ~%hk_charm_icon%~ RET hk_rows = rows hk_n = number END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@130) picks = 1
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKMPFV~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@135) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKMPTH~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+ACTION_IF (hk_enemy_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@140) picks = 2
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKMPMD~ icon = EVAL ~%hk_charm_icon%~ RET hk_rows = rows hk_n = number END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@145) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKMPGR~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@150) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKMPTT~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@155) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKMPSM~ icon = EVAL ~%hk_charm_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKMPPSG~ icon = EVAL ~%hk_charm_icon%~ RET hk_rows = rows hk_n = number END
+OUTER_FOR (i = 0; i < 4; ++i) BEGIN
+  ACTION_IF ($hk_mp_hla_found(~%i%~)) BEGIN
+    OUTER_SPRINT ability $hk_mp_hla_ability(~%i%~)
+    OUTER_SPRINT icon    $hk_mp_hla_icon(~%i%~)
+    OUTER_SPRINT prereq  $hk_mp_hla_prereq(~%i%~)
+    LAF HK_HLA_ROW
+      INT_VAR number = hk_n strref = $hk_mp_hla_strref(~%i%~) picks = $hk_mp_hla_num(~%i%~)
+              min_level = $hk_mp_hla_min(~%i%~) max_level = $hk_mp_hla_max(~%i%~)
+      STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%ability%~ icon = EVAL ~%icon%~ prereq = EVAL ~%prereq%~
+      RET hk_rows = rows hk_n = number
+    END
+  END
+END
+
+COPY ~%MOD_FOLDER%/kits/07-magpie/luhmp.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+// Weapon skill: the thief's, in the weapons the Magpie may use, and 2
+// pips in Single Weapon Style
+/////////////////////////////////////////////////////////////////////
+LAF HK_WEAPPROF_LINE
+  INT_VAR copy_all = 1 pips2 = 2
+  STR_VAR kit      = ~HK_MAGPIE~
+          base     = ~THIEF~
+          skilled2 = ~SINGLEWEAPON~
+          none     = ~BASTARDSWORD LONGSWORD AXE TWOHANDEDSWORD KATANA SCIMITARWAKISASHININJATO WARHAMMER SPEAR HALBERD FLAILMORNINGSTAR MACE CROSSBOW LONGBOW~
+  RET hk_mp_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_mp_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_MAGPIE~ values = ~DEX=9 INT=9 CHR=15~ RET hk_mp_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_MAGPIE~ allowed = ~NEUTRAL_GOOD CHAOTIC_GOOD CHAOTIC_NEUTRAL~ RET hk_mp_align = line END
+
+ADD_KIT ~HK_MAGPIE~
+  ~HK_MAGPIE                1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_mp_weapprof%~                                          // WEAPPROF (column)
+  ~%hk_mp_abclasrq%~                                          // ABCLASRQ: Dex 9, Int 9, Cha 15
+  ~HK_MAGPIE                0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_MAGPIE                0 17 0 0 0 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_MAGPIE                0 17 0 0 0 0~                     // ABDCSCRQ
+  ~%hk_mp_align%~                                             // ALIGNMNT: NG, CG, CN
+  ~HK_MAGPIE                0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/07-magpie/hkmpclab.2da~                  // CLAB
+  ~K_T_H~                                                     // halfling thieves only
+  ~0x00004000 4~                                              // thief usability, class 4
+  ~HMP~                                                       // LUHMP.2da
+  ~%hk_mp_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+OUTER_SET hk_mp_kit_id = IDS_OF_SYMBOL (~kit~ ~HK_MAGPIE~)
+
+
+/////////////////////////////////////////////////////////////////////
+// 20 thief skill points per level: THIEFSKL.2DA holds the points per
+// kit (the Assassin's 15 comes from there). Its layout is read rather
+// than assumed: the Magpie's row copies the kitless thief's row
+// (TRUECLASS, or THIEF), with 20 in the per-level column (RATE). If the
+// file, the row or the column isn't found, the Magpie keeps the usual
+// number and the install warns.
+/////////////////////////////////////////////////////////////////////
+OUTER_SPRINT hk_tsk_reason ~~
+OUTER_SPRINT hk_tsk_row ~~
+ACTION_IF (NOT FILE_EXISTS_IN_GAME ~thiefskl.2da~) BEGIN
+  OUTER_SPRINT hk_tsk_reason ~the file is missing~
+END ELSE BEGIN
+  COPY_EXISTING ~thiefskl.2da~ ~override~
+    COUNT_2DA_COLS cols
+    READ_2DA_ENTRIES_NOW ~hk_tsk~ 2
+    // The column headings have one fewer token than data rows. With few
+    // columns the "2DA V1.0" line can match that count too, so skip it.
+    SET head_row = 0
+    READ_2DA_ENTRY 0 0 (cols - 1) first
+    PATCH_IF (~%first%~ STRING_EQUAL_CASE ~2DA~) BEGIN SET head_row = 1 END
+    SET rate_col = "-1"
+    FOR (c = 0; c < cols - 1; ++c) BEGIN
+      READ_2DA_ENTRY head_row c (cols - 1) head
+      PATCH_IF (~%head%~ STRING_EQUAL_CASE ~RATE~) BEGIN
+        SET rate_col = c + 1
+      END
+    END
+    SET source_row = "-1"
+    SET has_magpie = 0
+    FOR (r = 0; r < hk_tsk; ++r) BEGIN
+      READ_2DA_ENTRY_FORMER ~hk_tsk~ r 0 label
+      PATCH_IF (~%label%~ STRING_EQUAL_CASE ~HK_MAGPIE~) BEGIN SET has_magpie = 1 END
+      PATCH_IF (source_row < 0 && ~%label%~ STRING_EQUAL_CASE ~TRUECLASS~) BEGIN SET source_row = r END
+    END
+    FOR (r = 0; r < hk_tsk && source_row < 0; ++r) BEGIN
+      READ_2DA_ENTRY_FORMER ~hk_tsk~ r 0 label
+      PATCH_IF (~%label%~ STRING_EQUAL_CASE ~THIEF~) BEGIN SET source_row = r END
+    END
+    PATCH_IF (rate_col < 0) BEGIN
+      SPRINT hk_tsk_reason ~no RATE column~
+    END ELSE PATCH_IF (source_row < 0) BEGIN
+      SPRINT hk_tsk_reason ~no TRUECLASS or THIEF row to copy~
+    END ELSE PATCH_IF (NOT has_magpie) BEGIN
+      SPRINT hk_tsk_row ~HK_MAGPIE~
+      FOR (c = 1; c < cols; ++c) BEGIN
+        READ_2DA_ENTRY_FORMER ~hk_tsk~ source_row c value
+        PATCH_IF (c == rate_col) BEGIN SPRINT value ~20~ END
+        SPRINT hk_tsk_row ~%hk_tsk_row% %value%~
+      END
+    END
+  BUT_ONLY
+END
+ACTION_IF (NOT ~%hk_tsk_reason%~ STRING_EQUAL ~~) BEGIN
+  WARN @16
+END ELSE ACTION_IF (NOT ~%hk_tsk_row%~ STRING_EQUAL ~~) BEGIN
+  APPEND ~thiefskl.2da~ ~%hk_tsk_row%~
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment: daggers (96), short swords (91), clubs (115),
+// quarterstaffs (102), slings (107), darts (106) and short bows (105);
+// leather and studded leather (base AC 7 or more); no shields (12)
+/////////////////////////////////////////////////////////////////////
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id      = hk_mp_kit_id
+          message     = RESOLVE_STR_REF (@180)
+          min_base_ac = 7
+  STR_VAR allowed_profs   = ~96 91 115 102 107 106 105~
+          forbidden_types = ~12~
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Magpie's Knack: arcane scrolls (11) and wands (35) that a mage may use
+// but a thief may not. Clearing the "unusable by thief" flag (bit 22)
+// opens them to every single-class thief; every thief kit other than
+// the Magpie, and the kitless thief (TRUECLASS), is then blocked again
+// with opcode 319. Multi-class thieves have their own flags and are
+// untouched. Thief kits added by mods installed after this one are not
+// blocked.
+/////////////////////////////////////////////////////////////////////
+OUTER_SPRINT hk_mp_other_thieves ~~
+OUTER_SET hk_trueclass = IDS_OF_SYMBOL (~kit~ ~TRUECLASS~)
+ACTION_IF (hk_trueclass >= 0) BEGIN
+  OUTER_SPRINT hk_mp_other_thieves ~%hk_trueclass%~
+END
+COPY_EXISTING ~kitlist.2da~ ~override~
+  COUNT_2DA_COLS cols
+  READ_2DA_ENTRIES_NOW ~hk_kl~ cols
+  FOR (r = 0; r < hk_kl; ++r) BEGIN
+    READ_2DA_ENTRY_FORMER ~hk_kl~ r 1 kit_name
+    READ_2DA_ENTRY_FORMER ~hk_kl~ r (cols - 1) kit_class
+    PATCH_IF (~%kit_class%~ STRING_EQUAL ~4~ && NOT ~%kit_name%~ STRING_EQUAL_CASE ~HK_MAGPIE~) BEGIN
+      SET kit_id = IDS_OF_SYMBOL (~kit~ ~%kit_name%~)
+      PATCH_IF (kit_id >= 0) BEGIN
+        SPRINT hk_mp_other_thieves ~%hk_mp_other_thieves% %kit_id%~
+      END
+    END
+  END
+BUT_ONLY
+
+COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
+  PATCH_IF (SOURCE_SIZE > 0x71) BEGIN
+    READ_SHORT 0x1c type
+    READ_LONG  0x1e unusable
+    SET mage_ok  = NOT (unusable BAND 0x40000)
+    SET thief_no = (unusable BAND 0x400000)
+    PATCH_IF ((type == 11 || type == 35) && mage_ok && thief_no) BEGIN
+      WRITE_LONG 0x1e (unusable BAND (BNOT 0x400000))
+      PATCH_IF (NOT ~%hk_mp_other_thieves%~ STRING_EQUAL ~~) BEGIN
+        INNER_PATCH ~%hk_mp_other_thieves%~ BEGIN
+          REPLACE_EVALUATE ~[0-9]+~ BEGIN
+            SET $hk_mp_block(~%MATCH0%~) = 1
+          END ~%MATCH0%~
+        END
+      END
+      PHP_EACH hk_mp_block AS blocked_kit => unused BEGIN
+        LPF ADD_ITEM_EQEFFECT
+          INT_VAR opcode = 319 target = 1 timing = 2 parameter1 = blocked_kit parameter2 = 9
+                  power = 0 special = RESOLVE_STR_REF (@180)
+        END
+      END
+    END
+  END
+BUT_ONLY
+
+
+/////////////////////////////////////////////////////////////////////
+// The rest script: one copy per party slot in each global script
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_mp_win  = RESOLVE_STR_REF (@170)
+OUTER_SET hk_mp_lose = RESOLVE_STR_REF (@171)
+ACTION_FOR_EACH script IN ~baldur~ ~baldur25~ ~bdbaldur~ BEGIN
+  ACTION_IF (FILE_EXISTS_IN_GAME ~%script%.bcs~) BEGIN
+    OUTER_FOR (slot = 1; slot <= 6; ++slot) BEGIN
+      OUTER_SPRINT hk_player ~Player%slot%~
+      OUTER_SET    hk_slot   = slot
+      EXTEND_BOTTOM ~%script%.bcs~ ~%MOD_FOLDER%/kits/07-magpie/hkmprest.baf~ EVALUATE_BUFFER
+    END
+  END
+END

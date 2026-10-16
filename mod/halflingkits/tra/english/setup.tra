@@ -11,3 +11,6 @@
 @11 = ~Unbeguiled (halfling fighter kit)~
 @12 = ~Surefoot Fighter (halfling fighter kit)~
 @13 = ~Slinger (halfling fighter kit)~
+@14 = ~Greenhand (halfling cleric kit)~
+@15 = ~Magpie (halfling thief kit)~
+@16 = ~WARNING: Halfling Kits could not set the Magpie's thief skill points per level in THIEFSKL.2DA (%hk_tsk_reason%). The Magpie keeps the usual number.~

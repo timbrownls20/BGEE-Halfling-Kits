@@ -1,0 +1,867 @@
+/////////////////////////////////////////////////////////////////////
+// Greenhand
+// Design: docs/kits/10-greenhand/design.md
+//
+// Resource prefix HKGH. Spells, items, creatures and scripts:
+//   HKGHL1        Small and Nimble, Wind's Whisper, no Turn Undead, and
+//                 the level-1 spells                          (CLAB, level 1)
+//   HKGHG2-G7     Gives the druid, IWD, Green Thumb and Bounty spells of
+//                 spell levels 2 to 7 as they open      (CLAB, 3 5 7 9 11 14)
+//   HKGHCUT       Removes the cut cleric spells              (CLAB, every level)
+//   HKGHA01 ...   Greenhand copies of the added spells: druid-only spells
+//                 made usable by a cleric, and summons with Green Thumb
+//   HKGHH<n><t>   Healing spells with Sheela's Bounty, tier t = 1 (+25%),
+//                 2 (+50%) and 3 (+75%, Bountiful Harvest)
+//   HKGHC01 ...   Green Thumb copies of summoned creatures
+//   HKGHSH        Summon Horde; HKGHRAB.cre its rabbit
+//   HKGHSB        Sheela's Berries; HKGHB<b><c>.itm the berries
+//   HKGHHL        Harvest Loaf                      (CLAB, levels 1 and 12)
+//   HKGHCV        Clairvoyance (innate copy)               (CLAB, level 5)
+//   HKGHFAM       Find Familiar: HKGHRB1-5.cre by level; hkghrbd.baf
+//                 (HKGHRBD.bcs) its script; HKGHFDX when it dies;
+//                 HKGHF<nn>, HKGHFSH the rabbit's innate copies of its spells
+//   HKGHGF        Garden of Friends                                HLA
+//   HKGHCB        Call the Bog                                     HLA
+//   HKGHSHV       Sheela's Harvest                                 HLA
+//   HKGHFW        Fair Winds                                       HLA
+//   HKGHBH/BH1/BH2  Bountiful Harvest                              HLA
+//   HKGHHW        Hedge Warden                                     HLA
+//
+// Spell list. Added and cut spells are found by name at install, so
+// IWDification's spells are used when present and skipped when not.
+// Each added spell's level is its own. A spell is copied when it is
+// druid-only (exclusion flag 0x40000000, which bars clerics), when it
+// summons (Green Thumb), or when it heals (Sheela's Bounty); the copies
+// are given with opcode 171 when their spell level opens, and the
+// cleric-usable originals of copied spells are cut. Cut spells are
+// removed with opcode 172 at every level, because a cleric relearns its
+// whole list on levelling up.
+//
+// Find Familiar is a simple scripted summon, as the Briarguard's badger
+// (open question 9): it lasts one day, doesn't follow between areas or
+// ride in the pack, and its death costs no Constitution.
+/////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////
+// Borrowed data from vanilla spells, creatures, items and tables
+/////////////////////////////////////////////////////////////////////
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr101~   // Bless: party-only area
+  RET hk_bless_projectile = projectile hk_bless_target = target hk_bless_range = range
+      hk_bless_icon = icon hk_bless_book_icon = book_icon
+END
+LAF HK_READ_SPELL_AREA STR_VAR spell = ~sppr103~   // Cure Light Wounds: icons
+  RET hk_clw_icon = icon hk_clw_book_icon = book_icon
+END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Death Spell~ pattern = ~^spwi[0-9][0-9][0-9]\.spl$~
+  RET hk_death_found = found hk_death_spell = spell
+END
+LAF HK_FIND_SPELL_BY_NAME STR_VAR name = ~Clairvoyance~ pattern = ~^spwi[0-9][0-9][0-9]\.spl$~
+  RET hk_clair_found = found hk_clair_spell = spell
+END
+OUTER_SET hk_race_elemental = IDS_OF_SYMBOL (~race~ ~ELEMENTAL~)
+
+// Creatures, found before any Green Thumb copies (which keep their names)
+LAF HK_FIND_CRE_BY_NAME STR_VAR name = ~Rabbit~ RET hk_rabbit_found = found hk_rabbit_cre = cre END
+LAF HK_FIND_CRE_BY_NAME INT_VAR quiet = 1 STR_VAR name = ~Cave Bear~ RET hk_bear_found = found hk_bear_cre = cre END
+ACTION_IF (NOT hk_bear_found) BEGIN
+  LAF HK_FIND_CRE_BY_NAME STR_VAR name = ~Black Bear~ RET hk_bear_found = found hk_bear_cre = cre END
+END
+LAF HK_FIND_CRE_BY_NAME INT_VAR quiet = 1 STR_VAR name = ~Dire Wolf~ RET hk_wolf_found = found hk_wolf_cre = cre END
+ACTION_IF (NOT hk_wolf_found) BEGIN
+  LAF HK_FIND_CRE_BY_NAME STR_VAR name = ~Wolf~ RET hk_wolf_found = found hk_wolf_cre = cre END
+END
+LAF HK_FIND_CRE_BY_NAME STR_VAR name = ~Shambling Mound~ RET hk_mound_found = found hk_mound_cre = cre END
+LAF HK_FIND_CRE_BY_NAME STR_VAR name = ~Treant~          RET hk_treant_found = found hk_treant_cre = cre END
+
+
+ACTION_DEFINE_ARRAY hk_gh_std_hla BEGIN ~Elemental Summoning~ ~Mass Raise Dead~ ~Storm of Vengeance~ END
+OUTER_FOR (i = 0; i < 3; ++i) BEGIN
+  OUTER_SPRINT hla $hk_gh_std_hla(~%i%~)
+  LAF HK_FIND_HLA STR_VAR name = EVAL ~%hla%~ table = ~lucl0~
+    RET found ability icon strref min_lev max_lev num_allowed prereq
+  END
+  OUTER_SET    $hk_gh_hla_found(~%i%~)   = found
+  OUTER_SPRINT $hk_gh_hla_ability(~%i%~) ~%ability%~
+  OUTER_SPRINT $hk_gh_hla_icon(~%i%~)    ~%icon%~
+  OUTER_SET    $hk_gh_hla_strref(~%i%~)  = strref
+  OUTER_SET    $hk_gh_hla_min(~%i%~)     = min_lev
+  OUTER_SET    $hk_gh_hla_max(~%i%~)     = max_lev
+  OUTER_SET    $hk_gh_hla_num(~%i%~)     = num_allowed
+  OUTER_SPRINT $hk_gh_hla_prereq(~%i%~)  ~%prereq%~
+END
+
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_GH_BOUNTY1~ RET hk_state_bounty1 = id END
+LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_GH_BOUNTY2~ RET hk_state_bounty2 = id END
+
+
+/////////////////////////////////////////////////////////////////////
+// Every priest spell by name (lower case): resref, level and exclusion
+// flags. The first spell with a name wins.
+/////////////////////////////////////////////////////////////////////
+COPY_EXISTING_REGEXP GLOB ~^sppr[0-9][0-9][0-9]\.spl$~ ~override~
+  PATCH_IF (SOURCE_SIZE > 0x71) BEGIN
+    READ_LONG 0x08 nm
+    PATCH_IF (nm > 0) BEGIN
+      GET_STRREF nm txt
+      TO_LOWER txt
+      PATCH_IF (NOT VARIABLE_IS_SET $hk_gh_res(~%txt%~)) BEGIN
+        SPRINT $hk_gh_res(~%txt%~) ~%SOURCE_RES%~
+        READ_LONG 0x34 lvl
+        SET $hk_gh_lvl(~%txt%~) = lvl
+        READ_LONG 0x1e excl
+        SET $hk_gh_excl(~%txt%~) = excl
+      END
+    END
+  END
+BUT_ONLY
+
+// The cleric level at which each spell level opens
+ACTION_DEFINE_ARRAY hk_gh_open BEGIN 0 1 3 5 7 9 11 14 END
+
+// Spells given at each spell level (built up below), and spells cut
+OUTER_FOR (sl = 1; sl <= 7; ++sl) BEGIN
+  OUTER_SPRINT $hk_gh_grant(~%sl%~) ~~
+END
+OUTER_SPRINT hk_gh_cut ~~
+
+
+/////////////////////////////////////////////////////////////////////
+// Green Thumb
+// HK_GH_GT_CRE copies a creature once: +2 to hit, damage and saves,
+// and immune to Death Spell unless it is an elemental.
+// HK_GH_GT_SPELL copies a summoning spell: every summon (opcode 67)
+// lasts 50% longer and calls the Green Thumb copy; random summons from
+// a table (opcode 331) only last longer.
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_gh_gt_n = 0
+
+// Macros, not functions, so the copy list and counter persist.
+// HK_GH_GT_CRE: in hk_gt_cre, out hk_gt_copy.
+// HK_GH_GT_SPELL: in hk_gt_source and hk_gt_dest.
+DEFINE_ACTION_MACRO HK_GH_GT_CRE BEGIN
+  ACTION_TO_LOWER hk_gt_cre
+  ACTION_IF (VARIABLE_IS_SET $hk_gh_gt(~%hk_gt_cre%~)) BEGIN
+    OUTER_SPRINT hk_gt_copy $hk_gh_gt(~%hk_gt_cre%~)
+  END ELSE ACTION_IF (FILE_EXISTS_IN_GAME ~%hk_gt_cre%.cre~) BEGIN
+    OUTER_SET hk_gh_gt_n += 1
+    ACTION_IF (hk_gh_gt_n < 10) BEGIN
+      OUTER_SPRINT hk_gt_copy ~HKGHC0%hk_gh_gt_n%~
+    END ELSE BEGIN
+      OUTER_SPRINT hk_gt_copy ~HKGHC%hk_gh_gt_n%~
+    END
+    OUTER_SPRINT $hk_gh_gt(~%hk_gt_cre%~) ~%hk_gt_copy%~
+    COPY_EXISTING ~%hk_gt_cre%.cre~ ~override/%hk_gt_copy%.cre~
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 54  target = 1 timing = 9 parameter1 = 2 END   // to hit
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 73  target = 1 timing = 9 parameter1 = 2 END   // damage
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 325 target = 1 timing = 9 parameter1 = 2 END   // saves
+      READ_BYTE 0x272 race
+      PATCH_IF (hk_death_found && race != hk_race_elemental) BEGIN
+        LPF ADD_CRE_EFFECT INT_VAR opcode = 206 target = 1 timing = 9 STR_VAR resource = EVAL ~%hk_death_spell%~ END
+      END
+  END ELSE BEGIN
+    OUTER_SPRINT hk_gt_copy ~%hk_gt_cre%~
+  END
+END
+
+DEFINE_ACTION_MACRO HK_GH_GT_SPELL BEGIN
+  // Pass 1: the creatures it summons
+  OUTER_SPRINT hk_gt_summoned ~~
+  COPY_EXISTING ~%hk_gt_source%.spl~ ~override~
+    READ_LONG 0x6a hk_gt_fx
+    FOR (hk_gt_e = hk_gt_fx; hk_gt_e + 0x30 <= SOURCE_SIZE; hk_gt_e += 0x30) BEGIN
+      READ_SHORT hk_gt_e hk_gt_op
+      PATCH_IF (hk_gt_op == 67) BEGIN
+        READ_ASCII (hk_gt_e + 0x14) hk_gt_res (8) NULL
+        SPRINT hk_gt_summoned ~%hk_gt_summoned% %hk_gt_res%~
+      END
+    END
+  BUT_ONLY
+  OUTER_PATCH ~%hk_gt_summoned%~ BEGIN
+    REPLACE_EVALUATE ~[^ ]+~ BEGIN
+      SPRINT hk_gt_cre ~%MATCH0%~
+      INNER_ACTION BEGIN
+        LAM HK_GH_GT_CRE
+      END
+    END ~%MATCH0%~
+  END
+  // Pass 2: the copy
+  COPY_EXISTING ~%hk_gt_source%.spl~ ~override/%hk_gt_dest%.spl~
+    READ_LONG 0x6a hk_gt_fx
+    FOR (hk_gt_e = hk_gt_fx; hk_gt_e + 0x30 <= SOURCE_SIZE; hk_gt_e += 0x30) BEGIN
+      READ_SHORT hk_gt_e hk_gt_op
+      PATCH_IF (hk_gt_op == 67 || hk_gt_op == 331) BEGIN
+        READ_LONG (hk_gt_e + 0x0e) hk_gt_dur
+        WRITE_LONG (hk_gt_e + 0x0e) (hk_gt_dur * 3 / 2)
+      END
+      PATCH_IF (hk_gt_op == 67) BEGIN
+        READ_ASCII (hk_gt_e + 0x14) hk_gt_res (8) NULL
+        TO_LOWER hk_gt_res
+        PATCH_IF (VARIABLE_IS_SET $hk_gh_gt(~%hk_gt_res%~)) BEGIN
+          SPRINT hk_gt_new $hk_gh_gt(~%hk_gt_res%~)
+          WRITE_ASCIIE (hk_gt_e + 0x14) ~%hk_gt_new%~ #8
+        END
+      END
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Added spells (druid and IWD). Summons get Green Thumb.
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ARRAY hk_gh_add BEGIN
+  ~Entangle~ ~Barkskin~ ~Alicorn Lance~
+  ~Call Lightning~ ~Summon Insects~ ~Cloudburst~ ~Exaltation~ ~Spike Growth~ ~Storm Shell~
+  ~Recitation~ ~Animal Summoning I~ ~Call Woodland Beings~ ~Iron Skins~ ~Giant Insect~
+  ~Smashing Wave~ ~Static Charge~ ~Thorn Spray~
+  ~Animal Summoning II~ ~Insect Plague~ ~Pixie Dust~ ~Spike Stones~ ~Animal Rage~
+  ~Animal Summoning III~ ~Conjure Fire Elemental~ ~Fire Seeds~ ~Whirlwind~
+  ~Conjure Air Elemental~ ~Conjure Earth Elemental~ ~Creeping Doom~ ~Nature's Beauty~
+  ~Mist of Eldath~ ~Stalker~
+  ~Conjure Animals~
+END
+OUTER_SPRINT hk_gh_summons ~|animal summoning i|animal summoning ii|animal summoning iii|call woodland beings|conjure animals|giant insect|conjure fire elemental|conjure air elemental|conjure earth elemental|~
+
+OUTER_SET hk_gh_copy_n = 0
+ACTION_PHP_EACH hk_gh_add AS idx => spell_name BEGIN
+  OUTER_SPRINT key ~%spell_name%~
+  ACTION_TO_LOWER key
+  ACTION_IF (VARIABLE_IS_SET $hk_gh_res(~%key%~)) BEGIN
+    OUTER_SPRINT res $hk_gh_res(~%key%~)
+    OUTER_SET    sl   = $hk_gh_lvl(~%key%~)
+    OUTER_SET    excl = $hk_gh_excl(~%key%~)
+    OUTER_SET is_summon = (INDEX (EXACT_MATCH ~|%key%|~ ~%hk_gh_summons%~) >= 0)
+    ACTION_IF ((excl BAND 0x40000000) || is_summon) BEGIN
+      OUTER_SET hk_gh_copy_n += 1
+      ACTION_IF (hk_gh_copy_n < 10) BEGIN
+        OUTER_SPRINT copy ~HKGHA0%hk_gh_copy_n%~
+      END ELSE BEGIN
+        OUTER_SPRINT copy ~HKGHA%hk_gh_copy_n%~
+      END
+      ACTION_IF (is_summon) BEGIN
+        OUTER_SPRINT hk_gt_source ~%res%~
+        OUTER_SPRINT hk_gt_dest   ~%copy%~
+        LAM HK_GH_GT_SPELL
+      END ELSE BEGIN
+        COPY_EXISTING ~%res%.spl~ ~override/%copy%.spl~
+      END
+      COPY_EXISTING ~%copy%.spl~ ~override~
+        READ_LONG  0x1e flags
+        WRITE_LONG 0x1e (flags BAND (BNOT 0x40000000))   // clerics may use it
+      ACTION_IF (sl >= 1 && sl <= 7) BEGIN
+        OUTER_SPRINT list $hk_gh_grant(~%sl%~)
+        OUTER_SPRINT $hk_gh_grant(~%sl%~) ~%list% %copy%~
+      END
+      // A cleric-usable original would otherwise sit beside the copy
+      ACTION_IF (NOT (excl BAND 0x40000000)) BEGIN
+        OUTER_SPRINT hk_gh_cut ~%hk_gh_cut% %res%~
+      END
+    END
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Sheela's Bounty: Greenhand copies of the healing spells heal 25%,
+// 50% and 75% more (opcode 17, increment mode: the fixed part is raised
+// so the total, dice average included, grows by that much)
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ARRAY hk_gh_heals BEGIN ~Cure Light Wounds~ ~Cure Moderate Wounds~ ~Cure Serious Wounds~ ~Cure Critical Wounds~ ~Mass Cure~ END
+OUTER_FOR (i = 0; i < 5; ++i) BEGIN
+  OUTER_SPRINT key $hk_gh_heals(~%i%~)
+  ACTION_TO_LOWER key
+  OUTER_SET $hk_gh_heal_found(~%i%~) = 0
+  ACTION_IF (VARIABLE_IS_SET $hk_gh_res(~%key%~)) BEGIN
+    OUTER_SET $hk_gh_heal_found(~%i%~) = 1
+    OUTER_SPRINT res $hk_gh_res(~%key%~)
+    OUTER_SET    sl   = $hk_gh_lvl(~%key%~)
+    OUTER_FOR (tier = 1; tier <= 3; ++tier) BEGIN
+      OUTER_SET pct = 100 + 25 * tier
+      COPY_EXISTING ~%res%.spl~ ~override/HKGHH%i%%tier%.spl~
+        READ_LONG  0x1e flags
+        WRITE_LONG 0x1e (flags BAND (BNOT 0x40000000))
+        READ_LONG 0x6a fx_off
+        FOR (e = fx_off; e + 0x30 <= SOURCE_SIZE; e += 0x30) BEGIN
+          READ_SHORT e op
+          READ_LONG (e + 0x08) mode
+          PATCH_IF (op == 17 && mode == 0) BEGIN
+            READ_SLONG (e + 0x04) amount
+            READ_LONG  (e + 0x1c) dice
+            READ_LONG  (e + 0x20) sides
+            SET average2 = 2 * amount + dice * (sides + 1)          // twice the average heal
+            WRITE_LONG  (e + 0x04) (amount + (average2 * (pct - 100) + 100) / 200)
+          END
+        END
+    END
+    ACTION_IF (sl >= 1 && sl <= 7) BEGIN
+      OUTER_SPRINT list $hk_gh_grant(~%sl%~)
+      OUTER_SPRINT $hk_gh_grant(~%sl%~) ~%list% HKGHH%i%1~
+    END
+    OUTER_SPRINT hk_gh_cut ~%hk_gh_cut% %res%~
+  END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Cut cleric spells
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ARRAY hk_gh_cuts BEGIN
+  ~Animate Dead~ ~False Dawn~
+  ~Spiritual Hammer~ ~Flame Blade~ ~Shillelagh~ ~Magical Stone~ ~Beast Claw~ ~Moonblade~ ~Star Metal Cudgel~
+  ~Command~ ~Greater Command~ ~Hold Person~ ~Hold Animal~ ~Rigid Thinking~ ~Mental Domination~ ~Confusion~ ~Charm Person or Mammal~
+  ~Glyph of Warding~ ~Symbol of Fear~ ~Symbol of Stun~ ~Symbol of Death~
+  ~Holy Smite~ ~Unholy Blight~ ~Flame Strike~ ~Bolt of Glory~ ~Holy Word~ ~Unholy Word~ ~Sunray~ ~Sol's Searing Orb~ ~Destruction~
+  ~Draw Upon Holy Might~ ~Holy Power~
+  ~Poison~ ~Cause Serious Wounds~ ~Slay Living~ ~Harm~ ~Dolorous Decay~
+  ~Blade Barrier~ ~Gate~ ~Doom~ ~Find Traps~ ~Chaotic Commands~ ~Magic Resistance~ ~Righteous Magic~
+  ~Physical Mirror~ ~Shield of the Archons~ ~Know Alignment~
+  ~Prayer~ ~Favor of Ilmater~ ~Produce Fire~ ~Unfailing Endurance~
+END
+ACTION_PHP_EACH hk_gh_cuts AS idx => spell_name BEGIN
+  OUTER_SPRINT key ~%spell_name%~
+  ACTION_TO_LOWER key
+  ACTION_IF (VARIABLE_IS_SET $hk_gh_res(~%key%~)) BEGIN
+    OUTER_SPRINT res $hk_gh_res(~%key%~)
+    OUTER_SPRINT hk_gh_cut ~%hk_gh_cut% %res%~
+  END
+END
+
+CREATE SPL ~HKGHCUT~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  PATCH_IF (NOT ~%hk_gh_cut%~ STRING_EQUAL ~~) BEGIN
+    INNER_PATCH ~%hk_gh_cut%~ BEGIN
+      REPLACE_EVALUATE ~[^ ]+~ BEGIN
+        SPRINT $hk_gh_cut_list(~%MATCH0%~) ~1~
+      END ~%MATCH0%~
+    END
+  END
+  PHP_EACH hk_gh_cut_list AS removed => unused BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 172 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%removed%~ END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// Summon Horde (new 1st-level spell): 6 rabbits, plus 2 more at 50%
+// each, for 3 rounds + 1 per level, 50% longer for Green Thumb.
+// The rabbits are copies of the game's rabbit with no scripts.
+/////////////////////////////////////////////////////////////////////
+
+ACTION_IF (hk_rabbit_found) BEGIN
+  COPY_EXISTING ~%hk_rabbit_cre%.cre~ ~override/HKGHRAB.cre~
+    LPF HK_SUMMON_COPY INT_VAR name = RESOLVE_STR_REF (@132) END
+
+  CREATE SPL ~HKGHSH~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@130) desc = RESOLVE_STR_REF (@131) type = 2 level = 1
+      STR_VAR icon = EVAL ~%hk_bless_book_icon%~
+    END
+    FOR (level = 1; level <= 20; ++level) BEGIN
+      LPF HK_ADD_SPELL_HEADER INT_VAR location = 2 min_level = level STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+    END
+    FOR (level = 1; level <= 20; ++level) BEGIN
+      SET duration = (3 + level) * 6 * 3 / 2
+      FOR (n = 1; n <= 8; ++n) BEGIN
+        LPF ADD_SPELL_EFFECT
+          INT_VAR opcode = 67 target = 1 duration header = level power = 1
+                  probability1 = (n <= 6 ? 100 : 49) probability2 = 0
+          STR_VAR resource = ~HKGHRAB~
+        END
+      END
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Sheela's Berries (new 1st-level spell): creates berries (opcode 122).
+// The berries are copies of a healing potion; what they heal and cure
+// is set by the Greenhand's level when picked, so each level band has
+// its own berry, HKGHB<b><c>:
+//   b = level / 4: extra hit points on top of 1d4+1
+//   c = cures: 0 none, 1 poison (5+), 2 and disease (9+), 3 and
+//       blindness, deafness and paralysis (14+)
+// Count: 3 + level / 3, up to 8.
+/////////////////////////////////////////////////////////////////////
+LAF HK_FIND_ITEM_BY_NAME INT_VAR type = 9 quiet = 1 STR_VAR regexp = ~Potion of Healing~ RET hk_potion_found = found hk_potion = itm END
+
+ACTION_DEFINE_ARRAY hk_gh_berry_levels BEGIN 1 3 4 5 6 8 9 12 14 15 16 20 24 28 32 36 40 END
+OUTER_SET hk_gh_berry_count = 17
+
+ACTION_IF (hk_potion_found) BEGIN
+  OUTER_FOR (i = 0; i < hk_gh_berry_count; ++i) BEGIN
+    OUTER_SET level = $hk_gh_berry_levels(~%i%~)
+    OUTER_SET b = level / 4
+    OUTER_SET c = (level >= 14 ? 3 : level >= 9 ? 2 : level >= 5 ? 1 : 0)
+    ACTION_IF (NOT FILE_EXISTS_IN_GAME ~HKGHB%b%%c%.itm~) BEGIN
+      COPY_EXISTING ~%hk_potion%.itm~ ~override/HKGHB%b%%c%.itm~
+        SAY 0x08 @137
+        SAY 0x0c @137
+        SAY 0x50 @138
+        SAY 0x54 @138
+        WRITE_LONG 0x34 0                      // no shop value
+        LPF DELETE_ITEM_EFFECT INT_VAR opcode_to_delete = "-1" END
+        LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 17 target = 1 timing = 1 parameter1 = 1 + b dicenumber = 1 dicesize = 4 END
+        PATCH_IF (c >= 1) BEGIN
+          LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 11 target = 1 timing = 1 END
+        END
+        PATCH_IF (c >= 2) BEGIN
+          LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 79 target = 1 timing = 1 END
+        END
+        PATCH_IF (c >= 3) BEGIN
+          PATCH_FOR_EACH cure IN ~75~ ~81~ BEGIN
+            LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = cure target = 1 timing = 1 END
+          END
+          PATCH_FOR_EACH removed IN ~109~ ~175~ ~185~ BEGIN
+            LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 337 target = 1 timing = 1 parameter1 = "-1" parameter2 = removed END
+          END
+        END
+    END
+  END
+
+  CREATE SPL ~HKGHSB~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@135) desc = RESOLVE_STR_REF (@136) type = 2 level = 1
+      STR_VAR icon = EVAL ~%hk_clw_book_icon%~
+    END
+    FOR (i = 0; i < hk_gh_berry_count; ++i) BEGIN
+      SET level = $hk_gh_berry_levels(~%i%~)
+      LPF HK_ADD_SPELL_HEADER INT_VAR location = 2 min_level = level STR_VAR icon = EVAL ~%hk_clw_icon%~ END
+    END
+    FOR (i = 0; i < hk_gh_berry_count; ++i) BEGIN
+      SET level = $hk_gh_berry_levels(~%i%~)
+      SET b = level / 4
+      SET c = (level >= 14 ? 3 : level >= 9 ? 2 : level >= 5 ? 1 : 0)
+      SET count = 3 + level / 3
+      SET count = (count > 8 ? 8 : count)
+      LPF HK_SPELL_FX INT_VAR opcode = 122 parameter1 = count timing = HK_TIMING_INSTANT header = i + 1 STR_VAR resource = EVAL ~HKGHB%b%%c%~ END
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Level 1 and the spell grants
+// HKGHL1: +2 AC; +2 saves vs illusions (opcode 346, school 5); no
+// Turn Undead (opcode 323, turning level lowered out of reach; check
+// in game); the level-1 spells, Summon Horde and Sheela's Berries.
+// HKGHG2-G7: the spells of each level as it opens.
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_GH_GRANTS INT_VAR sl = 1 BEGIN
+  SPRINT list $hk_gh_grant(~%sl%~)
+  PATCH_IF (NOT ~%list%~ STRING_EQUAL ~~) BEGIN
+    INNER_PATCH ~%list%~ BEGIN
+      REPLACE_EVALUATE ~[^ ]+~ BEGIN
+        SPRINT $hk_gh_grant_now(~%MATCH0%~) ~%sl%~
+      END ~%MATCH0%~
+    END
+  END
+  PHP_EACH hk_gh_grant_now AS given => given_level BEGIN
+    PATCH_IF (given_level == sl) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%given%~ END
+    END
+  END
+END
+
+CREATE SPL ~HKGHL1~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+  LPF HK_ADD_SPELL_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 0   parameter1 = 2                 timing = HK_TIMING_PERMANENT END   // AC
+  LPF HK_SPELL_FX INT_VAR opcode = 346 parameter1 = 2 parameter2 = 5 timing = HK_TIMING_PERMANENT END   // saves vs illusion
+  LPF HK_SPELL_FX INT_VAR opcode = 323 parameter1 = "-50"            timing = HK_TIMING_PERMANENT END   // no Turn Undead
+  LPF HK_GH_GRANTS INT_VAR sl = 1 END
+  PATCH_IF (hk_rabbit_found) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKGHSH~ END
+  END
+  PATCH_IF (hk_potion_found) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKGHSB~ END
+  END
+
+OUTER_FOR (sl = 2; sl <= 7; ++sl) BEGIN
+  CREATE SPL ~HKGHG%sl%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@110) desc = RESOLVE_STR_REF (@111) END
+    LPF HK_ADD_SPELL_HEADER END
+    LPF HK_GH_GRANTS INT_VAR sl END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Harvest Loaf: allies in Bless's area heal 5 + level HP (one header
+// per level) and lose their fatigue (opcode 93, set to 0; check in
+// game); from level 15, +1 to saves for 1 turn
+/////////////////////////////////////////////////////////////////////
+CREATE SPL ~HKGHHL~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@120) desc = RESOLVE_STR_REF (@121) STR_VAR icon = EVAL ~%hk_clw_book_icon%~ END
+  FOR (level = 1; level <= 40; ++level) BEGIN
+    LPF HK_ADD_SPELL_HEADER
+      INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile min_level = level
+      STR_VAR icon = EVAL ~%hk_clw_icon%~
+    END
+  END
+  LPF HK_SPELL_FX INT_VAR opcode = 93 target = 2 parameter1 = 0 parameter2 = 1 timing = HK_TIMING_INSTANT END
+  FOR (level = 1; level <= 40; ++level) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 17 target = 2 parameter1 = 5 + level timing = HK_TIMING_INSTANT header = level END
+    PATCH_IF (level >= 15) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 325 target = 2 parameter1 = 1 duration = HK_ONE_TURN header = level END
+    END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// Wind's Whisper: Clairvoyance as an innate ability from level 5
+/////////////////////////////////////////////////////////////////////
+ACTION_IF (hk_clair_found) BEGIN
+  LAF HK_INNATE_COPY INT_VAR name = RESOLVE_STR_REF (@125) STR_VAR source = EVAL ~%hk_clair_spell%~ dest = ~HKGHCV~ END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// Find Familiar: the rabbit
+// A daily innate that summons the rabbit form for the Greenhand's level
+// for one game day, and gives the Greenhand that form's bonus hit
+// points (and +20 Lore from the Warren Elder) for as long. When the
+// rabbit dies, its script removes the bonus. The forms are copies of
+// the game's rabbit; each casts its divinations as innate abilities.
+//   Form              Level  HP   AC  Bonus HP  Adds
+//   Hedgerow Rabbit     1    15    4     8      poison immunity; very fast;
+//                                                sees invisible; Detect Invisibility
+//   Hare                7    35    2    15      disease and fear immunity; 1 HP a round;
+//                                                Summon Horde, Find Traps
+//   Warren Elder       12    60    0    25      charm, hold, paralysis, sleep immunity;
+//                                                20% MR, 25% elemental; Cure Light
+//                                                Wounds x2, Detect Illusion
+//   Moon Hare          18    90   -3    35      confusion, slow, stun, level drain
+//                                                immunity; 40% MR, 50% elemental; needs
+//                                                +1 weapons; Cure Serious Wounds, True Seeing
+//   Sheela's Hare      24   120   -6    45      death, petrification, disintegration
+//                                                immunity; 60% MR, 75% elemental; needs
+//                                                +2 weapons; 3 HP a round; Heal, True
+//                                                Seeing x2, Clairvoyance x2
+/////////////////////////////////////////////////////////////////////
+ACTION_DEFINE_ARRAY hk_rb_level   BEGIN 1 7 12 18 24 END
+ACTION_DEFINE_ARRAY hk_rb_hp      BEGIN 15 35 60 90 120 END
+ACTION_DEFINE_ARRAY hk_rb_ac      BEGIN 4 2 0 "-3" "-6" END
+ACTION_DEFINE_ARRAY hk_rb_bonus   BEGIN 8 15 25 35 45 END
+ACTION_DEFINE_ARRAY hk_rb_mr      BEGIN 0 0 20 40 60 END
+ACTION_DEFINE_ARRAY hk_rb_elem    BEGIN 0 0 25 50 75 END
+ACTION_DEFINE_ARRAY hk_rb_needs   BEGIN 0 0 0 1 2 END
+ACTION_DEFINE_ARRAY hk_rb_immune  BEGIN ~25~ ~78 24~ ~5 109 175 185 39~ ~128 40 45 216~ ~13 55 134 238~ END
+
+OUTER_SET $hk_rb_name(~0~) = RESOLVE_STR_REF (@150)
+OUTER_SET $hk_rb_name(~1~) = RESOLVE_STR_REF (@151)
+OUTER_SET $hk_rb_name(~2~) = RESOLVE_STR_REF (@152)
+OUTER_SET $hk_rb_name(~3~) = RESOLVE_STR_REF (@153)
+OUTER_SET $hk_rb_name(~4~) = RESOLVE_STR_REF (@154)
+
+// The rabbit's spells: innate copies, by the form that first casts them
+// and how many times a day each form casts them
+//   name                 pattern   first form  uses by form 1-5
+ACTION_DEFINE_ARRAY hk_rb_spell_name BEGIN ~Detect Invisibility~ ~Find Traps~ ~Cure Light Wounds~ ~Detect Illusion~ ~Cure Serious Wounds~ ~True Seeing~ ~Heal~ ~Clairvoyance~ END
+ACTION_DEFINE_ARRAY hk_rb_spell_uses BEGIN ~1 1 1 1 1~ ~0 1 1 1 1~ ~0 0 2 2 2~ ~0 0 1 1 1~ ~0 0 0 1 1~ ~0 0 0 1 2~ ~0 0 0 0 1~ ~0 0 0 0 2~ END
+OUTER_FOR (s = 0; s < 8; ++s) BEGIN
+  OUTER_SPRINT spell_name $hk_rb_spell_name(~%s%~)
+  OUTER_SET $hk_rb_spell_ok(~%s%~) = 0
+  LAF HK_FIND_SPELL_BY_NAME STR_VAR name = EVAL ~%spell_name%~ pattern = ~^sp\(pr\|wi\)[0-9][0-9][0-9]\.spl$~ RET found spell END
+  ACTION_IF (found) BEGIN
+    OUTER_SET $hk_rb_spell_ok(~%s%~) = 1
+    LAF HK_INNATE_COPY STR_VAR source = EVAL ~%spell%~ dest = EVAL ~HKGHF0%s%~ END
+  END
+END
+
+ACTION_IF (hk_rabbit_found) BEGIN
+  COMPILE ~%MOD_FOLDER%/kits/10-greenhand/hkghrbd.baf~
+  LAF HK_INNATE_COPY STR_VAR source = ~HKGHSH~ dest = ~HKGHFSH~ END
+
+  OUTER_FOR (i = 0; i < 5; ++i) BEGIN
+    OUTER_SET form = i + 1
+    OUTER_SET hp    = $hk_rb_hp(~%i%~)
+    OUTER_SET ac    = $hk_rb_ac(~%i%~)
+    OUTER_SET mr    = $hk_rb_mr(~%i%~)
+    OUTER_SET elem  = $hk_rb_elem(~%i%~)
+    OUTER_SET needs = $hk_rb_needs(~%i%~)
+    OUTER_SPRINT immune ~~
+    OUTER_FOR (j = 0; j <= i; ++j) BEGIN
+      OUTER_SPRINT more $hk_rb_immune(~%j%~)
+      OUTER_SPRINT immune ~%immune% %more%~
+    END
+    OUTER_SET name_ref = $hk_rb_name(~%i%~)
+    COPY_EXISTING ~%hk_rabbit_cre%.cre~ ~override/HKGHRB%form%.cre~
+      LPF HK_SUMMON_COPY INT_VAR name = name_ref hp ac END
+      WRITE_ASCII 0x268 ~HKGHRBD~ #8      // default script
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 193 target = 1 timing = 9 END                   // sees invisible
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 176 target = 1 timing = 9 parameter1 = 4 END    // very fast
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 54  target = 1 timing = 9 parameter1 = 2 END    // Green Thumb
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 73  target = 1 timing = 9 parameter1 = 2 END
+      LPF ADD_CRE_EFFECT INT_VAR opcode = 325 target = 1 timing = 9 parameter1 = 2 END
+      PATCH_FOR_EACH blocked IN ~25~ ~78~ ~24~ ~5~ ~109~ ~175~ ~185~ ~39~ ~128~ ~40~ ~45~ ~216~ ~13~ ~55~ ~134~ ~238~ BEGIN
+        PATCH_IF (INDEX (EXACT_MATCH ~ %blocked% ~ ~ %immune% ~) >= 0) BEGIN
+          LPF ADD_CRE_EFFECT INT_VAR opcode = 101 target = 1 timing = 9 parameter2 = blocked END
+        END
+      END
+      PATCH_IF (mr > 0) BEGIN
+        LPF ADD_CRE_EFFECT INT_VAR opcode = 166 target = 1 timing = 9 parameter1 = mr END
+      END
+      PATCH_IF (elem > 0) BEGIN
+        PATCH_FOR_EACH resist IN ~30~ ~28~ ~29~ ~27~ BEGIN
+          LPF ADD_CRE_EFFECT INT_VAR opcode = resist target = 1 timing = 9 parameter1 = elem END
+        END
+      END
+      PATCH_IF (needs > 0) BEGIN
+        LPF ADD_CRE_EFFECT INT_VAR opcode = 120 target = 1 timing = 9 parameter1 = needs END
+      END
+      PATCH_IF (form == 2 || form == 3 || form == 4) BEGIN
+        LPF ADD_CRE_EFFECT INT_VAR opcode = 98 target = 1 timing = 9 parameter1 = 6 parameter2 = 3 END   // 1 HP a round
+      END
+      PATCH_IF (form == 5) BEGIN
+        LPF ADD_CRE_EFFECT INT_VAR opcode = 98 target = 1 timing = 9 parameter1 = 2 parameter2 = 3 END   // 3 HP a round
+      END
+      // Spells
+      PATCH_IF (form >= 2) BEGIN
+        ADD_KNOWN_SPELL ~HKGHFSH~ #0 ~innate~
+        ADD_MEMORIZED_SPELL ~HKGHFSH~ #0 ~innate~ (1)
+      END
+      FOR (s = 0; s < 8; ++s) BEGIN
+        PATCH_IF ($hk_rb_spell_ok(~%s%~)) BEGIN
+          SPRINT uses_list $hk_rb_spell_uses(~%s%~)
+          SET uses = 0
+          SET k = 0
+          INNER_PATCH ~%uses_list%~ BEGIN
+            REPLACE_EVALUATE ~[0-9]+~ BEGIN
+              PATCH_IF (k == i) BEGIN SET uses = MATCH0 END
+              SET k += 1
+            END ~%MATCH0%~
+          END
+          PATCH_IF (uses > 0) BEGIN
+            ADD_KNOWN_SPELL ~HKGHF0%s%~ #0 ~innate~
+            ADD_MEMORIZED_SPELL ~HKGHF0%s%~ #0 ~innate~ (uses)
+          END
+        END
+      END
+  END
+
+  CREATE SPL ~HKGHFDX~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKGHFAM~ END
+    LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@157) timing = HK_TIMING_INSTANT END
+
+  CREATE SPL ~HKGHFAM~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+    FOR (i = 0; i < 5; ++i) BEGIN
+      SET level = $hk_rb_level(~%i%~)
+      LPF HK_ADD_SPELL_HEADER INT_VAR min_level = level STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKGHFAM~ END
+    FOR (i = 0; i < 5; ++i) BEGIN
+      SET header = i + 1
+      SET bonus = $hk_rb_bonus(~%i%~)
+      LPF HK_SPELL_FX INT_VAR opcode = 67 duration = HK_ONE_DAY header STR_VAR resource = EVAL ~HKGHRB%header%~ END
+      LPF HK_SPELL_FX INT_VAR opcode = 18 parameter1 = bonus duration = HK_ONE_DAY header END   // bonus HP
+      PATCH_IF (header >= 3) BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 21 parameter1 = 20 duration = HK_ONE_DAY header END    // Old Wisdom: +20 Lore
+      END
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: the summons (Green Thumb copies of the game's creatures; Green
+// Thumb's 50% longer duration included)
+//   Garden of Friends  a bear and two wolves, 1 turn (90 s)
+//   Call the Bog       two shambling mounds, 1 turn (90 s)
+//   Hedge Warden       a treant, 2 turns (180 s)
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_GH_SUMMON INT_VAR duration = 90 count = 1 STR_VAR cre = "" BEGIN
+  FOR (n = 0; n < count; ++n) BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 67 duration STR_VAR resource = EVAL ~%cre%~ END
+  END
+END
+
+OUTER_SET hk_gh_garden = (hk_bear_found && hk_wolf_found)
+ACTION_IF (hk_gh_garden) BEGIN
+  OUTER_SPRINT hk_gt_cre ~%hk_bear_cre%~
+  LAM HK_GH_GT_CRE
+  OUTER_SPRINT hk_gh_bear ~%hk_gt_copy%~
+  OUTER_SPRINT hk_gt_cre ~%hk_wolf_cre%~
+  LAM HK_GH_GT_CRE
+  OUTER_SPRINT hk_gh_wolf ~%hk_gt_copy%~
+  CREATE SPL ~HKGHGF~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@160) desc = RESOLVE_STR_REF (@161) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+    LPF HK_GH_SUMMON STR_VAR cre = EVAL ~%hk_gh_bear%~ END
+    LPF HK_GH_SUMMON INT_VAR count = 2 STR_VAR cre = EVAL ~%hk_gh_wolf%~ END
+END
+ACTION_IF (hk_mound_found) BEGIN
+  OUTER_SPRINT hk_gt_cre ~%hk_mound_cre%~
+  LAM HK_GH_GT_CRE
+  OUTER_SPRINT hk_gh_mound ~%hk_gt_copy%~
+  CREATE SPL ~HKGHCB~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@165) desc = RESOLVE_STR_REF (@166) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+    LPF HK_GH_SUMMON INT_VAR count = 2 STR_VAR cre = EVAL ~%hk_gh_mound%~ END
+END
+ACTION_IF (hk_treant_found) BEGIN
+  OUTER_SPRINT hk_gt_cre ~%hk_treant_cre%~
+  LAM HK_GH_GT_CRE
+  OUTER_SPRINT hk_gh_treant ~%hk_gt_copy%~
+  CREATE SPL ~HKGHHW~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@190) desc = RESOLVE_STR_REF (@191) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+    LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_bless_icon%~ END
+    LPF HK_GH_SUMMON INT_VAR duration = 180 STR_VAR cre = EVAL ~%hk_gh_treant%~ END
+END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLAs: Sheela's Harvest (1 turn in Bless's area: 6 HP a round, the
+// nearest the game's regeneration gets to 5; poison and disease cured
+// and blocked) and Fair Winds (1 turn: +2 movement; immune to slow,
+// entangle and web)
+/////////////////////////////////////////////////////////////////////
+DEFINE_PATCH_FUNCTION HK_GH_AREA_HEADER BEGIN
+  LPF HK_ADD_SPELL_HEADER
+    INT_VAR target = hk_bless_target range = hk_bless_range projectile = hk_bless_projectile
+    STR_VAR icon = EVAL ~%hk_bless_icon%~
+  END
+END
+
+CREATE SPL ~HKGHSHV~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@170) desc = RESOLVE_STR_REF (@171) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_GH_AREA_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKGHSHV~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 98  target = 2 parameter1 = 1 parameter2 = 3 duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 11  target = 2 timing = HK_TIMING_INSTANT END
+  LPF HK_SPELL_FX INT_VAR opcode = 79  target = 2 timing = HK_TIMING_INSTANT END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 25 duration = HK_ONE_TURN END
+  LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = 78 duration = HK_ONE_TURN END
+
+CREATE SPL ~HKGHFW~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@175) desc = RESOLVE_STR_REF (@176) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
+  LPF HK_GH_AREA_HEADER END
+  LPF HK_SPELL_FX INT_VAR opcode = 321 target = 2 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKGHFW~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 176 target = 2 parameter1 = 2 duration = HK_ONE_TURN END
+  PATCH_FOR_EACH blocked IN ~40~ ~154~ ~157~ BEGIN
+    LPF HK_SPELL_FX INT_VAR opcode = 101 target = 2 parameter2 = blocked duration = HK_ONE_TURN END
+  END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA: Bountiful Harvest. Each pick swaps the Greenhand's healing spells
+// for the next tier (opcode 172 the old, 171 the new). HKGHBH2 (second
+// pick) needs the first pick's state; HKGHBH1 is blocked once it is
+// set. HKGHBH2 is applied first, so exactly one swap happens per pick.
+/////////////////////////////////////////////////////////////////////
+OUTER_FOR (pick = 1; pick <= 2; ++pick) BEGIN
+  OUTER_SET from_tier = pick
+  OUTER_SET to_tier   = pick + 1
+  CREATE SPL ~HKGHBH%pick%~
+    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@185) desc = RESOLVE_STR_REF (@186) END
+    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+    PATCH_IF (pick == 1) BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_bounty1 parameter2 = 110 duration = 1 STR_VAR resource = ~HKGHBH1~ END
+    END ELSE BEGIN
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_bounty1 parameter2 = 111 duration = 1 STR_VAR resource = ~HKGHBH2~ END
+      LPF HK_SPELL_FX INT_VAR opcode = 318 parameter1 = hk_state_bounty2 parameter2 = 110 duration = 1 STR_VAR resource = ~HKGHBH2~ END
+    END
+    FOR (i = 0; i < 5; ++i) BEGIN
+      PATCH_IF ($hk_gh_heal_found(~%i%~)) BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 172 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKGHH%i%%from_tier%~ END
+        LPF HK_SPELL_FX INT_VAR opcode = 171 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~HKGHH%i%%to_tier%~ END
+      END
+    END
+    LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = (pick == 1 ? hk_state_bounty1 : hk_state_bounty2) special = 1 timing = HK_TIMING_PERMANENT END
+END
+
+CREATE SPL ~HKGHBH~
+  LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@185) desc = RESOLVE_STR_REF (@186) STR_VAR icon = EVAL ~%hk_clw_book_icon%~ END
+  LPF HK_ADD_SPELL_HEADER STR_VAR icon = EVAL ~%hk_clw_icon%~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKGHBH2~ END
+  LPF HK_SPELL_FX INT_VAR opcode = 326 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKGHBH1~ END
+
+
+/////////////////////////////////////////////////////////////////////
+// HLA table (LUHGH.2da). The standard cleric HLAs keep their own
+// levels from the cleric's table, so the Greenhand's HLAs open when a
+// cleric's do (open question 2).
+/////////////////////////////////////////////////////////////////////
+OUTER_SET hk_n = 0
+OUTER_SPRINT hk_rows ~~
+
+ACTION_IF (hk_gh_garden) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@160) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKGHGF~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+END
+ACTION_IF (hk_mound_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@165) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKGHCB~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@170) picks = 3
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKGHSHV~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@175) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKGHFW~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@185) picks = 2
+  STR_VAR rows = EVAL ~%hk_rows%~ ability = ~AP_HKGHBH~ icon = EVAL ~%hk_clw_icon%~ RET hk_rows = rows hk_n = number END
+ACTION_IF (hk_treant_found) BEGIN
+  LAF HK_HLA_ROW INT_VAR number = hk_n strref = RESOLVE_STR_REF (@190) picks = 3
+    STR_VAR rows = EVAL ~%hk_rows%~ ability = ~GA_HKGHHW~ icon = EVAL ~%hk_bless_icon%~ RET hk_rows = rows hk_n = number END
+END
+OUTER_FOR (i = 0; i < 3; ++i) BEGIN
+  ACTION_IF ($hk_gh_hla_found(~%i%~)) BEGIN
+    OUTER_SPRINT ability $hk_gh_hla_ability(~%i%~)
+    OUTER_SPRINT icon    $hk_gh_hla_icon(~%i%~)
+    OUTER_SPRINT prereq  $hk_gh_hla_prereq(~%i%~)
+    LAF HK_HLA_ROW
+      INT_VAR number = hk_n strref = $hk_gh_hla_strref(~%i%~) picks = $hk_gh_hla_num(~%i%~)
+              min_level = $hk_gh_hla_min(~%i%~) max_level = $hk_gh_hla_max(~%i%~)
+      STR_VAR rows = EVAL ~%hk_rows%~ ability = EVAL ~%ability%~ icon = EVAL ~%icon%~ prereq = EVAL ~%prereq%~
+      RET hk_rows = rows hk_n = number
+    END
+  END
+END
+
+COPY ~%MOD_FOLDER%/kits/10-greenhand/luhgh.2da~ ~override~
+  EVALUATE_BUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+// The kit
+// Weapon skill: grandmastery in slings; proficiency (1 pip) in clubs
+// and quarterstaffs; 2 pips in Sword and Shield Style; the cleric's
+// other fighting styles.
+/////////////////////////////////////////////////////////////////////
+LAF HK_WEAPPROF_LINE
+  INT_VAR pips = 5 pips2 = 2 pips3 = 1
+  STR_VAR kit      = ~HK_GREENHAND~
+          base     = ~CLERIC~
+          skilled  = ~SLING~
+          skilled2 = ~SWORDANDSHIELD~
+          skilled3 = ~CLUB QUARTERSTAFF~
+  RET hk_gh_weapprof = line
+END
+LAF HK_EMPTY_COLUMN_LINE STR_VAR file = ~25stweap.2da~ RET hk_gh_stweap = line END
+LAF HK_STAT_LINE STR_VAR kit = ~HK_GREENHAND~ values = ~WIS=9 CHR=13~ RET hk_gh_abclasrq = line END
+LAF HK_ALIGNMENT_LINE STR_VAR kit = ~HK_GREENHAND~ allowed = ~NEUTRAL_GOOD NEUTRAL~ RET hk_gh_align = line END
+
+ADD_KIT ~HK_GREENHAND~
+  ~HK_GREENHAND             1 1 1 1 1 1 1 1~                  // CLASWEAP
+  ~%hk_gh_weapprof%~                                          // WEAPPROF (column)
+  ~%hk_gh_abclasrq%~                                          // ABCLASRQ: Wis 9, Cha 13
+  ~HK_GREENHAND             0 0 0 0 0 0~                      // ABCLSMOD
+  ~HK_GREENHAND             0 0 0 0 17 0~                     // ABDCDSRQ (halflings cannot dual-class)
+  ~HK_GREENHAND             0 0 0 0 17 0~                     // ABDCSCRQ
+  ~%hk_gh_align%~                                             // ALIGNMNT: NG, TN
+  ~HK_GREENHAND             0 0 0 0 0 0~                      // DUALCLAS: none
+  ~%MOD_FOLDER%/kits/10-greenhand/hkghclab.2da~               // CLAB
+  ~K_C_H~                                                     // halfling clerics only
+  ~0x00004000 3~                                              // cleric usability, class 3
+  ~HGH~                                                       // LUHGH.2da
+  ~%hk_gh_stweap%~                                            // 25STWEAP: no special kit gear
+  SAY @100
+  SAY @101
+  SAY @102
+
+
+/////////////////////////////////////////////////////////////////////
+// Equipment: clubs (115), quarterstaffs (102) and slings (107); armour
+// up to studded leather (base AC 7); any shield
+/////////////////////////////////////////////////////////////////////
+LAF HK_RESTRICT_ITEMS
+  INT_VAR kit_id  = IDS_OF_SYMBOL (~kit~ ~HK_GREENHAND~)
+          message = RESOLVE_STR_REF (@180)
+          min_base_ac = 7
+  STR_VAR allowed_profs = ~115 102 107~
+END

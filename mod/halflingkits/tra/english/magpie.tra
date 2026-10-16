@@ -1,0 +1,74 @@
+// Magpie
+
+@100 = ~Magpie~
+@101 = ~Magpie~
+@102 = ~MAGPIE: Every halfling village has one: the cousin who comes home from the woods with a silver spoon, a lost ring and somebody's spare boots, and swears they just found them. Brandobaris, the halfling god of thieves, luck and adventure, smiles on the Magpie. Treasure has a way of turning up wherever it sleeps, and the dice rarely roll against it.
+
+Advantages:
+– +1 Luck and +2 AC (Ducking and Weaving), and again at levels 10 and 20.
+– May put 2 slots into Single Weapon Style.
+– Magpie's Eye: +15% Pick Pockets, +10% Open Locks and Move Silently, +20% Detect Illusion, and +10 Lore, plus 2 Lore every level afterwards.
+– Magpie's Knack: may use arcane scrolls and wands.
+– Silver Tongue: 1 use, plus 1 more at levels 6, 11, 16 and every 5 levels after.
+  SILVER TONGUE: A creature no higher in level than the Magpie must save vs spell at -2 or stop being hostile.
+– Brandobaris's Gift: once a day, when the party rests, a 50% chance that the Magpie finds something: potions, scrolls, gems or ammunition, better as it rises in level, and the occasional wand from level 17.
+– Brandobaris's Dice: once a day, when the party rests in a town or a building, the Magpie gambles through the night, winning or losing gold with the odds in its favour.
+
+Disadvantages:
+– No backstab, and cannot set traps.
+– May only use daggers, short swords, clubs, quarterstaffs, slings, darts and short bows.
+– May only wear leather and studded leather armour, and no shields.
+– Requires Charisma 15 and Intelligence 9 or higher.
+– Must be a neutral good, chaotic good or chaotic neutral halfling.~
+
+@110 = ~Magpie~
+@111 = ~Brandobaris's favour: Luck, Ducking and Weaving, and Magpie's Eye.~
+
+@120 = ~Silver Tongue~
+@121 = ~Silver Tongue
+
+The Magpie talks its way out of trouble. A creature no higher in level than the Magpie must save vs spell at -2 or calm down and stop being hostile.~
+
+@125 = ~Slip Away~
+@126 = ~Slip Away
+
+The Magpie turns invisible, as Improved Invisibility, and is protected by Non-Detection.~
+
+@130 = ~Brandobaris's Favour~
+@131 = ~Brandobaris's Favour
+
+Brandobaris's Gift always finds something, and draws from the next tier of treasure up.~
+@135 = ~Treasure Hunter~
+@136 = ~Treasure Hunter
+
+Each time this ability is chosen, Brandobaris's Gift rolls once more each day.~
+@140 = ~Misdirection~
+@141 = ~Misdirection
+
+A flick of the wrist and a stolen glance: enemies nearby must save vs spell at -2 or be distracted and harmless for 2 rounds, until something hits them.~
+@145 = ~Brandobaris's Grin~
+@146 = ~Brandobaris's Grin
+
+Each time this ability is chosen, the Magpie gains 5% resistance to slashing, crushing, piercing, missile and magic damage, and 5% magic resistance.~
+@150 = ~Trickster's Turn~
+@151 = ~Trickster's Turn
+
+For 1 turn, the Magpie gains +2 to all saves, and enemies nearby get -2 Luck.~
+@155 = ~Smooth Talker~
+@156 = ~Smooth Talker
+
++2 uses of Silver Tongue per day.~
+@160 = ~Pocket Sand~
+@161 = ~Pocket Sand
+
+A handful of sand to the face: one enemy must save vs breath at -2 (-4 from level 30) or be blinded for 2 rounds. Each pick of this ability gives 3 uses a day.~
+
+@165 = ~Brandobaris's Gift~
+@166 = ~Brandobaris's Gift
+
+Once a day, when the party rests, there is a 50% chance the Magpie finds something.~
+@167 = ~Brandobaris smiles: the Magpie has found something.~
+@170 = ~The dice were kind tonight.~
+@171 = ~The dice were not kind tonight.~
+
+@180 = ~Magpies cannot use this item.~

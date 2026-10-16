@@ -1,0 +1,8 @@
+// The Greenhand's rabbit: when it dies, its master loses the bonus
+// hit points and Lore Find Familiar gave.
+IF
+  Die()
+THEN
+  RESPONSE #100
+    ApplySpellRES("HKGHFDX",LastSummonerOf(Myself))
+END

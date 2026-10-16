@@ -1,0 +1,267 @@
+// Magpie: Brandobaris's Gift and Brandobaris's Dice.
+// Added to the global scripts once per party slot (%hk_player%, %hk_slot%).
+// The Gift: once a day on any rest. The Dice: once a day on a rest in a
+// city or a building that isn't a dungeon; 60% to win, 40% to lose, an
+// amount by level band. The win blocks don't Continue(), so when one
+// fires the lose blocks are not reached; when none fires, a lose block does.
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPG%hk_slot%","GLOBAL")
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPG%hk_slot%","GLOBAL",7200)
+    ActionOverride(%hk_player%,ApplySpellRES("HKMPGIFT",Myself))
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,0)
+  LevelLT(%hk_player%,5)
+  RandomNumLT(100,61)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    GivePartyGold(100)
+    DisplayStringHead(%hk_player%,%hk_mp_win%)
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,4)
+  LevelLT(%hk_player%,10)
+  RandomNumLT(100,61)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    GivePartyGold(300)
+    DisplayStringHead(%hk_player%,%hk_mp_win%)
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,9)
+  LevelLT(%hk_player%,15)
+  RandomNumLT(100,61)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    GivePartyGold(500)
+    DisplayStringHead(%hk_player%,%hk_mp_win%)
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,14)
+  LevelLT(%hk_player%,20)
+  RandomNumLT(100,61)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    GivePartyGold(750)
+    DisplayStringHead(%hk_player%,%hk_mp_win%)
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,19)
+  LevelLT(%hk_player%,25)
+  RandomNumLT(100,61)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    GivePartyGold(1000)
+    DisplayStringHead(%hk_player%,%hk_mp_win%)
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,24)
+  LevelLT(%hk_player%,30)
+  RandomNumLT(100,61)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    GivePartyGold(1250)
+    DisplayStringHead(%hk_player%,%hk_mp_win%)
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,29)
+  RandomNumLT(100,61)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    GivePartyGold(1500)
+    DisplayStringHead(%hk_player%,%hk_mp_win%)
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,0)
+  LevelLT(%hk_player%,5)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    TakePartyGold(100)
+    DisplayStringHead(%hk_player%,%hk_mp_lose%)
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,4)
+  LevelLT(%hk_player%,10)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    TakePartyGold(300)
+    DisplayStringHead(%hk_player%,%hk_mp_lose%)
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,9)
+  LevelLT(%hk_player%,15)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    TakePartyGold(500)
+    DisplayStringHead(%hk_player%,%hk_mp_lose%)
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,14)
+  LevelLT(%hk_player%,20)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    TakePartyGold(750)
+    DisplayStringHead(%hk_player%,%hk_mp_lose%)
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,19)
+  LevelLT(%hk_player%,25)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    TakePartyGold(1000)
+    DisplayStringHead(%hk_player%,%hk_mp_lose%)
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,24)
+  LevelLT(%hk_player%,30)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    TakePartyGold(1250)
+    DisplayStringHead(%hk_player%,%hk_mp_lose%)
+    Continue()
+END
+
+IF
+  PartyRested()
+  Kit(%hk_player%,HK_MAGPIE)
+  !GlobalTimerNotExpired("HKMPD%hk_slot%","GLOBAL")
+  OR(2)
+    AreaType(CITY)
+    !AreaType(OUTDOOR)
+  !AreaType(DUNGEON)
+  LevelGT(%hk_player%,29)
+THEN
+  RESPONSE #100
+    SetGlobalTimer("HKMPD%hk_slot%","GLOBAL",7200)
+    TakePartyGold(1500)
+    DisplayStringHead(%hk_player%,%hk_mp_lose%)
+    Continue()
+END
