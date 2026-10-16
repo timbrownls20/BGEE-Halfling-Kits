@@ -985,3 +985,184 @@ BEGIN
     WARN @4
   END
 END
+
+
+/////////////////////////////////////////////////////////////////////
+// HK_FAMILIAR (action)
+// Find Familiar for a kit: a familiar when the main character calls it,
+// a one-day summon when anyone else does (the engine ties familiars to
+// the main character).
+//
+// The kit first builds its five summoned forms, <cre>1-5.cre, and its
+// innate <prefix>FAM, which summons the form for the caster's level for
+// one day (opcode 67, one header per form). This function then adds:
+//   <cre>S1-5.bcs  the summoned forms' script (lib/hk_fam_summon.baf):
+//                  turns into the familiar when the main character called
+//   <cre>F1-5.cre  the familiar forms (the summoned forms with their own
+//                  script, dialogue and EA FAMILIAR); each grows into the
+//                  next when the main character reaches its level
+//   <cre>F.dlg     the familiar's dialogue: its master can pick it up
+//   <cre>I.itm     the familiar in the pack; using it lets it out
+//   <prefix>FB1-5  the summon's bonus to its master, for one day
+//   <prefix>FP1-5  the familiar's bonus to the main character, while it lives
+//   <prefix>FDX    the summon died: the bonus goes
+//   <prefix>FDY    the familiar died: the bonus goes, and 1 Constitution
+//                  for 8 hours (until the next rest)
+// The global <prefix>FML holds the familiar's state: 0 none, 1 out,
+// 2 in the pack.
+//
+// levels, bonus and lore are five numbers each, one per form: the
+// master's level for the form, its bonus hit points and its bonus Lore.
+/////////////////////////////////////////////////////////////////////
+DEFINE_ACTION_FUNCTION HK_FAMILIAR
+  INT_VAR name       = "-1"   // the ability's name and description,
+          desc       = "-1"   // for the bonus spells
+          death      = "-1"   // shown when it dies
+          item_name  = "-1"
+          item_desc  = "-1"
+  STR_VAR prefix     = ""
+          cre        = ""
+          levels     = ""
+          bonus      = ""
+          lore       = "0 0 0 0 0"
+          icon_items = "famrab famfer famcat"   // vanilla familiar items to borrow an icon from
+BEGIN
+  LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_FAM_CALL~ RET hk_fm_call = id END
+  LAF HK_ADD_SPELLSTATE STR_VAR name = ~HK_FAM_FREE~ RET hk_fm_free = id END
+
+  OUTER_SPRINT hk_fm_prefix ~%prefix%~
+  OUTER_SPRINT hk_fm_cre    ~%cre%~
+  OUTER_SPRINT hk_fm_global ~%prefix%FML~
+  OUTER_SET hk_fm_have  = RESOLVE_STR_REF (@17)
+  OUTER_SET hk_fm_say   = RESOLVE_STR_REF (@18)
+  OUTER_SET hk_fm_take  = RESOLVE_STR_REF (@19)
+  OUTER_SET hk_fm_leave = RESOLVE_STR_REF (@20)
+
+  // Split the number lists into arrays indexed by form (1-5)
+  OUTER_PATCH ~levels %levels%,bonus %bonus%,lore %lore%~ BEGIN
+    REPLACE_EVALUATE ~\([a-z]+\) \([0-9 ]+\)~ BEGIN
+      SPRINT list ~%MATCH1%~
+      SET n = 0
+      INNER_PATCH ~%MATCH2%~ BEGIN
+        REPLACE_EVALUATE ~[0-9]+~ BEGIN
+          SET n += 1
+          SET $hk_fm(~%list%~ ~%n%~) = MATCH0
+        END ~%MATCH0%~
+      END
+    END ~%MATCH0%~
+  END
+
+  // The innate also marks its caster for a few seconds, so the summoned
+  // form can tell whether the main character called it
+  COPY_EXISTING ~%prefix%FAM.spl~ ~override~
+    LPF HK_SPELL_FX INT_VAR opcode = 328 parameter2 = hk_fm_call special = 1 duration = 6 END
+
+  COMPILE EVALUATE_BUFFER ~%MOD_FOLDER%/lib/hk_fam.d~
+
+  OUTER_FOR (hk_fm_form = 1; hk_fm_form <= 5; ++hk_fm_form) BEGIN
+    OUTER_SET hk_fm_next = hk_fm_form + 1
+    ACTION_IF (hk_fm_form < 5) BEGIN
+      OUTER_SET hk_fm_up = $hk_fm(~levels~ ~%hk_fm_next%~) - 1
+      OUTER_SPRINT hk_fm_grow ~
+// Grows into the next form when the main character reaches its level
+IF
+  Global("HK_UP","LOCALS",0)
+  LevelGT(Player1,%hk_fm_up%)
+THEN
+  RESPONSE #100
+    SetGlobal("HK_UP","LOCALS",1)
+    CreateCreatureObject("%cre%F%hk_fm_next%",Myself,0,0,0)
+    DestroySelf()
+END
+~
+    END ELSE BEGIN
+      OUTER_SPRINT hk_fm_grow ~~
+    END
+
+    COPY ~%MOD_FOLDER%/lib/hk_fam_summon.baf~ ~override/%cre%S%hk_fm_form%.bcs~
+      EVALUATE_BUFFER
+      COMPILE_BAF_TO_BCS
+    COPY ~%MOD_FOLDER%/lib/hk_fam_familiar.baf~ ~override/%cre%F%hk_fm_form%.bcs~
+      EVALUATE_BUFFER
+      COMPILE_BAF_TO_BCS
+
+    COPY_EXISTING ~%cre%%hk_fm_form%.cre~ ~override~
+      WRITE_ASCIIE 0x268 ~%cre%S%hk_fm_form%~ #8   // default script
+    COPY_EXISTING ~%cre%%hk_fm_form%.cre~ ~override/%cre%F%hk_fm_form%.cre~
+      WRITE_ASCIIE 0x268 ~%cre%F%hk_fm_form%~ #8   // default script
+      WRITE_ASCIIE 0x2cc ~%cre%F~ #8               // dialogue
+      WRITE_BYTE   0x270 3                          // EA: FAMILIAR
+
+    // Bonus spells: FB (summon, one day) and FP (familiar, while it
+    // lives). Each first removes any bonus already given.
+    OUTER_SET b = $hk_fm(~bonus~ ~%hk_fm_form%~)
+    OUTER_SET l = $hk_fm(~lore~ ~%hk_fm_form%~)
+    ACTION_FOR_EACH kind IN ~FB~ ~FP~ BEGIN
+      CREATE SPL ~%prefix%%kind%%hk_fm_form%~
+        LPF HK_INIT_SPELL INT_VAR name desc END
+        LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+        FOR (k = 1; k <= 5; ++k) BEGIN
+          LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%prefix%%kind%%k%~ END
+        END
+        PATCH_IF (~%kind%~ STRING_EQUAL ~FB~) BEGIN
+          SET t = HK_TIMING_DURATION
+          SET d = HK_ONE_DAY
+        END ELSE BEGIN
+          SET t = HK_TIMING_PERMANENT
+          SET d = 0
+        END
+        LPF HK_SPELL_FX INT_VAR opcode = 18 parameter1 = b timing = t duration = d END   // bonus HP
+        PATCH_IF (l > 0) BEGIN
+          LPF HK_SPELL_FX INT_VAR opcode = 21 parameter1 = l timing = t duration = d END // bonus Lore
+        END
+    END
+  END
+
+  ACTION_FOR_EACH kind IN ~X~ ~Y~ BEGIN
+    ACTION_IF (~%kind%~ STRING_EQUAL ~X~) BEGIN
+      OUTER_SPRINT given ~FB~
+    END ELSE BEGIN
+      OUTER_SPRINT given ~FP~
+    END
+    CREATE SPL ~%prefix%FD%kind%~
+      LPF HK_INIT_SPELL INT_VAR name desc END
+      LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
+      FOR (k = 1; k <= 5; ++k) BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = EVAL ~%prefix%%given%%k%~ END
+      END
+      PATCH_IF (~%kind%~ STRING_EQUAL ~Y~) BEGIN
+        LPF HK_SPELL_FX INT_VAR opcode = 10 parameter1 = "-1" duration = 2400 END   // -1 Constitution until the next rest
+      END
+      LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = death timing = HK_TIMING_INSTANT END
+  END
+
+  // The familiar in the pack: a copy of a healing potion whose use lets
+  // the familiar out (a summoned form, marked as called and freed by the
+  // main character, which then turns into the familiar for its level)
+  LAF HK_FIND_ITEM_BY_NAME INT_VAR type = 9 STR_VAR regexp = ~Potion of Healing~ label = ~Potion of Healing~ RET hk_fm_potion_found = found hk_fm_potion = itm END
+  ACTION_IF (hk_fm_potion_found) BEGIN
+    OUTER_SPRINT hk_fm_icon ~~
+    OUTER_PATCH ~%icon_items%~ BEGIN
+      REPLACE_EVALUATE ~[A-Za-z0-9_#-]+~ BEGIN
+        PATCH_IF (~%hk_fm_icon%~ STRING_EQUAL ~~ && FILE_EXISTS_IN_GAME ~%MATCH0%.itm~) BEGIN
+          INNER_PATCH_FILE ~%MATCH0%.itm~ BEGIN
+            READ_ASCII 0x3a hk_fm_icon (8) NULL
+          END
+        END
+      END ~%MATCH0%~
+    END
+    COPY_EXISTING ~%hk_fm_potion%.itm~ ~override/%cre%I.itm~
+      WRITE_LONG 0x08 item_name
+      WRITE_LONG 0x0c item_name
+      WRITE_LONG 0x50 item_desc
+      WRITE_LONG 0x54 item_desc
+      WRITE_LONG 0x34 0      // no shop value
+      PATCH_IF (NOT ~%hk_fm_icon%~ STRING_EQUAL ~~) BEGIN
+        WRITE_ASCIIE 0x3a ~%hk_fm_icon%~ #8
+      END
+      LPF DELETE_ITEM_EFFECT INT_VAR opcode_to_delete = "-1" END
+      LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 328 target = 1 parameter2 = hk_fm_call special = 1 duration = 6 END
+      LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 328 target = 1 parameter2 = hk_fm_free special = 1 duration = 6 END
+      LPF ADD_ITEM_EFFECT INT_VAR type = 99 opcode = 67  target = 1 duration = HK_ONE_DAY STR_VAR resource = EVAL ~%cre%1~ END
+  END
+END

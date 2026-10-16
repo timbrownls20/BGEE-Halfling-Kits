@@ -14,3 +14,7 @@
 @14 = ~Greenhand (halfling cleric kit)~
 @15 = ~Magpie (halfling thief kit)~
 @16 = ~WARNING: Halfling Kits could not set the Magpie's thief skill points per level in THIEFSKL.2DA (%hk_tsk_reason%). The Magpie keeps the usual number.~
+@17 = ~My familiar is already with me.~
+@18 = ~Your familiar looks up at you.~
+@19 = ~Pick it up and carry it in your pack.~
+@20 = ~Leave it be.~

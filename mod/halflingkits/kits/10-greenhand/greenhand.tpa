@@ -17,8 +17,9 @@
 //   HKGHSB        Sheela's Berries; HKGHB<b><c>.itm the berries
 //   HKGHHL        Harvest Loaf                      (CLAB, levels 1 and 12)
 //   HKGHCV        Clairvoyance (innate copy)               (CLAB, level 5)
-//   HKGHFAM       Find Familiar: HKGHRB1-5.cre by level; hkghrbd.baf
-//                 (HKGHRBD.bcs) its script; HKGHFDX when it dies;
+//   HKGHFAM       Find Familiar: HKGHRB1-5.cre by level; HK_FAMILIAR adds
+//                 the familiar forms HKGHRBF1-5, the pack item HKGHRBI and
+//                 the bonus spells HKGHFB/FP/FDX/FDY;
 //                 HKGHF<nn>, HKGHFSH the rabbit's innate copies of its spells
 //   HKGHGF        Garden of Friends                                HLA
 //   HKGHCB        Call the Bog                                     HLA
@@ -37,9 +38,9 @@
 // removed with opcode 172 at every level, because a cleric relearns its
 // whole list on levelling up.
 //
-// Find Familiar is a simple scripted summon, as the Briarguard's badger
-// (open question 9): it lasts one day, doesn't follow between areas or
-// ride in the pack, and its death costs no Constitution.
+// Find Familiar, as the Briarguard's badger: called by the main
+// character the rabbit is a familiar (HK_FAMILIAR); called by anyone
+// else it is a one-day summon.
 /////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////
@@ -512,11 +513,14 @@ END
 
 /////////////////////////////////////////////////////////////////////
 // Find Familiar: the rabbit
-// A daily innate that summons the rabbit form for the Greenhand's level
-// for one game day, and gives the Greenhand that form's bonus hit
-// points (and +20 Lore from the Warren Elder) for as long. When the
-// rabbit dies, its script removes the bonus. The forms are copies of
-// the game's rabbit; each casts its divinations as innate abilities.
+// A daily innate that calls the rabbit form for the Greenhand's level.
+// For the main character it is a familiar (see HK_FAMILIAR): it follows
+// between areas, rides in the pack, grows as the Greenhand levels and
+// costs 1 Constitution until the next rest if it dies. For anyone else
+// it is a summon for one game day. Either way the Greenhand gains that
+// form's bonus hit points (and +20 Lore from the Warren Elder) while it
+// lives. The forms are copies of the game's rabbit; each casts its
+// divinations as innate abilities.
 //   Form              Level  HP   AC  Bonus HP  Adds
 //   Hedgerow Rabbit     1    15    4     8      poison immunity; very fast;
 //                                                sees invisible; Detect Invisibility
@@ -536,7 +540,6 @@ END
 ACTION_DEFINE_ARRAY hk_rb_level   BEGIN 1 7 12 18 24 END
 ACTION_DEFINE_ARRAY hk_rb_hp      BEGIN 15 35 60 90 120 END
 ACTION_DEFINE_ARRAY hk_rb_ac      BEGIN 4 2 0 "-3" "-6" END
-ACTION_DEFINE_ARRAY hk_rb_bonus   BEGIN 8 15 25 35 45 END
 ACTION_DEFINE_ARRAY hk_rb_mr      BEGIN 0 0 20 40 60 END
 ACTION_DEFINE_ARRAY hk_rb_elem    BEGIN 0 0 25 50 75 END
 ACTION_DEFINE_ARRAY hk_rb_needs   BEGIN 0 0 0 1 2 END
@@ -564,7 +567,6 @@ OUTER_FOR (s = 0; s < 8; ++s) BEGIN
 END
 
 ACTION_IF (hk_rabbit_found) BEGIN
-  COMPILE ~%MOD_FOLDER%/kits/10-greenhand/hkghrbd.baf~
   LAF HK_INNATE_COPY STR_VAR source = ~HKGHSH~ dest = ~HKGHFSH~ END
 
   OUTER_FOR (i = 0; i < 5; ++i) BEGIN
@@ -582,7 +584,6 @@ ACTION_IF (hk_rabbit_found) BEGIN
     OUTER_SET name_ref = $hk_rb_name(~%i%~)
     COPY_EXISTING ~%hk_rabbit_cre%.cre~ ~override/HKGHRB%form%.cre~
       LPF HK_SUMMON_COPY INT_VAR name = name_ref hp ac END
-      WRITE_ASCII 0x268 ~HKGHRBD~ #8      // default script
       LPF ADD_CRE_EFFECT INT_VAR opcode = 193 target = 1 timing = 9 END                   // sees invisible
       LPF ADD_CRE_EFFECT INT_VAR opcode = 176 target = 1 timing = 9 parameter1 = 4 END    // very fast
       LPF ADD_CRE_EFFECT INT_VAR opcode = 54  target = 1 timing = 9 parameter1 = 2 END    // Green Thumb
@@ -634,28 +635,22 @@ ACTION_IF (hk_rabbit_found) BEGIN
       END
   END
 
-  CREATE SPL ~HKGHFDX~
-    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) END
-    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
-    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKGHFAM~ END
-    LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@157) timing = HK_TIMING_INSTANT END
-
   CREATE SPL ~HKGHFAM~
     LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) STR_VAR icon = EVAL ~%hk_bless_book_icon%~ END
     FOR (i = 0; i < 5; ++i) BEGIN
       SET level = $hk_rb_level(~%i%~)
       LPF HK_ADD_SPELL_HEADER INT_VAR min_level = level STR_VAR icon = EVAL ~%hk_bless_icon%~ END
     END
-    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKGHFAM~ END
-    FOR (i = 0; i < 5; ++i) BEGIN
-      SET header = i + 1
-      SET bonus = $hk_rb_bonus(~%i%~)
+    FOR (header = 1; header <= 5; ++header) BEGIN
       LPF HK_SPELL_FX INT_VAR opcode = 67 duration = HK_ONE_DAY header STR_VAR resource = EVAL ~HKGHRB%header%~ END
-      LPF HK_SPELL_FX INT_VAR opcode = 18 parameter1 = bonus duration = HK_ONE_DAY header END   // bonus HP
-      PATCH_IF (header >= 3) BEGIN
-        LPF HK_SPELL_FX INT_VAR opcode = 21 parameter1 = 20 duration = HK_ONE_DAY header END    // Old Wisdom: +20 Lore
-      END
     END
+
+  LAF HK_FAMILIAR
+    INT_VAR name = RESOLVE_STR_REF (@155) desc = RESOLVE_STR_REF (@156) death = RESOLVE_STR_REF (@157)
+            item_name = RESOLVE_STR_REF (@158) item_desc = RESOLVE_STR_REF (@159)
+    STR_VAR prefix = ~HKGH~ cre = ~HKGHRB~ levels = ~1 7 12 18 24~ bonus = ~8 15 25 35 45~ lore = ~0 0 20 20 20~
+            icon_items = ~famrab famfer famcat~
+  END
 END
 
 

@@ -72,8 +72,14 @@ A plump, glossy berry from Sheela Peryroyl's hedgerows. Eating it heals 1d4+1 hi
 @155 = ~Find Familiar~
 @156 = ~Find Familiar
 
-Once a day, the Greenhand calls its rabbit, which stays for one day. It grows with the Greenhand: a Hedgerow Rabbit, then a Hare from level 7, a Warren Elder from 12, a Moon Hare from 18 and Sheela's Hare from 24. It is a scout, not a fighter: each form is tougher and can cast more divinations. While it lives, the Greenhand gains extra hit points (8, rising to 45), and from the Warren Elder +20 Lore.~
+Once a day, the Greenhand calls its rabbit. If the Greenhand is the main character, the rabbit is a true familiar: it stays, follows the party from area to area, and can be picked up (talk to it) and carried in the pack, where it heals. If it dies, the Greenhand also loses 1 Constitution until it next rests. Any other Greenhand's rabbit stays for one day.
+
+It grows with the Greenhand: a Hedgerow Rabbit, then a Hare from level 7, a Warren Elder from 12, a Moon Hare from 18 and Sheela's Hare from 24. It is a scout, not a fighter: each form is tougher and can cast more divinations. While it lives, the Greenhand gains extra hit points (8, rising to 45), and from the Warren Elder +20 Lore.~
 @157 = ~The rabbit is gone, and the Greenhand feels the loss.~
+@158 = ~Rabbit Familiar~
+@159 = ~Rabbit Familiar
+
+The Greenhand's rabbit, curled up asleep in the pack. Use it to let the rabbit out again.~
 
 @160 = ~Garden of Friends~
 @161 = ~Garden of Friends

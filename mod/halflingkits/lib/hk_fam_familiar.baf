@@ -1,0 +1,22 @@
+// Find Familiar, the main character's familiar, form %hk_fm_form%
+// (built by HK_FAMILIAR).
+%hk_fm_grow%
+// First round: join the party as a familiar (it follows between areas
+// and doesn't count towards the summon limit) and give the bonus
+IF
+  Global("HK_INIT","LOCALS",0)
+THEN
+  RESPONSE #100
+    SetGlobal("HK_INIT","LOCALS",1)
+    ChangeEnemyAlly(Myself,FAMILIAR)
+    AddFamiliar()
+    ApplySpellRES("%hk_fm_prefix%FP%hk_fm_form%",Player1)
+END
+
+IF
+  Die()
+THEN
+  RESPONSE #100
+    SetGlobal("%hk_fm_global%","GLOBAL",0)
+    ApplySpellRES("%hk_fm_prefix%FDY",Player1)
+END

@@ -1,0 +1,47 @@
+// Find Familiar, summoned form %hk_fm_form% (built by HK_FAMILIAR).
+// On its first round it checks who called it. The main character's call
+// (Player1 carries the HK_FAM_CALL state for a few seconds) turns it into
+// the familiar; anyone else's leaves it a one-day summon.
+
+// The main character called it, or let it out of the pack: become the
+// familiar
+IF
+  Global("HK_INIT","LOCALS",0)
+  CheckSpellState(Player1,HK_FAM_CALL)
+  OR(2)
+    Global("%hk_fm_global%","GLOBAL",0)
+    CheckSpellState(Player1,HK_FAM_FREE)
+THEN
+  RESPONSE #100
+    SetGlobal("HK_INIT","LOCALS",1)
+    SetGlobal("%hk_fm_global%","GLOBAL",1)
+    CreateCreatureObject("%hk_fm_cre%F%hk_fm_form%",Myself,0,0,0)
+    DestroySelf()
+END
+
+// The main character already has the familiar, out or in the pack
+IF
+  Global("HK_INIT","LOCALS",0)
+  CheckSpellState(Player1,HK_FAM_CALL)
+THEN
+  RESPONSE #100
+    SetGlobal("HK_INIT","LOCALS",1)
+    DisplayStringHead(Player1,%hk_fm_have%)
+    DestroySelf()
+END
+
+// Anyone else: a summon for one day, with the bonus for as long
+IF
+  Global("HK_INIT","LOCALS",0)
+THEN
+  RESPONSE #100
+    SetGlobal("HK_INIT","LOCALS",1)
+    ApplySpellRES("%hk_fm_prefix%FB%hk_fm_form%",LastSummonerOf(Myself))
+END
+
+IF
+  Die()
+THEN
+  RESPONSE #100
+    ApplySpellRES("%hk_fm_prefix%FDX",LastSummonerOf(Myself))
+END

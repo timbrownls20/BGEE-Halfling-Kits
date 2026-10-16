@@ -105,6 +105,6 @@ For anyone building this kit as a mod (for example with WeiDU):
   - **Spears and axes:** a thief can't normally use them. They need opening to this kit only, as the Magpie's scrolls and wands were: clear the "unusable by thief" flag, then block every other thief kit.
   - **No Open Locks or Pick Pockets:** lower both skills out of reach, as the Magpie's Set Traps. **15 skill points per level:** a row in `THIEFSKL.2DA`, as the Magpie's.
   - **Child of the Wood and outdoor-only traps:** a global-script check per party slot that applies the outdoor bonus when the area is outdoors and not a city, and removes it otherwise (like the True Heart's fall check). The same check takes Set Traps away indoors (the skill lowered out of reach while inside) and sets a spell state outdoors; the kit's copy of Set Spike Trap only works with that state.
-  - **The owl familiar:** the simple-summon approach of the badger and rabbit. It needs an owl or bird creature to copy; if the game has none, another small creature stands in.
+  - **The owl familiar:** the badger's and rabbit's approach (`HK_FAMILIAR`): a familiar for the main character, a one-day summon for anyone else. It needs an owl or bird creature to copy; if the game has none, another small creature stands in.
   - **Wild Rage and Spirit of the Chondalwood:** spell states that the rage checks, as the Surefoot's stances.
 - **Hard:** none.

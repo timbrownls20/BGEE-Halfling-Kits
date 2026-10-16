@@ -22,14 +22,14 @@
 //   HKBGHS        Hedge Shelter                                       HLA
 //
 //   HKBGFAM       Find Familiar: calls the badger form for the level
-//   HKBGBD1-5.cre The badger's five forms; hkbgbdg.baf (HKBGBDG.bcs) its script
-//   HKBGFDX       The badger died: its master loses the bonus hit points
+//   HKBGBD1-5.cre The badger's five forms; HK_FAMILIAR adds the familiar
+//                 forms HKBGBDF1-5, the pack item HKBGBDI and the bonus
+//                 spells HKBGFB/FP/FDX/FDY
 //   HKBGBFA       Badger's Fury's rage for the badger
 //
-// Find Familiar is a simple scripted summon (decided 16 October 2026),
-// not the engine's familiar, which only works for the protagonist: the
-// badger lasts one day, doesn't follow between areas or ride in the
-// pack, and its death costs no Constitution.
+// Find Familiar: called by the main character the badger is a familiar
+// (HK_FAMILIAR; the engine ties familiars to the main character); called
+// by anyone else it is a one-day summon.
 /////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////
@@ -361,10 +361,12 @@ CREATE SPL ~HKBGIW~
 
 /////////////////////////////////////////////////////////////////////
 // Find Familiar: the badger
-// A daily innate that summons the badger form for the Briarguard's
-// level for one game day, and gives the Briarguard that form's bonus
-// hit points for as long. When the badger dies, its script removes the
-// bonus. The forms are copies of the game's badger (or wolf, if there
+// A daily innate that calls the badger form for the Briarguard's level.
+// For the main character it is a familiar (see HK_FAMILIAR): it follows
+// between areas, rides in the pack, grows as the Briarguard levels and
+// costs 1 Constitution until the next rest if it dies. For anyone else
+// it is a summon for one game day. Either way the Briarguard gains that
+// form's bonus hit points while it lives. The forms are copies of the game's badger (or wolf, if there
 // is no badger), tagged with a new SPECIFIC.IDS value so Badger's Fury
 // can find them.
 //   Form               Level  HP   AC  Bonus HP  Adds
@@ -390,7 +392,6 @@ LAF HK_ADD_IDS STR_VAR file = ~specific~ name = ~HK_BG_BADGER~ RET hk_badger_spe
 ACTION_DEFINE_ARRAY hk_bd_level   BEGIN 1 7 12 18 24 END
 ACTION_DEFINE_ARRAY hk_bd_hp      BEGIN 20 40 65 95 130 END
 ACTION_DEFINE_ARRAY hk_bd_ac      BEGIN 5 3 1 "-2" "-5" END
-ACTION_DEFINE_ARRAY hk_bd_bonus   BEGIN 8 15 25 35 45 END
 ACTION_DEFINE_ARRAY hk_bd_mr      BEGIN 0 0 20 40 60 END
 ACTION_DEFINE_ARRAY hk_bd_elem    BEGIN 0 0 25 50 75 END
 ACTION_DEFINE_ARRAY hk_bd_ench    BEGIN 0 0 1 2 3 END
@@ -405,8 +406,6 @@ OUTER_SET $hk_bd_name(~3~) = RESOLVE_STR_REF (@193)
 OUTER_SET $hk_bd_name(~4~) = RESOLVE_STR_REF (@194)
 
 ACTION_IF (hk_badger_found) BEGIN
-  COMPILE ~%MOD_FOLDER%/kits/11-briarguard/hkbgbdg.baf~
-
   OUTER_FOR (i = 0; i < 5; ++i) BEGIN
     OUTER_SET form = i + 1
     OUTER_SET hp    = $hk_bd_hp(~%i%~)
@@ -423,7 +422,6 @@ ACTION_IF (hk_badger_found) BEGIN
     OUTER_SET name_ref = $hk_bd_name(~%i%~)
     COPY_EXISTING ~%hk_badger_cre%.cre~ ~override/HKBGBD%form%.cre~
       LPF HK_SUMMON_COPY INT_VAR name = name_ref hp ac END
-      WRITE_ASCII 0x268 ~HKBGBDG~ #8      // default script
       WRITE_BYTE  0x274 hk_badger_specific
       LPF ADD_CRE_EFFECT INT_VAR opcode = 193 target = 1 timing = 9 END   // sees invisible
       PATCH_FOR_EACH blocked IN ~25~ ~78~ ~24~ ~5~ ~109~ ~175~ ~185~ ~39~ ~128~ ~40~ ~45~ ~216~ ~13~ ~55~ ~134~ ~238~ BEGIN
@@ -450,25 +448,22 @@ ACTION_IF (hk_badger_found) BEGIN
       END
   END
 
-  CREATE SPL ~HKBGFDX~
-    LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@195) desc = RESOLVE_STR_REF (@196) END
-    LPF HK_ADD_SPELL_HEADER INT_VAR target = 1 END
-    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGFAM~ END
-    LPF HK_SPELL_FX INT_VAR opcode = 139 parameter1 = RESOLVE_STR_REF (@197) timing = HK_TIMING_INSTANT END
-
   CREATE SPL ~HKBGFAM~
     LPF HK_INIT_SPELL INT_VAR name = RESOLVE_STR_REF (@195) desc = RESOLVE_STR_REF (@196) STR_VAR icon = EVAL ~%hk_ent_icon%~ END
     FOR (i = 0; i < 5; ++i) BEGIN
       SET level = $hk_bd_level(~%i%~)
       LPF HK_ADD_SPELL_HEADER INT_VAR min_level = level STR_VAR icon = EVAL ~%hk_ent_icon%~ END
     END
-    LPF HK_SPELL_FX INT_VAR opcode = 321 timing = HK_TIMING_INSTANT STR_VAR resource = ~HKBGFAM~ END
-    FOR (i = 0; i < 5; ++i) BEGIN
-      SET header = i + 1
-      SET bonus = $hk_bd_bonus(~%i%~)
+    FOR (header = 1; header <= 5; ++header) BEGIN
       LPF HK_SPELL_FX INT_VAR opcode = 67 duration = HK_ONE_DAY header STR_VAR resource = EVAL ~HKBGBD%header%~ END
-      LPF HK_SPELL_FX INT_VAR opcode = 18 parameter1 = bonus duration = HK_ONE_DAY header END   // bonus HP
     END
+
+  LAF HK_FAMILIAR
+    INT_VAR name = RESOLVE_STR_REF (@195) desc = RESOLVE_STR_REF (@196) death = RESOLVE_STR_REF (@197)
+            item_name = RESOLVE_STR_REF (@198) item_desc = RESOLVE_STR_REF (@199)
+    STR_VAR prefix = ~HKBG~ cre = ~HKBGBD~ levels = ~1 7 12 18 24~ bonus = ~8 15 25 35 45~
+            icon_items = ~famfer famcat famrab~
+  END
 
   // Badger's Fury: the badger rages too (anything that isn't the badger
   // is protected: SPLPROT row 116, SPECIFIC != n)
