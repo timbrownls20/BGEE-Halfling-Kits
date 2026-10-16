@@ -286,7 +286,7 @@ A nature party: the halflings of the hedgerows and the deep woods.
 | Front line | Briarguard | Elemental tank: resistance up to 80%, Iron Skins, Entangle, Wake the Hedge and a badger familiar that grows with it |
 | Damage | Slinger | Up to 5 sling attacks a round; Breaching and Dispelling bullets in ToB |
 | Healer | Greenhand | Healing, summons that Death Spell can't kill, Insect Plague and Creeping Doom, True Seeing |
-| Rogue | Ghostwise Rogue | A wild hunter: rage, thick hide, stealth and bonuses outdoors, and an owl familiar that spots the invisible and later casts True Seeing |
+| Rogue | Ghostwise Rogue | A wild hunter: stealth, Ambush to pin targets, rage when caught, bonuses outdoors, a family amulet against spells, and an owl familiar that spots the invisible and later casts True Seeing |
 
 **How it plays:** a wall of thorns and summons. The Briarguard, its badger and the Greenhand's creatures hold the enemy in Entangle while the Slinger shoots from behind them and the Ghostwise Rogue hunts the edges.
 

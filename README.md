@@ -26,7 +26,7 @@ Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Bald
 | [Nettle](docs/kits/09-nettle/design.md) | Thief | Anti-caster opener | Yes | |
 | [Greenhand](docs/kits/10-greenhand/design.md) | Cleric | Nature priest and summoner | Yes | |
 | [Briarguard](docs/kits/11-briarguard/design.md) | Fighter | Nature warrior, elemental tank | Yes | |
-| [Ghostwise Rogue](docs/kits/12-ghostwise-rogue/design.md) | Thief | Wild hunter with rage and an owl familiar | | |
+| [Ghostwise Rogue](docs/kits/12-ghostwise-rogue/design.md) | Thief | Wild hunter with Ambush, rage, an owl familiar and a family amulet | | |
 
 Each coded kit's design file ends with an "As built" section listing where the code differs from the design. **Tested** means installed and played in the game; no kit has been yet, as there is no game install to test against.
 
