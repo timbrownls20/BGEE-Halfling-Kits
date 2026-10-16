@@ -2,7 +2,7 @@
 
 Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Baldur's Gate II: Enhanced Edition (including Siege of Dragonspear and Throne of Bhaal). Each kit is built around one idea and tuned to be strong but not overpowered.
 
-**Status:** design complete for eleven kits; the twelfth, the Ghostwise Rogue, is a placeholder still to be designed. Seven are coded as a WeiDU mod: the Fleet Foot Fighter, the True Heart, the Hearthsinger, Tymora's Champion, the Unbeguiled, the Nettle and the Briarguard. None has been installed or playtested yet.
+**Status:** all twelve kits are designed. Eleven are coded as a WeiDU mod; the twelfth, the Ghostwise Rogue, is designed but not yet coded. None has been installed or playtested yet.
 
 ## Start here
 
@@ -26,7 +26,7 @@ Twelve halfling-only character kits for Baldur's Gate: Enhanced Edition and Bald
 | [Nettle](docs/kits/09-nettle/design.md) | Thief | Anti-caster opener | Yes | |
 | [Greenhand](docs/kits/10-greenhand/design.md) | Cleric | Nature priest and summoner | Yes | |
 | [Briarguard](docs/kits/11-briarguard/design.md) | Fighter | Nature warrior, elemental tank | Yes | |
-| [Ghostwise Rogue](docs/kits/12-ghostwise-rogue/design.md) | Fighter/Thief | Wild rogue with barbarian qualities (to be designed) | | |
+| [Ghostwise Rogue](docs/kits/12-ghostwise-rogue/design.md) | Thief | Wild hunter with rage and an owl familiar | | |
 
 Each coded kit's design file ends with an "As built" section listing where the code differs from the design. **Tested** means installed and played in the game; no kit has been yet, as there is no game install to test against.
 

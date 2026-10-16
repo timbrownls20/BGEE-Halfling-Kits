@@ -1,6 +1,6 @@
 # Party Design
 
-How the halfling kits fit together into all-halfling parties: what each kit brings, six line-ups (two of six, two of four, a trio and a duo), two guest line-ups with an elf Sorcerer (Snow White and the Five Shorties, and the Three Shorties), the three playtest parties, and the swaps between them. The line-ups predate the twelfth kit, the Ghostwise Rogue, which is still to be designed; it appears only in the playtest parties. Ratings for each kit are on the Overview and Strength Rankings tabs.
+How the halfling kits fit together into all-halfling parties: what each kit brings, six line-ups (two of six, two of four, a trio and a duo), two guest line-ups with an elf Sorcerer (Snow White and the Five Shorties, and the Three Shorties), the three playtest parties, and the swaps between them. The line-ups predate the twelfth kit, the Ghostwise Rogue; it appears only in the playtest parties. Ratings for each kit are on the Overview and Strength Rankings tabs.
 
 ## What each kit brings
 
@@ -286,13 +286,13 @@ A nature party: the halflings of the hedgerows and the deep woods.
 | Front line | Briarguard | Elemental tank: resistance up to 80%, Iron Skins, Entangle, Wake the Hedge and a badger familiar that grows with it |
 | Damage | Slinger | Up to 5 sling attacks a round; Breaching and Dispelling bullets in ToB |
 | Healer | Greenhand | Healing, summons that Death Spell can't kill, Insect Plague and Creeping Doom, True Seeing |
-| Rogue | Ghostwise Rogue | A wild fighter/thief with barbarian qualities and wilderness bonuses (still to be designed) |
+| Rogue | Ghostwise Rogue | A wild hunter: rage, thick hide, stealth and bonuses outdoors, and an owl familiar that spots the invisible and later casts True Seeing |
 
 **How it plays:** a wall of thorns and summons. The Briarguard, its badger and the Greenhand's creatures hold the enemy in Entangle while the Slinger shoots from behind them and the Ghostwise Rogue hunts the edges.
 
-**What it tests:** the summon limit (the Greenhand's summons and Wake the Hedge share the limit of 5), both familiars (the Greenhand's rabbit and the Briarguard's badger), the Greenhand's druid spells, Iron Skins with 80% elemental resistance against ToB dragons, the Slinger's Eagle Eye, and the Ghostwise Rogue's wilderness bonuses outdoors versus in towns and dungeons.
+**What it tests:** the summon limit (the Greenhand's summons and Wake the Hedge share the limit of 5), all three familiars (the Greenhand's rabbit, the Briarguard's badger and the Ghostwise Rogue's owl), the Greenhand's druid spells, Iron Skins with 80% elemental resistance against ToB dragons, the Slinger's Eagle Eye, and the Ghostwise Rogue's wilderness bonuses outdoors versus in towns and dungeons.
 
-**Difficulty: strongest outdoors, weakest in cities and dungeons.** Nobody in it can open locks (the Ghostwise Rogue has no Open Locks), so locked doors and chests mean bashing, Knock scrolls or leaving them. Its answers to enemy mages are the Greenhand's True Seeing and Dispel Magic, then the Slinger's bullets in ToB. It needs the most building: the Greenhand, the Slinger and the Ghostwise Rogue.
+**Difficulty: strongest outdoors, weakest in cities and dungeons.** Nobody in it can open locks (the Ghostwise Rogue has no Open Locks), so locked doors and chests mean bashing, Knock scrolls or leaving them. Its answers to enemy mages are the Greenhand's True Seeing and Dispel Magic, then the Slinger's bullets in ToB. It needs the most building: the Ghostwise Rogue is designed but not yet coded.
 
 ## Swaps
 

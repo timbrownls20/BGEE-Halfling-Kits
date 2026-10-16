@@ -4,8 +4,8 @@ The working record for the halfling-only kit set for Baldur's Gate: Enhanced Edi
 
 ## Status
 
-- **Design:** complete for eleven kits, with several review and balance passes. A twelfth, the Ghostwise Rogue (fighter/thief with barbarian qualities and wilderness bonuses; no Open Locks or Pick Pockets), is a placeholder still to be designed (`docs/kits/12-ghostwise-rogue/design.md`).
-- **Implementation:** all eleven designed kits are coded; the Ghostwise Rogue waits on its design. `mod/halflingkits/` holds the WeiDU mod: the shared library (`lib/hk_lib.tpa`), the Fleet Foot Fighter (`kits/01-fleet-foot-fighter/`), the Hearthsinger (`kits/04-hearthsinger/`), Tymora's Champion (`kits/05-tymoras-champion/`), the Nettle (`kits/09-nettle/`), the Surefoot Fighter (`kits/03-surefoot-fighter/`), the Slinger (`kits/06-slinger/`), the Magpie (`kits/07-magpie/`), the Greenhand (`kits/10-greenhand/`), the Briarguard (`kits/11-briarguard/`), the True Heart (`kits/02-true-heart/`) and the Unbeguiled (`kits/08-unbeguiled/`). All eleven pass WeiDU's syntax check (`utils/check-mod.sh`) but have not been installed in a game yet. Each kit's design file ends with an "As built" section listing where the code differs from the design.
+- **Design:** complete for all twelve kits. The Ghostwise Rogue (thief with barbarian qualities, wilderness bonuses and an owl familiar; no Open Locks or Pick Pockets) was designed on 16 October 2026 and hasn't had a review or balance pass yet.
+- **Implementation:** eleven kits are coded; the Ghostwise Rogue is designed but not yet coded. `mod/halflingkits/` holds the WeiDU mod: the shared library (`lib/hk_lib.tpa`), the Fleet Foot Fighter (`kits/01-fleet-foot-fighter/`), the Hearthsinger (`kits/04-hearthsinger/`), Tymora's Champion (`kits/05-tymoras-champion/`), the Nettle (`kits/09-nettle/`), the Surefoot Fighter (`kits/03-surefoot-fighter/`), the Slinger (`kits/06-slinger/`), the Magpie (`kits/07-magpie/`), the Greenhand (`kits/10-greenhand/`), the Briarguard (`kits/11-briarguard/`), the True Heart (`kits/02-true-heart/`) and the Unbeguiled (`kits/08-unbeguiled/`). All eleven pass WeiDU's syntax check (`utils/check-mod.sh`) but have not been installed in a game yet. Each kit's design file ends with an "As built" section listing where the code differs from the design.
 - **Playtesting:** none yet. Every rating is an estimate.
 - **Source of truth:** these Markdown files, from the point they are committed. They were exported from the design document on 15 October 2026. Make further changes here, not in the original document, so git history stays the record.
 
@@ -13,7 +13,7 @@ The working record for the halfling-only kit set for Baldur's Gate: Enhanced Edi
 
 In priority order. Each kit's "As built" notes list its own smaller check-in-game items.
 
-1. **Design the Ghostwise Rogue** (placeholder: `docs/kits/12-ghostwise-rogue/design.md`). Check the multiclass kit workaround first. Then add it to the Overview, Party Design and Strength Rankings.
+1. **Ghostwise Rogue:** add it to the Overview tables and the Strength Rankings (its design has rough ratings), then code it (`docs/kits/12-ghostwise-rogue/design.md`).
 2. **EEex components** (optional, Windows only; see the EEex plan under Dependencies). Current TODOs:
    - Fleet Foot: Halfling Evasion's half damage on a failed save.
    - Fleet Foot and Tymora's Champion: Critical Strike ignoring critical-hit immunity.
@@ -33,6 +33,7 @@ In priority order. Each kit's "As built" notes list its own smaller check-in-gam
 Newest first.
 
 **16 October 2026**
+- Designed the **Ghostwise Rogue**: a single-class thief with barbarian qualities (Rage every 4 levels, the Barbarian's physical resistance, and fighter-like Hunter's Eye (+1 to hit every 4 levels), Hunter's Pace (extra attacks at 13 and 21) and Wild Hide (+30 HP), +2 movement), outdoor bonuses, an owl familiar, hunter's weapons (short swords, spears, clubs, axes, daggers, slings, short bows). After a critique pass: Weathered Hide cut, Wild Rage only doubles the rage, Child of the Wood gives damage and stealth but no to-hit, Hunter's Mark is a debuff only. No Open Locks or Pick Pockets and 15 skill points a level, traps outdoors only, leather or studded leather and bucklers only, backstab capped at x3, and no Use Any Item, Scribe Scrolls, Alchemy, Assassination or magical trap HLAs. It was a thief kit rather than a fighter/thief multiclass, because the game doesn't support multiclass kits without an extra mod.
 - Coded the **Magpie**, the last of the eleven designed kits. Magpie's Knack is split by category (open question 8 decided): arcane scrolls and wands from level 1, other classes' items through Use Any Item, and the level ladder and fumble chance as EEex TODOs. Brandobaris's Gift and Dice run from a rest script; the Gift's treasure tiers are built from the game's own items at install. Its 20 skill points per level are a row added to `THIEFSKL.2DA`.
 - Coded the **Greenhand**: its spell list (druid and IWD additions found by name, with cleric-usable copies of druid-only spells; cut spells removed at every level), Green Thumb and Sheela's Bounty built into its own copies of the summoning and healing spells, Summon Horde, Sheela's Berries, Harvest Loaf, the rabbit familiar and its HLAs. Open questions 1 and 2 are settled by the build. Added `skilled3` to `HK_WEAPPROF_LINE`.
 - Coded the **Slinger**: sling-only scaling and Rapid Sling, the Called Shot ladder, its HLAs, and crafted bullets made by a rest script from gems the Slinger carries. Added `HK_FIND_ITEM_BY_NAME` to the library.
@@ -113,7 +114,7 @@ Ratings are out of 10, scored against the standard classes on the same scale (So
 | Briarguard | Fighter | Nature warrior, elemental tank | 7.5 | 8.5 | 6.5 | 8 |
 | Magpie | Thief | Scrolls, wands and loot | 7 | 6 | 8 | 7.5 |
 | Nettle | Thief | Anti-caster opener | 4.5 | 6.5 | 8 | 7.5 |
-| Ghostwise Rogue | Fighter/Thief | Wild rogue (to be designed) | | | | |
+| Ghostwise Rogue | Thief | Wild hunter and light fighter, with rage and an owl familiar | | | | |
 
 Design intent: strong but not overpowered. Every kit sits between 7.5 and 9 overall, with the Fleet Foot the only 9.
 
@@ -234,7 +235,7 @@ No party has an arcane caster: every kit is a fighter, cleric or thief, so the M
 | --- | --- | --- |
 | The Bold | 4 (True Heart, Fleet Foot, Tymora's Champion, Nettle) | Nothing |
 | Hearth and Home | 4 (Surefoot, Unbeguiled, Hearthsinger, Magpie) | Nothing |
-| The Wild Wood | 3 (Briarguard, Slinger, Greenhand) | the Ghostwise Rogue is still to be designed and may need the multiclass kit workaround |
+| The Wild Wood | 3 (Briarguard, Slinger, Greenhand) | the Ghostwise Rogue (designed, not yet coded) |
 
 The Bold and Hearth and Home are fully coded; The Bold goes first.
 
